@@ -2,3 +2,10 @@
 pytest-ansible
 pytest-xdist
 molecule
+requests
+pytest
+# Linting and code formatting tools
+tox
+black
+flake8
+isort
