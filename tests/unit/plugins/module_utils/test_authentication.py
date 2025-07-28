@@ -208,6 +208,48 @@ def test_login_with_approle_401_failure(mock_post):
 
 
 @patch("ansible_collections.hashicorp.vault.plugins.module_utils.authentication.requests.post")
+def test_login_with_approle_403_failure(mock_post):
+    """Test AppRole login failure with 403 forbidden."""
+    mock_response = Mock()
+    mock_response.status_code = 403
+    mock_response.text = "forbidden"
+    mock_post.return_value = mock_response
+
+    with pytest.raises(
+        VaultAppRoleLoginError, match="AppRole login failed: HTTP 403 - forbidden"
+    ):
+        _login_with_approle("http://127.0.0.1:8200", "bad-role", "bad-secret", "namespace")
+
+
+@patch("ansible_collections.hashicorp.vault.plugins.module_utils.authentication.requests.post")
+def test_login_with_approle_404_failure(mock_post):
+    """Test AppRole login failure with 404 not found (invalid mount path)."""
+    mock_response = Mock()
+    mock_response.status_code = 404
+    mock_response.text = "unsupported path"
+    mock_post.return_value = mock_response
+
+    with pytest.raises(
+        VaultAppRoleLoginError, match="AppRole login failed: HTTP 404 - unsupported path"
+    ):
+        _login_with_approle("http://127.0.0.1:8200", "role-id", "secret-id", "namespace", "invalid-path")
+
+
+@patch("ansible_collections.hashicorp.vault.plugins.module_utils.authentication.requests.post")
+def test_login_with_approle_500_failure(mock_post):
+    """Test AppRole login failure with 500 internal server error."""
+    mock_response = Mock()
+    mock_response.status_code = 500
+    mock_response.text = "internal server error"
+    mock_post.return_value = mock_response
+
+    with pytest.raises(
+        VaultAppRoleLoginError, match="AppRole login failed: HTTP 500 - internal server error"
+    ):
+        _login_with_approle("http://127.0.0.1:8200", "role-id", "secret-id", "namespace")
+
+
+@patch("ansible_collections.hashicorp.vault.plugins.module_utils.authentication.requests.post")
 def test_login_with_approle_network_error(mock_post):
     """Test AppRole login propagates network errors."""
     mock_post.side_effect = requests.ConnectionError("Connection timeout")
