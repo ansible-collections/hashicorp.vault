@@ -3,6 +3,7 @@
 # Copyright (c) 2025 Red Hat, Inc.
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+import logging
 import os
 import requests
 
@@ -10,6 +11,8 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.authentication imp
     get_vault_token,
     VaultConfigurationError,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class VaultClient:
@@ -46,4 +49,4 @@ class VaultClient:
                 "X-Vault-Namespace": vault_namespace,
             }
         )
-        print("Logged in to Vault!")
+        logger.info("Successfully authenticated with Vault at %s", vault_address)
