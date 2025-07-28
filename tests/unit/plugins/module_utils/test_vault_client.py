@@ -18,7 +18,7 @@ MOCK_REQUESTS_SESSION = (
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import VaultClient
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
     VaultConfigurationError,
-    VaultCredentialsError
+    VaultCredentialsError,
 )
 
 
@@ -38,22 +38,55 @@ def test_vault_client_init_success(mock_session_class, mock_get_token):
     client = VaultClient()
 
     assert client.session == mock_session
-    mock_get_token.assert_called_once_with("http://127.0.0.1:8200", "test-namespace")
-    mock_session.headers.update.assert_any_call({"X-Vault-Token": "test-token"})
-    mock_session.headers.update.assert_any_call({"X-Vault-Namespace": "test-namespace"})
+    mock_get_token.assert_called_once_with("http://127.0.0.1:8200", "test-namespace", "approle")
+    mock_session.headers.update.assert_called_once_with(
+        {"X-Vault-Token": "test-token", "X-Vault-Namespace": "test-namespace"}
+    )
+
+
+@patch.dict(
+    os.environ,
+    {
+        "VAULT_ADDR": "http://127.0.0.1:8200",
+        "VAULT_NAMESPACE": "test-namespace",
+        "VAULT_APPROLE_PATH": "custom-approle",
+    },
+    clear=True,
+)
+@patch(MOCK_GET_VAULT_TOKEN)
+@patch(MOCK_REQUESTS_SESSION)
+def test_vault_client_init_custom_approle_path(mock_session_class, mock_get_token):
+    """Test VaultClient initialization with custom AppRole path."""
+    mock_get_token.return_value = "test-token"
+    mock_session = Mock()
+    mock_session_class.return_value = mock_session
+
+    client = VaultClient()
+
+    assert client.session == mock_session
+    mock_get_token.assert_called_once_with(
+        "http://127.0.0.1:8200", "test-namespace", "custom-approle"
+    )
+    mock_session.headers.update.assert_called_once_with(
+        {"X-Vault-Token": "test-token", "X-Vault-Namespace": "test-namespace"}
+    )
 
 
 @patch.dict(os.environ, {}, clear=True)
 def test_vault_client_missing_vault_addr():
     """Test VaultClient fails without VAULT_ADDR set."""
-    with pytest.raises(VaultConfigurationError, match="VAULT_ADDR environment variable is required"):
+    with pytest.raises(
+        VaultConfigurationError, match="VAULT_ADDR environment variable is required"
+    ):
         VaultClient()
 
 
 @patch.dict(os.environ, {"VAULT_ADDR": "http://127.0.0.1:8200"}, clear=True)
 def test_vault_client_missing_vault_namespace():
     """Test VaultClient fails without VAULT_NAMESPACE set."""
-    with pytest.raises(VaultConfigurationError, match="VAULT_NAMESPACE environment variable is required"):
+    with pytest.raises(
+        VaultConfigurationError, match="VAULT_NAMESPACE environment variable is required"
+    ):
         VaultClient()
 
 

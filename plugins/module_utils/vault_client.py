@@ -21,6 +21,7 @@ class VaultClient:
         - VAULT_NAMESPACE (required): Vault Enterprise namespace
         - VAULT_TOKEN: (optional) Vault token for direct authentication
         - VAULT_APPROLE_ROLE_ID and VAULT_APPROLE_SECRET_ID: (optional) AppRole credentials
+        - VAULT_APPROLE_PATH: (optional) AppRole mount path, defaults to "approle"
 
     Raises:
         VaultConfigurationError: If required environment variables are missing.
@@ -31,6 +32,7 @@ class VaultClient:
     def __init__(self) -> None:
         vault_address = os.environ.get("VAULT_ADDR")
         vault_namespace = os.environ.get("VAULT_NAMESPACE")
+        approle_path = os.environ.get("VAULT_APPROLE_PATH", "approle")
 
         if not vault_address:
             raise VaultConfigurationError("VAULT_ADDR environment variable is required")
@@ -39,7 +41,9 @@ class VaultClient:
 
         self.session = requests.Session()
         self.session.headers.update(
-            {"X-Vault-Token": get_vault_token(vault_address, vault_namespace)}
+            {
+                "X-Vault-Token": get_vault_token(vault_address, vault_namespace, approle_path),
+                "X-Vault-Namespace": vault_namespace,
+            }
         )
-        self.session.headers.update({"X-Vault-Namespace": vault_namespace})
         print("Logged in to Vault!")

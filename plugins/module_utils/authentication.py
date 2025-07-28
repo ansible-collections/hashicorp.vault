@@ -33,7 +33,9 @@ class VaultAppRoleLoginError(VaultError):
         self.status_code = status_code
 
 
-def get_vault_token(vault_address: str, vault_namespace) -> str:
+def get_vault_token(
+    vault_address: str, vault_namespace: str = None, approle_path: str = "approle"
+) -> str:
     """
     Retrieves a Vault token using environment variables.
     - If VAULT_TOKEN is set, use it directly.
@@ -42,6 +44,7 @@ def get_vault_token(vault_address: str, vault_namespace) -> str:
     Args:
         vault_address (str): The Vault server address (e.g., http://127.0.0.1:8200).
         vault_namespace (str, optional): The Vault namespace to use.
+        approle_path (str, optional): The AppRole mount path. Defaults to "approle".
 
     Returns:
         str: A Vault client token.
@@ -60,7 +63,7 @@ def get_vault_token(vault_address: str, vault_namespace) -> str:
     if token:
         return token
     elif role_id and secret_id:
-        return _login_with_approle(vault_address, role_id, secret_id, vault_namespace)
+        return _login_with_approle(vault_address, role_id, secret_id, vault_namespace, approle_path)
     else:
         raise VaultCredentialsError(
             "No Vault token or AppRole credentials found in environment variables."
@@ -68,7 +71,11 @@ def get_vault_token(vault_address: str, vault_namespace) -> str:
 
 
 def _login_with_approle(
-    vault_address: str, role_id: str, secret_id: str, vault_namespace: str
+    vault_address: str,
+    role_id: str,
+    secret_id: str,
+    vault_namespace: str = None,
+    approle_path: str = "approle",
 ) -> str:
     """
     Logs into Vault using AppRole and retrieves a client token.
@@ -77,7 +84,8 @@ def _login_with_approle(
         vault_address (str): The Vault server address.
         role_id (str): The AppRole role_id.
         secret_id (str): The AppRole secret_id.
-        vault_namespace (str): The Vault namespace to use for login.
+        vault_namespace (str, optional): The Vault namespace to use for login.
+        approle_path (str, optional): The AppRole mount path. Defaults to "approle".
 
     Returns:
         str: The Vault client token retrieved from login.
@@ -85,8 +93,12 @@ def _login_with_approle(
     Raises:
         VaultAppRoleLoginError: If login fails.
     """
-    api_url = f"{vault_address.rstrip('/')}/v1/auth/approle/login"
-    headers = {"X-Vault-Namespace": vault_namespace}
+    api_url = f"{vault_address.rstrip('/')}/v1/auth/{approle_path}/login"
+
+    # Build headers conditionally
+    headers = {}
+    if vault_namespace:
+        headers["X-Vault-Namespace"] = vault_namespace
 
     try:
         response = requests.post(
