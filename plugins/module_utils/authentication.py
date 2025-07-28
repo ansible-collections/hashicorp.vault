@@ -7,6 +7,32 @@ import os
 import requests
 
 
+class VaultError(Exception):
+    """Base exception for all Vault-related errors."""
+
+    pass
+
+
+class VaultConfigurationError(VaultError):
+    """Raised when Vault configuration is invalid (missing env vars, etc.)."""
+
+    pass
+
+
+class VaultCredentialsError(VaultError):
+    """Raised when there are credential issues (missing, conflicting, invalid)."""
+
+    pass
+
+
+class VaultAppRoleLoginError(VaultError):
+    """Raised when AppRole login fails."""
+
+    def __init__(self, message: str, status_code: int = None):
+        super().__init__(message)
+        self.status_code = status_code
+
+
 def get_vault_token(vault_address: str, vault_namespace) -> str:
     """
     Retrieves a Vault token using environment variables.
@@ -21,21 +47,24 @@ def get_vault_token(vault_address: str, vault_namespace) -> str:
         str: A Vault client token.
 
     Raises:
-        Exception: If neither VAULT_TOKEN nor AppRole credentials are found.
+        VaultCredentialsError: If credentials are missing or conflicting.
+        VaultAppRoleLoginError: If AppRole login fails.
     """
     token = os.environ.get("VAULT_TOKEN")
     role_id = os.environ.get("VAULT_APPROLE_ROLE_ID")
     secret_id = os.environ.get("VAULT_APPROLE_SECRET_ID")
 
     if token and (role_id or secret_id):
-        raise Exception("VAULT_TOKEN and VAULT_APPROLE_* are mutually exclusive.")
+        raise VaultCredentialsError("VAULT_TOKEN and VAULT_APPROLE_* are mutually exclusive.")
 
     if token:
         return token
     elif role_id and secret_id:
         return _login_with_approle(vault_address, role_id, secret_id, vault_namespace)
     else:
-        raise Exception("No Vault token or AppRole credentials found in environment variables.")
+        raise VaultCredentialsError(
+            "No Vault token or AppRole credentials found in environment variables."
+        )
 
 
 def _login_with_approle(
@@ -43,8 +72,6 @@ def _login_with_approle(
 ) -> str:
     """
     Logs into Vault using AppRole and retrieves a client token.
-
-    The token returned will respect the token_ttl, renewable flag, and token_max_ttl set in the AppRole configuration.
 
     Args:
         vault_address (str): The Vault server address.
@@ -56,14 +83,20 @@ def _login_with_approle(
         str: The Vault client token retrieved from login.
 
     Raises:
-        Exception: If login fails.
+        VaultAppRoleLoginError: If login fails.
     """
     api_url = f"{vault_address.rstrip('/')}/v1/auth/approle/login"
     headers = {"X-Vault-Namespace": vault_namespace}
 
-    response = requests.post(
-        api_url, json={"role_id": role_id, "secret_id": secret_id}, headers=headers
-    )
-    if response.status_code != 200:
-        raise Exception(f"AppRole login failed: HTTP {response.status_code} - {response.text}")
-    return response.json()["auth"]["client_token"]
+    try:
+        response = requests.post(
+            api_url, json={"role_id": role_id, "secret_id": secret_id}, headers=headers
+        )
+        if response.status_code != 200:
+            raise VaultAppRoleLoginError(
+                f"AppRole login failed: HTTP {response.status_code} - {response.text}",
+                status_code=response.status_code,
+            )
+        return response.json()["auth"]["client_token"]
+    except requests.RequestException as e:
+        raise VaultAppRoleLoginError(f"Network error during AppRole login: {str(e)}") from e

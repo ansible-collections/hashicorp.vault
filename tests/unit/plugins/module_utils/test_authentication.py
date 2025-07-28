@@ -11,6 +11,8 @@ from unittest.mock import patch, Mock
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
     get_vault_token,
     _login_with_approle,
+    VaultCredentialsError,
+    VaultAppRoleLoginError,
 )
 
 
@@ -50,7 +52,35 @@ def test_get_vault_token_with_approle(mock_login):
 )
 def test_get_vault_token_mutually_exclusive():
     """Test get_vault_token raises exception when both token and AppRole credentials are provided."""
-    with pytest.raises(Exception, match="VAULT_TOKEN and VAULT_APPROLE_\\* are mutually exclusive"):
+    with pytest.raises(
+        VaultCredentialsError, match="VAULT_TOKEN and VAULT_APPROLE_\\* are mutually exclusive"
+    ):
+        get_vault_token("http://127.0.0.1:8200", "test-ns")
+
+
+@patch.dict(
+    os.environ,
+    {"VAULT_TOKEN": "test-token", "VAULT_APPROLE_ROLE_ID": "role-123"},
+    clear=True,
+)
+def test_get_vault_token_mutually_exclusive_token_and_role_id():
+    """Test get_vault_token raises exception when token and role_id are provided."""
+    with pytest.raises(
+        VaultCredentialsError, match="VAULT_TOKEN and VAULT_APPROLE_\\* are mutually exclusive"
+    ):
+        get_vault_token("http://127.0.0.1:8200", "test-ns")
+
+
+@patch.dict(
+    os.environ,
+    {"VAULT_TOKEN": "test-token", "VAULT_APPROLE_SECRET_ID": "secret-456"},
+    clear=True,
+)
+def test_get_vault_token_mutually_exclusive_token_and_secret_id():
+    """Test get_vault_token raises exception when token and secret_id are provided."""
+    with pytest.raises(
+        VaultCredentialsError, match="VAULT_TOKEN and VAULT_APPROLE_\\* are mutually exclusive"
+    ):
         get_vault_token("http://127.0.0.1:8200", "test-ns")
 
 
@@ -58,7 +88,8 @@ def test_get_vault_token_mutually_exclusive():
 def test_get_vault_token_no_credentials():
     """Test get_vault_token raises exception with no credentials."""
     with pytest.raises(
-        Exception, match="No Vault token or AppRole credentials found in environment variables"
+        VaultCredentialsError,
+        match="No Vault token or AppRole credentials found in environment variables",
     ):
         get_vault_token("http://127.0.0.1:8200", "test-ns")
 
@@ -79,3 +110,17 @@ def test_login_with_approle_success(mock_post):
         json={"role_id": "role-id", "secret_id": "secret-id"},
         headers={"X-Vault-Namespace": "namespace"},
     )
+
+
+@patch("ansible_collections.hashicorp.vault.plugins.module_utils.authentication.requests.post")
+def test_login_with_approle_401_failure(mock_post):
+    """Test AppRole login failure with 401 unauthorized."""
+    mock_response = Mock()
+    mock_response.status_code = 401
+    mock_response.text = "permission denied"
+    mock_post.return_value = mock_response
+
+    with pytest.raises(
+        VaultAppRoleLoginError, match="AppRole login failed: HTTP 401 - permission denied"
+    ):
+        _login_with_approle("http://127.0.0.1:8200", "bad-role", "bad-secret", "namespace")
