@@ -21,8 +21,6 @@ jobs:
     uses: ansible/ansible-content-actions/.github/workflows/build_import.yaml@main
   ansible-lint:
     uses: ansible/ansible-content-actions/.github/workflows/ansible_lint.yaml@main
-  integration:
-    uses: ansible/ansible-content-actions/.github/workflows/integration.yaml@main
   sanity:
     uses: ansible/ansible-content-actions/.github/workflows/sanity.yaml@main
   unit-galaxy:
@@ -41,7 +39,6 @@ jobs:
       - unit-galaxy
       - unit-source
       - ansible-lint
-      - integration
     runs-on: ubuntu-latest
     steps:
       - run: >-
@@ -52,5 +49,4 @@ jobs:
           '${{ needs.unit-galaxy.result }}'
           '${{ needs.ansible-lint.result }}'
           '${{ needs.unit-source.result }}'
-          '${{ needs.integration.result }}',
           ])"

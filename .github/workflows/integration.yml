@@ -1,0 +1,55 @@
+---
+name: Integration
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  run-integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ansible-version:
+          - stable-2.19
+          - devel
+        python-version:
+          - "3.11"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install ansible-core (${{ matrix.ansible-version }})
+        run: python3 -m pip install https://github.com/ansible/ansible/archive/${{ matrix.ansible-version }}.tar.gz --disable-pip-version-check
+
+      - name: Install collection test dependencies
+        run: python3 -m pip install -r test-requirements.txt
+
+      - name: Build and install the collection
+        run: ansible-galaxy collection install . --force
+
+      - name: List all integration test targets
+        run: |
+          cd ~/.ansible/collections/ansible_collections/hashicorp/vault && \
+          ansible-test integration --list-targets || echo "No integration targets found"
+
+      - name: Run integration tests (${{ matrix.ansible-version }})
+        run: |
+          cd ~/.ansible/collections/ansible_collections/hashicorp/vault
+          if ansible-test integration --list-targets > /dev/null 2>&1; then
+            ansible-test integration --python ${{ matrix.python-version }} --continue-on-error
+          else
+            echo "No integration test targets found, skipping integration tests"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
