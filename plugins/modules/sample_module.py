@@ -32,13 +32,8 @@ EXAMPLES = """
 
 __metaclass__ = type  # pylint: disable=C0103
 
-from typing import TYPE_CHECKING
 
 from ansible.module_utils.basic import AnsibleModule  # type: ignore
-
-
-if TYPE_CHECKING:
-    from typing import Callable
 
 
 def _sample_module(name: str) -> str:

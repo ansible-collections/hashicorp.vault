@@ -40,6 +40,7 @@ from ansible.errors import AnsibleError  # type: ignore
 from ansible.plugins.lookup import LookupBase  # type: ignore
 from ansible.utils.display import Display  # type: ignore
 
+
 display = Display()
 
 

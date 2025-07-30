@@ -5,18 +5,22 @@
 
 from __future__ import absolute_import, annotations, division, print_function
 
+
 __metaclass__ = type  # pylint: disable=C0103
 
 from typing import TYPE_CHECKING
+
+from ansible.plugins.action import ActionBase  # type: ignore
 from ansible_collections.ansible.utils.plugins.module_utils.common.argspec_validate import (  # type: ignore
     AnsibleArgSpecValidator,
 )
-from ansible_collections.ansible.utils.plugins.modules.fact_diff import DOCUMENTATION  # type: ignore
-from ansible.plugins.action import ActionBase  # type: ignore
+from ansible_collections.ansible.utils.plugins.modules.fact_diff import (
+    DOCUMENTATION,  # type: ignore
+)
 
 
 if TYPE_CHECKING:
-    from typing import Optional, Dict, Any
+    from typing import Any, Dict, Optional
 
 
 class ActionModule(ActionBase):  # type: ignore[misc]
