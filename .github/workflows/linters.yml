@@ -13,7 +13,7 @@ jobs:
     name: ${{ matrix.tests.name }}
     runs-on: ubuntu-latest
     permissions:
-      packages: write
+      # contents:read is required to checkout the repository source code
       contents: read
     strategy:
       fail-fast: false
