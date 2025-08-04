@@ -18,7 +18,7 @@ jobs:
           - stable-2.18
           - devel
         python-version:
-          - "3.11"
+          - "3.12"
     steps:
       - uses: actions/checkout@v4
 
