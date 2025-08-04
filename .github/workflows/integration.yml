@@ -44,13 +44,18 @@ jobs:
           cd ~/.ansible/collections/ansible_collections/hashicorp/vault && \
           ansible-test integration --list-targets || echo "No integration targets found"
 
-      - name: Run integration tests (${{ matrix.ansible-version }})
+      - name: Check for integration test targets
+        id: check-targets
         run: |
           cd ~/.ansible/collections/ansible_collections/hashicorp/vault
           if ansible-test integration --list-targets > /dev/null 2>&1; then
-            ansible-test integration --python ${{ matrix.python-version }} --continue-on-error
+            echo "has-targets=true" >> $GITHUB_OUTPUT
           else
-            echo "No integration test targets found, skipping integration tests"
+            echo "has-targets=false" >> $GITHUB_OUTPUT
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration tests (${{ matrix.ansible-version }})
+        if: steps.check-targets.outputs.has-targets == 'true'
+        run: |
+          cd ~/.ansible/collections/ansible_collections/hashicorp/vault
+          ansible-test integration --python ${{ matrix.python-version }} --continue-on-error
