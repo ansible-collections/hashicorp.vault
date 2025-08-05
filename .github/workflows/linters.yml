@@ -9,26 +9,13 @@ on: # yamllint disable-line rule:truthy
     branches: [main]
 
 jobs:
-  common-tests:
-    name: ${{ matrix.tests.name }}
+  linters:
+    name: Run Linters
     runs-on: ubuntu-latest
     permissions:
       # contents:read is required to checkout the repository source code
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        tests:
-          - name: flake8
-            command: check_flake8
-          - name: black
-            command: check_black
-          - name: isort
-            command: check_isort
     steps:
-      - name: Install make
-        run: sudo apt install make
-
       - uses: actions/checkout@v4
 
       - name: Install python 3.11
@@ -36,8 +23,8 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: Install requirements
-        run: pip3.11 install -r test-requirements.txt
+      - name: Install tox
+        run: pip3.11 install tox
 
-      - name: Run check ${{ matrix.tests.name }}
-        run: make ${{ matrix.tests.command }}
+      - name: Run all linters
+        run: tox -e linters
