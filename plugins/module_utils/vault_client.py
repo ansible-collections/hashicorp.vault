@@ -14,10 +14,12 @@ except ImportError as imp_exc:
 else:
     REQUESTS_IMPORT_ERROR = None
 
-from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
-    VaultConfigurationError,
-    get_vault_token,
-)
+# from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
+#     Authenticator,
+#     VaultConfigurationError,
+# )
+
+from authentication import Authenticator, VaultConfigurationError
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +42,14 @@ class VaultClient:
         VaultAppRoleLoginError: If AppRole login fails.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, auth_method: str = None) -> None:
+        """
+        Initialize the Vault client.
+
+        Args:
+            auth_method (str, optional): The authentication method to use.
+                                       If not provided, defaults to token authentication.
+        """
         vault_address = os.environ.get("VAULT_ADDR")
         vault_namespace = os.environ.get("VAULT_NAMESPACE")
         approle_path = os.environ.get("VAULT_APPROLE_PATH", "approle")
@@ -50,11 +59,30 @@ class VaultClient:
         if not vault_namespace:
             raise VaultConfigurationError("VAULT_NAMESPACE environment variable is required")
 
+        self.vault_address = vault_address
+        self.vault_namespace = vault_namespace
+
         self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "X-Vault-Token": get_vault_token(vault_address, vault_namespace, approle_path),
-                "X-Vault-Namespace": vault_namespace,
-            }
+        self.session.headers.update({"X-Vault-Namespace": vault_namespace})
+
+        # Default to token authentication if no method is provided
+        if not auth_method:
+            auth_method = "token"
+
+        authenticator = Authenticator(method=auth_method)
+        authenticator.authenticate(self, vault_address, vault_namespace, approle_path)
+
+        logger.info(
+            "Successfully authenticated with Vault at %s using %s method",
+            vault_address,
+            auth_method,
         )
-        logger.info("Successfully authenticated with Vault at %s", vault_address)
+
+    def set_token(self, token: str) -> None:
+        """
+        Set or update the Vault token for the client.
+
+        Args:
+            token (str): The Vault client token.
+        """
+        self.session.headers.update({"X-Vault-Token": token})

@@ -10,8 +10,8 @@ from unittest.mock import Mock, patch
 import pytest
 
 
-MOCK_GET_VAULT_TOKEN = (
-    "ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.get_vault_token"
+MOCK_AUTHENTICATOR = (
+    "ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.Authenticator"
 )
 MOCK_REQUESTS_SESSION = (
     "ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.requests.Session"
@@ -26,24 +26,25 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client impor
 
 @patch.dict(
     os.environ,
-    {"VAULT_ADDR": "http://127.0.0.1:8200", "VAULT_NAMESPACE": "test-namespace"},
+    {
+        "VAULT_ADDR": "http://127.0.0.1:8200",
+        "VAULT_NAMESPACE": "test-namespace",
+        "VAULT_TOKEN": "test-token",
+    },
     clear=True,
 )
-@patch(MOCK_GET_VAULT_TOKEN)
+@patch(MOCK_AUTHENTICATOR)
 @patch(MOCK_REQUESTS_SESSION)
-def test_vault_client_init_success(mock_session_class, mock_get_token):
-    """Test successful VaultClient initialization."""
-    mock_get_token.return_value = "test-token"
+def test_vault_client_init_explicit_method(mock_session_class, mock_authenticator_class):
+    """Test VaultClient initialization with explicitly specified auth method."""
+    mock_authenticator = Mock()
+    mock_authenticator_class.return_value = mock_authenticator
     mock_session = Mock()
     mock_session_class.return_value = mock_session
 
-    client = VaultClient()
+    client = VaultClient(auth_method="token")
 
-    assert client.session == mock_session
-    mock_get_token.assert_called_once_with("http://127.0.0.1:8200", "test-namespace", "approle")
-    mock_session.headers.update.assert_called_once_with(
-        {"X-Vault-Token": "test-token", "X-Vault-Namespace": "test-namespace"}
-    )
+    mock_authenticator_class.assert_called_once_with(method="token")
 
 
 @patch.dict(
@@ -52,25 +53,29 @@ def test_vault_client_init_success(mock_session_class, mock_get_token):
         "VAULT_ADDR": "http://127.0.0.1:8200",
         "VAULT_NAMESPACE": "test-namespace",
         "VAULT_APPROLE_PATH": "custom-approle",
+        "VAULT_TOKEN": "test-token",
     },
     clear=True,
 )
-@patch(MOCK_GET_VAULT_TOKEN)
+@patch(MOCK_AUTHENTICATOR)
 @patch(MOCK_REQUESTS_SESSION)
-def test_vault_client_init_custom_approle_path(mock_session_class, mock_get_token):
+def test_vault_client_init_custom_approle_path(mock_session_class, mock_authenticator_class):
     """Test VaultClient initialization with custom AppRole path."""
-    mock_get_token.return_value = "test-token"
+    mock_authenticator = Mock()
+    mock_authenticator_class.return_value = mock_authenticator
     mock_session = Mock()
     mock_session_class.return_value = mock_session
 
     client = VaultClient()
 
     assert client.session == mock_session
-    mock_get_token.assert_called_once_with(
-        "http://127.0.0.1:8200", "test-namespace", "custom-approle"
-    )
-    mock_session.headers.update.assert_called_once_with(
-        {"X-Vault-Token": "test-token", "X-Vault-Namespace": "test-namespace"}
+    assert client.vault_address == "http://127.0.0.1:8200"
+    assert client.vault_namespace == "test-namespace"
+
+    # Since no auth_method is specified, it defaults to "token"
+    mock_authenticator_class.assert_called_once_with(method="token")
+    mock_authenticator.authenticate.assert_called_once_with(
+        client, "http://127.0.0.1:8200", "test-namespace", "custom-approle"
     )
 
 
@@ -93,12 +98,49 @@ def test_vault_client_missing_vault_namespace():
 
 
 @patch.dict(
-    os.environ, {"VAULT_ADDR": "http://127.0.0.1:8200", "VAULT_NAMESPACE": "test-ns"}, clear=True
+    os.environ,
+    {
+        "VAULT_ADDR": "http://127.0.0.1:8200",
+        "VAULT_NAMESPACE": "test-ns",
+        "VAULT_TOKEN": "test-token",
+    },
+    clear=True,
 )
-@patch(MOCK_GET_VAULT_TOKEN)
-def test_vault_client_token_error_propagates(mock_get_token):
-    """Test VaultClient raises when get_vault_token fails."""
-    mock_get_token.side_effect = VaultCredentialsError("Token error")
+@patch(MOCK_AUTHENTICATOR)
+def test_vault_client_authentication_error_propagates(mock_authenticator_class):
+    """Test VaultClient raises when authentication fails."""
+    mock_authenticator = Mock()
+    mock_authenticator.authenticate.side_effect = VaultCredentialsError("Authentication failed")
+    mock_authenticator_class.return_value = mock_authenticator
 
-    with pytest.raises(VaultCredentialsError, match="Token error"):
+    with pytest.raises(VaultCredentialsError, match="Authentication failed"):
         VaultClient()
+
+
+@patch.dict(
+    os.environ,
+    {
+        "VAULT_ADDR": "http://127.0.0.1:8200",
+        "VAULT_NAMESPACE": "test-namespace",
+        "VAULT_TOKEN": "test-token",
+    },
+    clear=True,
+)
+@patch(MOCK_REQUESTS_SESSION)
+def test_vault_client_set_token(mock_session_class):
+    """Test VaultClient set_token method."""
+    mock_session = Mock()
+    mock_session_class.return_value = mock_session
+
+    with patch(MOCK_AUTHENTICATOR) as mock_authenticator_class:
+        mock_authenticator = Mock()
+        mock_authenticator_class.return_value = mock_authenticator
+
+        client = VaultClient()
+
+        # Reset the mock to check only the set_token call
+        mock_session.headers.update.reset_mock()
+
+        client.set_token("new-token")
+
+        mock_session.headers.update.assert_called_once_with({"X-Vault-Token": "new-token"})
