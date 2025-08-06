@@ -58,6 +58,7 @@ class VaultAppRoleLoginError(VaultError):
             status_code (int, optional): HTTP status code if applicable
             response_text (str, optional): Response body text if available
         """
+
         super().__init__(message)
         self.status_code = status_code
         self.response_text = response_text

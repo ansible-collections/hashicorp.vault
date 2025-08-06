@@ -4,17 +4,18 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 
-import os
-import requests
-import json
+import json  # noqa: F401
 import logging
-import argparse
 
-from .vault_exceptions import VaultClientError
-from .vault_exceptions import VaultConnectionError
-from .vault_exceptions import VaultApiError
-from .vault_exceptions import VaultPermissionError
-from .vault_exceptions import VaultSecretNotFoundError
+import requests
+
+from .vault_exceptions import (
+    VaultApiError,
+    VaultConnectionError,
+    VaultPermissionError,
+    VaultSecretNotFoundError,
+)
+
 
 log = logging.getLogger(__name__)
 
@@ -38,13 +39,13 @@ class VaultKv2Client:
             raise ValueError("Vault address cannot be empty.")
         if not vault_token:
             raise ValueError("Vault token cannot be empty.")
-            
-        self.vault_addr = vault_addr.rstrip('/')
+
+        self.vault_addr = vault_addr.rstrip("/")
         self.session = requests.Session()
-        headers = {'X-Vault-Token': vault_token}
+        headers = {"X-Vault-Token": vault_token}
         if vault_namespace:
-            headers['X-Vault-Namespace'] = vault_namespace
-    
+            headers["X-Vault-Namespace"] = vault_namespace
+
         self.session.headers.update(headers)
 
     def _make_request(self, method: str, path: str, **kwargs) -> dict:
@@ -68,7 +69,7 @@ class VaultKv2Client:
             return response.json()
         except requests.exceptions.HTTPError as e:
             status_code = e.response.status_code
-            errors = e.response.json().get('errors', [])
+            errors = e.response.json().get("errors", [])
             msg = f"API request failed: {errors}"
             if status_code == 403:
                 raise VaultPermissionError(msg, status_code, errors) from e
@@ -77,7 +78,9 @@ class VaultKv2Client:
             else:
                 raise VaultApiError(msg, status_code, errors) from e
         except requests.exceptions.RequestException as e:
-            raise VaultConnectionError(f"Failed to connect to Vault at {self.vault_addr}. Error: {e}") from e
+            raise VaultConnectionError(
+                f"Failed to connect to Vault at {self.vault_addr}. Error: {e}"
+            ) from e
 
     def read_secret(self, mount_path: str, secret_path: str, version: int = None) -> dict:
         """
@@ -95,7 +98,7 @@ class VaultKv2Client:
         path = f"{mount_path}/data/{secret_path}"
         params = {}
         if version is not None:
-            params['version'] = version
-        
-        response_data = self._make_request('GET', path, params=params)
-        return response_data.get('data', {})
+            params["version"] = version
+
+        response_data = self._make_request("GET", path, params=params)
+        return response_data.get("data", {})
