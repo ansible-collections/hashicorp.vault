@@ -75,3 +75,14 @@ class VaultConnectionError(VaultError):
     """
 
     pass
+
+
+class VaultPermissionError(VaultAppRoleLoginError):
+    """Raised for HTTP 403 permission denied errors."""
+
+    pass
+
+class VaultSecretNotFoundError(VaultAppRoleLoginError):
+    """Raised for HTTP 404 secret not found errors."""
+
+    pass
