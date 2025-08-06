@@ -14,12 +14,10 @@ except ImportError as imp_exc:
 else:
     REQUESTS_IMPORT_ERROR = None
 
-# from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
-#     Authenticator,
-#     VaultConfigurationError,
-# )
-
-from authentication import Authenticator, VaultConfigurationError
+from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
+    Authenticator,
+    VaultConfigurationError,
+)
 
 
 logger = logging.getLogger(__name__)
