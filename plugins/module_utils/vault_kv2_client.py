@@ -4,10 +4,16 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 
-import json  # noqa: F401
+import json  # noqa: F401 # pylint: disable=unused-import
 import logging
 
-import requests
+
+try:
+    import requests
+except ImportError as imp_exc:
+    REQUESTS_IMPORT_ERROR = imp_exc
+else:
+    REQUESTS_IMPORT_ERROR = None
 
 from .vault_exceptions import (
     VaultApiError,
@@ -62,7 +68,7 @@ class VaultKv2Client:
         """
 
         url = f"{self.vault_addr}/v1/{path}"
-        log.debug(f"Making {method} request to {url} with params: {kwargs.get('params')}")
+        log.debug("Making %s request to %s with params: %s", method, url, kwargs.get("params"))
         try:
             response = self.session.request(method, url, **kwargs)
             response.raise_for_status()
