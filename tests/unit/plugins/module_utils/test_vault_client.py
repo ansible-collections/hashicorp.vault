@@ -98,7 +98,6 @@ class TestVaultClient:
 class TestVaultClientIntegrationWithAuthenticators:
     """Test VaultClient working with concrete Authenticator instances."""
 
-
     @patch(MOCK_REQUESTS_SESSION)
     def test_token_authentication_flow(self, mock_session_class):
         """Test the complete token authentication flow."""
@@ -113,7 +112,6 @@ class TestVaultClientIntegrationWithAuthenticators:
         assert client.vault_address == "https://vault.example.com:8200"
         assert client.vault_namespace == "root"
         mock_session.headers.update.assert_any_call({"X-Vault-Token": "hvs.test-token"})
-
 
     @patch(MOCK_REQUESTS_SESSION)
     @patch("requests.post")
