@@ -8,7 +8,8 @@ from unittest.mock import Mock, patch
 import pytest
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
-    Authenticator,
+    AppRoleAuthenticator,
+    TokenAuthenticator,
     VaultConfigurationError,
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import VaultClient
@@ -97,8 +98,8 @@ class TestVaultClient:
         mock_session.headers.update.assert_called_with({"X-Vault-Token": "hvs.third-token"})
 
 
-class TestVaultClientIntegrationWithAuthenticator:
-    """Test VaultClient working with Authenticator instances."""
+class TestVaultClientIntegrationWithAuthenticators:
+    """Test VaultClient working with concrete Authenticator instances."""
 
     @patch(MOCK_REQUESTS_SESSION)
     def test_token_authentication_flow(self, mock_session_class):
@@ -110,7 +111,7 @@ class TestVaultClientIntegrationWithAuthenticator:
         client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="root")
 
         # Step 2: Authenticate using token
-        authenticator = Authenticator(method="token")
+        authenticator = TokenAuthenticator()
         authenticator.authenticate(client, token="hvs.test-token")
 
         # Verify the workflow completed
@@ -134,7 +135,7 @@ class TestVaultClientIntegrationWithAuthenticator:
         client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="root")
 
         # Step 2: Authenticate with AppRole
-        authenticator = Authenticator(method="approle")
+        authenticator = AppRoleAuthenticator()
         authenticator.authenticate(
             client,
             vault_address="https://vault.example.com:8200",
@@ -164,3 +165,28 @@ class TestVaultClientIntegrationWithAuthenticator:
 
         # Namespace header should be set
         mock_session.headers.update.assert_called_with({"X-Vault-Namespace": "test-namespace"})
+
+    @patch(MOCK_REQUESTS_SESSION)
+    def test_multiple_authentication_methods(self, mock_session_class):
+        """Test that different authenticators can be used with the same client."""
+        mock_session = Mock()
+        mock_session_class.return_value = mock_session
+
+        client = VaultClient(
+            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
+        )
+
+        # Reset to track only token calls
+        mock_session.headers.update.reset_mock()
+
+        # First authenticate with token
+        token_auth = TokenAuthenticator()
+        token_auth.authenticate(client, token="hvs.token-123")
+
+        # Then re-authenticate with a different token
+        token_auth2 = TokenAuthenticator()
+        token_auth2.authenticate(client, token="hvs.token-456")
+
+        # Should have been called twice
+        assert mock_session.headers.update.call_count == 2
+        mock_session.headers.update.assert_called_with({"X-Vault-Token": "hvs.token-456"})

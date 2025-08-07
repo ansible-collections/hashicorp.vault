@@ -3,7 +3,6 @@
 # Copyright (c) 2025 Red Hat, Inc.
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-
 from unittest.mock import Mock, patch
 
 import pytest
@@ -11,7 +10,6 @@ import requests
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
     AppRoleAuthenticator,
-    Authenticator,
     TokenAuthenticator,
     VaultAppRoleLoginError,
     VaultCredentialsError,
@@ -51,6 +49,17 @@ class TestTokenAuthenticator:
             match="Token is required for token authentication.",
         ):
             authenticator.authenticate(mock_client, token="")
+
+    def test_authenticate_none_token(self):
+        """Test token authentication fails when token is None."""
+        mock_client = Mock()
+        authenticator = TokenAuthenticator()
+
+        with pytest.raises(
+            VaultCredentialsError,
+            match="Token is required for token authentication.",
+        ):
+            authenticator.authenticate(mock_client, token=None)
 
 
 class TestAppRoleAuthenticator:
@@ -137,7 +146,7 @@ class TestAppRoleAuthenticator:
             authenticator.authenticate(
                 mock_client,
                 vault_address="http://127.0.0.1:8200",
-                role_id=None,  # Provide None instead of omitting
+                role_id=None,
                 secret_id="secret-456",
                 vault_namespace="test-namespace",
             )
@@ -155,7 +164,24 @@ class TestAppRoleAuthenticator:
                 mock_client,
                 vault_address="http://127.0.0.1:8200",
                 role_id="role-123",
-                secret_id=None,  # Provide None instead of omitting
+                secret_id=None,
+                vault_namespace="test-namespace",
+            )
+
+    def test_authenticate_missing_both_credentials(self):
+        """Test AppRole authentication fails without both role_id and secret_id."""
+        mock_client = Mock()
+        authenticator = AppRoleAuthenticator()
+
+        with pytest.raises(
+            VaultCredentialsError,
+            match="role_id and secret_id are required for AppRole authentication.",
+        ):
+            authenticator.authenticate(
+                mock_client,
+                vault_address="http://127.0.0.1:8200",
+                role_id=None,
+                secret_id=None,
                 vault_namespace="test-namespace",
             )
 
@@ -200,43 +226,22 @@ class TestAppRoleAuthenticator:
                 vault_namespace="test-namespace",
             )
 
-
-class TestAuthenticator:
-    """Tests for the Authenticator factory class."""
-
-    def test_token_method(self):
-        """Test Authenticator with token method."""
-        mock_client = Mock()
-        authenticator = Authenticator(method="token")
-
-        authenticator.authenticate(mock_client, token="test-token-123")
-
-        mock_client.set_token.assert_called_once_with("test-token-123")
-
     @patch("requests.post")
-    def test_approle_method(self, mock_post):
-        """Test Authenticator with approle method."""
+    def test_authenticate_invalid_response_format(self, mock_post):
+        """Test AppRole authentication handles invalid response format."""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"auth": {"client_token": "hvs.123abc"}}
+        mock_response.json.return_value = {"invalid": "format"}  # Missing auth.client_token
         mock_post.return_value = mock_response
 
         mock_client = Mock()
-        authenticator = Authenticator(method="approle")
+        authenticator = AppRoleAuthenticator()
 
-        authenticator.authenticate(
-            mock_client,
-            vault_address="http://127.0.0.1:8200",
-            role_id="role-123",
-            secret_id="secret-456",
-            vault_namespace="test-namespace",
-        )
-
-        mock_client.set_token.assert_called_once_with("hvs.123abc")
-
-    def test_invalid_method(self):
-        """Test Authenticator raises error for unsupported method."""
-        with pytest.raises(
-            VaultCredentialsError, match=r"Unsupported authentication method: 'ldap'\."
-        ):
-            Authenticator(method="ldap")
+        with pytest.raises(VaultAppRoleLoginError, match="Invalid response format from Vault"):
+            authenticator.authenticate(
+                mock_client,
+                vault_address="http://127.0.0.1:8200",
+                role_id="role-123",
+                secret_id="secret-456",
+                vault_namespace="test-namespace",
+            )
