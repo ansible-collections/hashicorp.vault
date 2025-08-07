@@ -98,40 +98,38 @@ class TestVaultClient:
 class TestVaultClientIntegrationWithAuthenticators:
     """Test VaultClient working with concrete Authenticator instances."""
 
+
     @patch(MOCK_REQUESTS_SESSION)
     def test_token_authentication_flow(self, mock_session_class):
         """Test the complete token authentication flow."""
         mock_session = Mock()
         mock_session_class.return_value = mock_session
 
-        # Step 1: Create client
         client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="root")
 
-        # Step 2: Authenticate using token
         authenticator = TokenAuthenticator()
         authenticator.authenticate(client, token="hvs.test-token")
 
-        # Verify the workflow completed
         assert client.vault_address == "https://vault.example.com:8200"
         assert client.vault_namespace == "root"
+        mock_session.headers.update.assert_any_call({"X-Vault-Token": "hvs.test-token"})
+
 
     @patch(MOCK_REQUESTS_SESSION)
     @patch("requests.post")
     def test_approle_authentication_flow(self, mock_post, mock_session_class):
         """Test the complete AppRole authentication flow."""
-        # Mock HTTP response for AppRole login
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"auth": {"client_token": "hvs.approle-token"}}
+        mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
 
         mock_session = Mock()
         mock_session_class.return_value = mock_session
 
-        # Step 1: Create client
         client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="root")
 
-        # Step 2: Authenticate with AppRole
         authenticator = AppRoleAuthenticator()
         authenticator.authenticate(
             client,
@@ -141,9 +139,9 @@ class TestVaultClientIntegrationWithAuthenticators:
             vault_namespace="root",
         )
 
-        # Verify the workflow completed
         assert client.vault_address == "https://vault.example.com:8200"
         assert client.vault_namespace == "root"
+        mock_session.headers.update.assert_any_call({"X-Vault-Token": "hvs.approle-token"})
 
     @patch(MOCK_REQUESTS_SESSION)
     def test_client_without_authentication(self, mock_session_class):

@@ -74,6 +74,7 @@ class TestAppRoleAuthenticator:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"auth": {"client_token": "hvs.123abc"}}
+        mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
 
         mock_client = Mock()
@@ -95,6 +96,7 @@ class TestAppRoleAuthenticator:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"auth": {"client_token": "hvs.custom"}}
+        mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
 
         mock_client = Mock()
@@ -122,6 +124,7 @@ class TestAppRoleAuthenticator:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"auth": {"client_token": "hvs.nonamespace"}}
+        mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
 
         mock_client = Mock()
@@ -193,6 +196,12 @@ class TestAppRoleAuthenticator:
         mock_response = Mock()
         mock_response.status_code = 401
         mock_response.text = "permission denied"
+
+        # Mock raise_for_status to raise HTTPError for 401
+        http_error = requests.HTTPError("401 Client Error")
+        http_error.response = mock_response
+        mock_response.raise_for_status.side_effect = http_error
+
         mock_post.return_value = mock_response
 
         mock_client = Mock()
@@ -234,6 +243,7 @@ class TestAppRoleAuthenticator:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"invalid": "format"}
+        mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
 
         mock_client = Mock()

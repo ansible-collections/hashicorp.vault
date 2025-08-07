@@ -132,17 +132,18 @@ class AppRoleAuthenticator(Authenticator):
         try:
             response = requests.post(login_url, json=payload, headers=headers)
 
-            if response.status_code != 200:
-                raise VaultAppRoleLoginError(
-                    f"AppRole login failed: HTTP {response.status_code} - {response.text}",
-                    status_code=response.status_code,
-                    response_text=response.text,
-                )
+            response.raise_for_status()
 
             auth_data = response.json()
             return auth_data["auth"]["client_token"]
 
         except requests.ConnectionError as e:
             raise VaultConnectionError(f"Network error during AppRole login: {e}")
+        except requests.HTTPError as e:
+            raise VaultAppRoleLoginError(
+                f"AppRole login failed: HTTP {e.response.status_code} - {e.response.text}",
+                status_code=e.response.status_code,
+                response_text=e.response.text,
+            )
         except (KeyError, ValueError) as e:
             raise VaultAppRoleLoginError(f"Invalid response format from Vault: {e}")
