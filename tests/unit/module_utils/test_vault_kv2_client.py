@@ -3,13 +3,13 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
-from vault.plugins.module_utils.vault_exceptions import (
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
     VaultConnectionError,
     VaultPermissionError,
     VaultSecretNotFoundError,
 )
-from vault.plugins.module_utils.vault_kv2_client import VaultKv2Client
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_kv2_client import VaultKv2Client
 
 
 @pytest.fixture
