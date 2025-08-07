@@ -27,7 +27,7 @@ def mock_success_response():
     return {
         "data": {
             "data": {"username": "test-user", "password": "test-password"},
-            "metadata": {"created_time": "2023-10-27T12:00:00Z", "version": 3, "destroyed": False},
+            "metadata": {"created_time": "2025-08-06T12:00:00Z", "version": 3, "destroyed": False},
         }
     }
 
