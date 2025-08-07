@@ -3,7 +3,9 @@
 # Copyright (c) 2025 Red Hat, Inc.
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+import json  # noqa: F401 # pylint: disable=unused-import
 import logging
+import os
 
 
 try:
@@ -13,8 +15,15 @@ except ImportError as imp_exc:
 else:
     REQUESTS_IMPORT_ERROR = None
 
+from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
+    Authenticator,
+)
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultAppRoleLoginError,
     VaultConfigurationError,
+    VaultConnectionError,
+    VaultPermissionError,
+    VaultSecretNotFoundError,
 )
 
 
@@ -92,6 +101,7 @@ class VaultClient:
         self.session.headers.update({"X-Vault-Namespace": vault_namespace})
 
         logger.info("Initialized VaultClient for %s", vault_address)
+        self.secrets = Secrets(self)
 
     def set_token(self, token: str) -> None:
         """
@@ -101,3 +111,82 @@ class VaultClient:
         """
         self.session.headers.update({"X-Vault-Token": token})
         logger.debug("Token set for VaultClient")
+
+
+class VaultKv2Secrets:
+    """
+    Handles interactions with the KV version 2 secrets engine.
+    """
+
+    def __init__(self, client):
+        """
+        Initializes the KV2 secrets client.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+        """
+        self._client = client
+
+    def _make_request(self, method: str, path: str, **kwargs) -> dict:
+        """
+        Make requests to the Vault API.
+
+        Args:
+            method (str): The HTTP method.
+            path (str): The API endpoint path.
+            **kwargs: Additional arguments for the requests library.
+
+        Returns:
+            dict: The JSON response data.
+        """
+
+        url = f"{self._client.vault_address}/v1/{path}"
+        logger.debug("Making %s request to %s with params: %s", method, url, kwargs.get("params"))
+        try:
+            response = self._client.session.request(method, url, **kwargs)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code
+            try:
+                errors = e.response.json().get("errors", [])
+            except json.JSONDecodeError:
+                errors = [e.response.text]
+            msg = f"API request failed: {errors}"
+            if status_code == 403:
+                raise VaultPermissionError(msg, status_code, errors) from e
+            elif status_code == 404:
+                raise VaultSecretNotFoundError(msg, status_code, errors) from e
+            else:
+                raise VaultAppRoleLoginError(msg, status_code, errors) from e
+        except requests.exceptions.RequestException as e:
+            raise VaultConnectionError(
+                f"Failed to connect to Vault at {self._client.vault_address}. Error: {e}"
+            ) from e
+
+    def read_secret(self, mount_path: str, secret_path: str, version: int = None) -> dict:
+        """
+        Reads a secret from the KV2 secrets engine.
+
+        Args:
+            mount_path (str): The mount path of the KV2 secrets engine.
+            secret_path (str): The path to the secret.
+            version (int, optional): The version to read. Defaults to the latest.
+
+        Returns:
+            dict: The secret's data and metadata.
+        """
+        path = f"{mount_path}/data/{secret_path}"
+        params = {}
+        if version is not None:
+            params["version"] = version
+
+        response_data = self._make_request("GET", path, params=params)
+        return response_data.get("data", {})
+
+
+class Secrets:
+    """A container class for different secrets engine clients."""
+
+    def __init__(self, client):
+        self.kv2 = VaultKv2Secrets(client)
