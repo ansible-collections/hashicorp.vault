@@ -5,7 +5,13 @@
 
 import logging
 
-import requests
+
+try:
+    import requests
+except ImportError as imp_exc:
+    REQUESTS_IMPORT_ERROR = imp_exc
+else:
+    REQUESTS_IMPORT_ERROR = None
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
     VaultConfigurationError,

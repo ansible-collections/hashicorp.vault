@@ -36,7 +36,12 @@ Example Usage:
     ```
 """
 
-import requests
+try:
+    import requests
+except ImportError as imp_exc:
+    REQUESTS_IMPORT_ERROR = imp_exc
+else:
+    REQUESTS_IMPORT_ERROR = None
 
 
 class VaultError(Exception):
