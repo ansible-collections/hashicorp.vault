@@ -11,7 +11,10 @@ import requests
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
     AppRoleAuthenticator,
     TokenAuthenticator,
+)
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultAppRoleLoginError,
+    VaultConnectionError,
     VaultCredentialsError,
 )
 
@@ -106,7 +109,6 @@ class TestAppRoleAuthenticator:
             approle_path="custom-approle",
         )
 
-        # Verify the correct URL was called
         expected_url = "http://127.0.0.1:8200/v1/auth/custom-approle/login"
         mock_post.assert_called_once()
         args, kwargs = mock_post.call_args
@@ -216,7 +218,7 @@ class TestAppRoleAuthenticator:
         authenticator = AppRoleAuthenticator()
 
         with pytest.raises(
-            VaultAppRoleLoginError, match="Network error during AppRole login: Connection timeout"
+            VaultConnectionError, match="Network error during AppRole login: Connection timeout"
         ):
             authenticator.authenticate(
                 mock_client,
@@ -231,7 +233,7 @@ class TestAppRoleAuthenticator:
         """Test AppRole authentication handles invalid response format."""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"invalid": "format"}  # Missing auth.client_token
+        mock_response.json.return_value = {"invalid": "format"}
         mock_post.return_value = mock_response
 
         mock_client = Mock()

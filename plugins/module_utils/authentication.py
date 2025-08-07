@@ -3,31 +3,6 @@
 # Copyright (c) 2025 Red Hat, Inc.
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-"""
-HashiCorp Vault Authentication Methods.
-
-Example Usage:
-    ```python
-    from vault_client import VaultClient
-    from authentication import TokenAuthenticator, AppRoleAuthenticator
-
-    # Create client
-    client = VaultClient("https://vault.example.com:8200", "root")
-
-    # Authenticate with token
-    auth = TokenAuthenticator()
-    auth.authenticate(client, token="hvs.abc123...")
-
-    # Or authenticate with AppRole
-    auth = AppRoleAuthenticator()
-    auth.authenticate(
-        client,
-        vault_address="https://vault.example.com:8200",
-        role_id="role-123",
-        secret_id="secret-456"
-    )
-    ```
-"""
 
 from abc import ABC, abstractmethod
 
@@ -39,62 +14,15 @@ except ImportError as imp_exc:
 else:
     REQUESTS_IMPORT_ERROR = None
 
-
-class VaultError(Exception):
-    """Base exception for all Vault-related errors."""
-
-    pass
-
-
-class VaultConfigurationError(VaultError):
-    """
-    Raised when Vault configuration is invalid.
-
-    Examples:
-        - Missing required arguments
-        - Invalid URLs or paths
-        - Misconfigured authentication parameters
-    """
-
-    pass
-
-
-class VaultCredentialsError(VaultError):
-    """
-    Raised when there are credential issues.
-
-    Examples:
-        - Missing credentials (role_id, secret_id, token)
-        - Invalid credential format
-        - Authentication method failures
-    """
-
-    pass
-
-
-class VaultAppRoleLoginError(VaultError):
-    """
-    Raised when AppRole login fails.
-
-    This includes both HTTP errors (401, 403, 500) and network errors.
-    """
-
-    def __init__(self, message: str, status_code: int = None):
-        """
-        Initialize AppRole login error.
-
-        Args:
-            message (str): Error description
-            status_code (int, optional): HTTP status code if applicable
-        """
-        super().__init__(message)
-        self.status_code = status_code
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultAppRoleLoginError,
+    VaultConnectionError,
+    VaultCredentialsError,
+)
 
 
 class Authenticator(ABC):
-    """
-    Abstract base class for all Vault authentication methods.
-    """
+    """Abstract base class for all Vault authentication methods."""
 
     @abstractmethod
     def authenticate(self, client, **kwargs):
@@ -113,9 +41,7 @@ class Authenticator(ABC):
 
 
 class TokenAuthenticator(Authenticator):
-    """
-    Authenticator for direct token authentication.
-    """
+    """Authenticator for direct token authentication."""
 
     def authenticate(self, client, *, token=None):
         """
@@ -134,9 +60,7 @@ class TokenAuthenticator(Authenticator):
 
 
 class AppRoleAuthenticator(Authenticator):
-    """
-    Authenticator for AppRole authentication.
-    """
+    """Authenticator for AppRole authentication."""
 
     def authenticate(
         self,
@@ -196,6 +120,7 @@ class AppRoleAuthenticator(Authenticator):
 
         Raises:
             VaultAppRoleLoginError: If login fails
+            VaultConnectionError: If network issues occur
         """
         login_url = f"{vault_address}/v1/auth/{approle_path}/login"
         payload = {"role_id": role_id, "secret_id": secret_id}
@@ -211,12 +136,13 @@ class AppRoleAuthenticator(Authenticator):
                 raise VaultAppRoleLoginError(
                     f"AppRole login failed: HTTP {response.status_code} - {response.text}",
                     status_code=response.status_code,
+                    response_text=response.text,
                 )
 
             auth_data = response.json()
             return auth_data["auth"]["client_token"]
 
         except requests.ConnectionError as e:
-            raise VaultAppRoleLoginError(f"Network error during AppRole login: {e}")
+            raise VaultConnectionError(f"Network error during AppRole login: {e}")
         except (KeyError, ValueError) as e:
             raise VaultAppRoleLoginError(f"Invalid response format from Vault: {e}")

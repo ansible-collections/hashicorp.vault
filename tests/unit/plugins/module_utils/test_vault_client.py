@@ -10,9 +10,11 @@ import pytest
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
     AppRoleAuthenticator,
     TokenAuthenticator,
-    VaultConfigurationError,
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import VaultClient
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultConfigurationError,
+)
 
 
 MOCK_REQUESTS_SESSION = (
@@ -66,7 +68,6 @@ class TestVaultClient:
             vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
         )
 
-        # Reset the mock to check only the set_token call
         mock_session.headers.update.reset_mock()
 
         client.set_token("hvs.test-token-123")
@@ -83,18 +84,14 @@ class TestVaultClient:
             vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
         )
 
-        # Reset to track only our token calls
         mock_session.headers.update.reset_mock()
 
-        # Set token multiple times
         client.set_token("hvs.first-token")
         client.set_token("hvs.second-token")
         client.set_token("hvs.third-token")
 
-        # Should have been called 3 times
         assert mock_session.headers.update.call_count == 3
 
-        # Check the final call
         mock_session.headers.update.assert_called_with({"X-Vault-Token": "hvs.third-token"})
 
 
@@ -154,16 +151,13 @@ class TestVaultClientIntegrationWithAuthenticators:
         mock_session = Mock()
         mock_session_class.return_value = mock_session
 
-        # This should work fine - no authentication required at creation
         client = VaultClient(
             vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
         )
 
-        # Client should be created but not authenticated yet
         assert client.vault_address == "https://vault.example.com:8200"
         assert client.vault_namespace == "test-namespace"
 
-        # Namespace header should be set
         mock_session.headers.update.assert_called_with({"X-Vault-Namespace": "test-namespace"})
 
     @patch(MOCK_REQUESTS_SESSION)
@@ -176,17 +170,13 @@ class TestVaultClientIntegrationWithAuthenticators:
             vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
         )
 
-        # Reset to track only token calls
         mock_session.headers.update.reset_mock()
 
-        # First authenticate with token
         token_auth = TokenAuthenticator()
         token_auth.authenticate(client, token="hvs.token-123")
 
-        # Then re-authenticate with a different token
         token_auth2 = TokenAuthenticator()
         token_auth2.authenticate(client, token="hvs.token-456")
 
-        # Should have been called twice
         assert mock_session.headers.update.call_count == 2
         mock_session.headers.update.assert_called_with({"X-Vault-Token": "hvs.token-456"})

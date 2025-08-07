@@ -13,7 +13,7 @@ except ImportError as imp_exc:
 else:
     REQUESTS_IMPORT_ERROR = None
 
-from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultConfigurationError,
 )
 
@@ -24,6 +24,15 @@ logger = logging.getLogger(__name__)
 class VaultClient:
     """
     A client for interacting with the HashiCorp Vault HTTP API.
+
+    This client handles HTTP communication with Vault but does NOT handle
+    authentication directly. Use an Authenticator to authenticate the client
+    after instantiation.
+
+    The separation of concerns allows for:
+    - Creating clients before knowing the auth method
+    - Easier unit testing with mock tokens
+    - Cleaner plugin architecture
 
     Args:
         vault_address (str): The Vault server address (e.g., "https://vault.example.com:8200")
@@ -36,10 +45,13 @@ class VaultClient:
             vault_address="https://vault.example.com:8200",
             vault_namespace="my-namespace"
         )
+
         # Step 2: Authenticate using an Authenticator
-        authenticator = Authenticator(method="approle")
-        authenticator.authenticate(client, vault_address, vault_namespace, approle_path)
+        authenticator = TokenAuthenticator()
+        authenticator.authenticate(client, token="hvs.abc123...")
+
         # Step 3: Client is now ready for API calls
+        # (Use with VaultKV2Client or other secret engines)
         ```
 
     Attributes:
@@ -62,6 +74,11 @@ class VaultClient:
         Raises:
             VaultConfigurationError: If vault_address or vault_namespace are empty/None
         """
+        if REQUESTS_IMPORT_ERROR:
+            raise ImportError(
+                "The 'requests' library is required for VaultClient"
+            ) from REQUESTS_IMPORT_ERROR
+
         if not vault_address:
             raise VaultConfigurationError("vault_address is required")
         if not vault_namespace:
@@ -79,7 +96,6 @@ class VaultClient:
     def set_token(self, token: str) -> None:
         """
         Set or update the Vault token for the client.
-
         Args:
             token (str): The Vault client token (e.g., "hvs.abc123...")
         """
