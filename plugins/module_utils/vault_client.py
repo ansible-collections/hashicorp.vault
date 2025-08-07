@@ -4,18 +4,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 import logging
-import os
 
-
-try:
-    import requests
-except ImportError as imp_exc:
-    REQUESTS_IMPORT_ERROR = imp_exc
-else:
-    REQUESTS_IMPORT_ERROR = None
+import requests
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
-    Authenticator,
     VaultConfigurationError,
 )
 
@@ -27,60 +19,63 @@ class VaultClient:
     """
     A client for interacting with the HashiCorp Vault HTTP API.
 
-    Environment Variables:
-        - VAULT_ADDR (required): The Vault server address (e.g., http://127.0.0.1:8200)
-        - VAULT_NAMESPACE (required): Vault Enterprise namespace
-        - VAULT_TOKEN: (optional) Vault token for direct authentication
-        - VAULT_APPROLE_ROLE_ID and VAULT_APPROLE_SECRET_ID: (optional) AppRole credentials
-        - VAULT_APPROLE_PATH: (optional) AppRole mount path, defaults to "approle"
+    Args:
+        vault_address (str): The Vault server address (e.g., "https://vault.example.com:8200")
+        vault_namespace (str): Vault Enterprise namespace (use "root" for OSS Vault)
 
-    Raises:
-        VaultConfigurationError: If required environment variables are missing.
-        VaultCredentialsError: If authentication credentials are invalid.
-        VaultAppRoleLoginError: If AppRole login fails.
+    Example Usage:
+        ```python
+        # Step 1: Create an unauthenticated client
+        client = VaultClient(
+            vault_address="https://vault.example.com:8200",
+            vault_namespace="my-namespace"
+        )
+        # Step 2: Authenticate using an Authenticator
+        authenticator = Authenticator(method="approle")
+        authenticator.authenticate(client, vault_address, vault_namespace, approle_path)
+        # Step 3: Client is now ready for API calls
+        ```
+
+    Attributes:
+        vault_address (str): The Vault server address
+        vault_namespace (str): The Vault namespace
+        session (requests.Session): HTTP session with Vault headers configured
     """
 
-    def __init__(self, auth_method: str = None) -> None:
+    def __init__(self, vault_address: str, vault_namespace: str) -> None:
         """
         Initialize the Vault client.
 
-        Args:
-            auth_method (str, optional): The authentication method to use.
-                                       If not provided, defaults to token authentication.
-        """
-        vault_address = os.environ.get("VAULT_ADDR")
-        vault_namespace = os.environ.get("VAULT_NAMESPACE")
-        approle_path = os.environ.get("VAULT_APPROLE_PATH", "approle")
+        Creates an unauthenticated HTTP client with proper headers configured.
+        You must use an Authenticator to authenticate before making API calls.
 
+        Args:
+            vault_address (str): The Vault server address (e.g., "https://vault.example.com:8200")
+            vault_namespace (str): Vault Enterprise namespace (use "root" for OSS Vault)
+
+        Raises:
+            VaultConfigurationError: If vault_address or vault_namespace are empty/None
+        """
         if not vault_address:
-            raise VaultConfigurationError("VAULT_ADDR environment variable is required")
+            raise VaultConfigurationError("vault_address is required")
         if not vault_namespace:
-            raise VaultConfigurationError("VAULT_NAMESPACE environment variable is required")
+            raise VaultConfigurationError("vault_namespace is required")
 
         self.vault_address = vault_address
         self.vault_namespace = vault_namespace
 
+        # Set up HTTP session with namespace header
         self.session = requests.Session()
         self.session.headers.update({"X-Vault-Namespace": vault_namespace})
 
-        # Default to token authentication if no method is provided
-        if not auth_method:
-            auth_method = "token"
-
-        authenticator = Authenticator(method=auth_method)
-        authenticator.authenticate(self, vault_address, vault_namespace, approle_path)
-
-        logger.info(
-            "Successfully authenticated with Vault at %s using %s method",
-            vault_address,
-            auth_method,
-        )
+        logger.info("Initialized VaultClient for %s", vault_address)
 
     def set_token(self, token: str) -> None:
         """
         Set or update the Vault token for the client.
 
         Args:
-            token (str): The Vault client token.
+            token (str): The Vault client token (e.g., "hvs.abc123...")
         """
         self.session.headers.update({"X-Vault-Token": token})
+        logger.debug("Token set for VaultClient")
