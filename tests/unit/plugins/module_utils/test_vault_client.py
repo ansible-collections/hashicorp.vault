@@ -25,12 +25,20 @@ MOCK_REQUESTS_SESSION = (
 class TestVaultClient:
     """Test VaultClient initialization and basic functionality."""
 
-    @patch(MOCK_REQUESTS_SESSION)
-    def test_vault_client_init_success(self, mock_session_class):
-        """Test successful VaultClient initialization."""
-        mock_session = Mock()
-        mock_session_class.return_value = mock_session
+    @pytest.fixture
+    def mock_session(self):
+        """Fixture providing a mock session."""
+        return Mock()
 
+    @pytest.fixture
+    def mock_session_class(self, mock_session):
+        """Fixture providing a mock session class that returns mock_session."""
+        with patch(MOCK_REQUESTS_SESSION) as mock_class:
+            mock_class.return_value = mock_session
+            yield mock_class
+
+    def test_vault_client_init_success(self, mock_session_class, mock_session):
+        """Test successful VaultClient initialization."""
         client = VaultClient(
             vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
         )
@@ -42,28 +50,30 @@ class TestVaultClient:
         # Verify namespace header is set
         mock_session.headers.update.assert_called_once_with({"X-Vault-Namespace": "test-namespace"})
 
-    def test_vault_client_missing_vault_address(self):
-        """Test VaultClient fails with empty vault_address."""
+    @pytest.mark.parametrize(
+        "vault_address",
+        ["", None],
+        ids=["empty", "none"],
+    )
+    def test_vault_client_missing_vault_address(self, vault_address):
+        """Test VaultClient fails with invalid vault_address."""
         with pytest.raises(VaultConfigurationError, match="vault_address is required"):
-            VaultClient(vault_address="", vault_namespace="test-namespace")
+            VaultClient(vault_address=vault_address, vault_namespace="test-namespace")
 
-        with pytest.raises(VaultConfigurationError, match="vault_address is required"):
-            VaultClient(vault_address=None, vault_namespace="test-namespace")
-
-    def test_vault_client_missing_vault_namespace(self):
-        """Test VaultClient fails with empty vault_namespace."""
+    @pytest.mark.parametrize(
+        "vault_namespace",
+        ["", None],
+        ids=["empty", "none"],
+    )
+    def test_vault_client_missing_vault_namespace(self, vault_namespace):
+        """Test VaultClient fails with invalid vault_namespace."""
         with pytest.raises(VaultConfigurationError, match="vault_namespace is required"):
-            VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="")
+            VaultClient(
+                vault_address="https://vault.example.com:8200", vault_namespace=vault_namespace
+            )
 
-        with pytest.raises(VaultConfigurationError, match="vault_namespace is required"):
-            VaultClient(vault_address="https://vault.example.com:8200", vault_namespace=None)
-
-    @patch(MOCK_REQUESTS_SESSION)
-    def test_vault_client_set_token(self, mock_session_class):
+    def test_vault_client_set_token(self, mock_session_class, mock_session):
         """Test VaultClient set_token method."""
-        mock_session = Mock()
-        mock_session_class.return_value = mock_session
-
         client = VaultClient(
             vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
         )
@@ -74,12 +84,8 @@ class TestVaultClient:
 
         mock_session.headers.update.assert_called_once_with({"X-Vault-Token": "hvs.test-token-123"})
 
-    @patch(MOCK_REQUESTS_SESSION)
-    def test_vault_client_multiple_token_updates(self, mock_session_class):
+    def test_vault_client_multiple_token_updates(self, mock_session_class, mock_session):
         """Test that set_token can be called multiple times."""
-        mock_session = Mock()
-        mock_session_class.return_value = mock_session
-
         client = VaultClient(
             vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
         )
@@ -98,12 +104,20 @@ class TestVaultClient:
 class TestVaultClientIntegrationWithAuthenticators:
     """Test VaultClient working with concrete Authenticator instances."""
 
-    @patch(MOCK_REQUESTS_SESSION)
-    def test_token_authentication_flow(self, mock_session_class):
-        """Test the complete token authentication flow."""
-        mock_session = Mock()
-        mock_session_class.return_value = mock_session
+    @pytest.fixture
+    def mock_session(self):
+        """Fixture providing a mock session."""
+        return Mock()
 
+    @pytest.fixture
+    def mock_session_class(self, mock_session):
+        """Fixture providing a mock session class that returns mock_session."""
+        with patch(MOCK_REQUESTS_SESSION) as mock_class:
+            mock_class.return_value = mock_session
+            yield mock_class
+
+    def test_token_authentication_flow(self, mock_session_class, mock_session):
+        """Test the complete token authentication flow."""
         client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="root")
 
         authenticator = TokenAuthenticator()
@@ -113,18 +127,14 @@ class TestVaultClientIntegrationWithAuthenticators:
         assert client.vault_namespace == "root"
         mock_session.headers.update.assert_any_call({"X-Vault-Token": "hvs.test-token"})
 
-    @patch(MOCK_REQUESTS_SESSION)
     @patch("requests.post")
-    def test_approle_authentication_flow(self, mock_post, mock_session_class):
+    def test_approle_authentication_flow(self, mock_post, mock_session_class, mock_session):
         """Test the complete AppRole authentication flow."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"auth": {"client_token": "hvs.approle-token"}}
         mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
-
-        mock_session = Mock()
-        mock_session_class.return_value = mock_session
 
         client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="root")
 
@@ -141,12 +151,8 @@ class TestVaultClientIntegrationWithAuthenticators:
         assert client.vault_namespace == "root"
         mock_session.headers.update.assert_any_call({"X-Vault-Token": "hvs.approle-token"})
 
-    @patch(MOCK_REQUESTS_SESSION)
-    def test_client_without_authentication(self, mock_session_class):
+    def test_client_without_authentication(self, mock_session_class, mock_session):
         """Test that VaultClient can be created without immediate authentication."""
-        mock_session = Mock()
-        mock_session_class.return_value = mock_session
-
         client = VaultClient(
             vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
         )
@@ -156,12 +162,8 @@ class TestVaultClientIntegrationWithAuthenticators:
 
         mock_session.headers.update.assert_called_with({"X-Vault-Namespace": "test-namespace"})
 
-    @patch(MOCK_REQUESTS_SESSION)
-    def test_multiple_authentication_methods(self, mock_session_class):
+    def test_multiple_authentication_methods(self, mock_session_class, mock_session):
         """Test that different authenticators can be used with the same client."""
-        mock_session = Mock()
-        mock_session_class.return_value = mock_session
-
         client = VaultClient(
             vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
         )

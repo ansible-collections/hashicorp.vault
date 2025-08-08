@@ -31,8 +31,17 @@ class TestTokenAuthenticator:
 
         mock_client.set_token.assert_called_once_with("test-token-123")
 
-    def test_authenticate_missing_token(self):
-        """Test token authentication fails when token is not provided."""
+    @pytest.mark.parametrize(
+        "token_kwargs",
+        [
+            {},  # missing token - no token parameter provided
+            {"token": ""},  # empty token
+            {"token": None},  # None token
+        ],
+        ids=["missing", "empty", "none"],
+    )
+    def test_authenticate_invalid_token(self, token_kwargs):
+        """Test token authentication fails with invalid token values."""
         mock_client = Mock()
         authenticator = TokenAuthenticator()
 
@@ -40,76 +49,61 @@ class TestTokenAuthenticator:
             VaultCredentialsError,
             match="Token is required for token authentication.",
         ):
-            authenticator.authenticate(mock_client)
-
-    def test_authenticate_empty_token(self):
-        """Test token authentication fails when token is empty."""
-        mock_client = Mock()
-        authenticator = TokenAuthenticator()
-
-        with pytest.raises(
-            VaultCredentialsError,
-            match="Token is required for token authentication.",
-        ):
-            authenticator.authenticate(mock_client, token="")
-
-    def test_authenticate_none_token(self):
-        """Test token authentication fails when token is None."""
-        mock_client = Mock()
-        authenticator = TokenAuthenticator()
-
-        with pytest.raises(
-            VaultCredentialsError,
-            match="Token is required for token authentication.",
-        ):
-            authenticator.authenticate(mock_client, token=None)
+            authenticator.authenticate(mock_client, **token_kwargs)
 
 
 class TestAppRoleAuthenticator:
     """Tests for AppRoleAuthenticator class."""
 
-    @patch("requests.post")
-    def test_authenticate_success(self, mock_post):
-        """Test successful AppRole authentication."""
+    @pytest.fixture
+    def mock_client(self):
+        """Fixture providing a mock Vault client."""
+        return Mock()
+
+    @pytest.fixture
+    def authenticator(self):
+        """Fixture providing an AppRoleAuthenticator instance."""
+        return AppRoleAuthenticator()
+
+    @pytest.fixture
+    def successful_mock_response(self):
+        """Fixture providing a mock response for successful authentication."""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"auth": {"client_token": "hvs.123abc"}}
         mock_response.raise_for_status.return_value = None
-        mock_post.return_value = mock_response
+        return mock_response
 
-        mock_client = Mock()
-        authenticator = AppRoleAuthenticator()
+    @pytest.fixture
+    def auth_params(self):
+        """Fixture providing common authentication parameters."""
+        return {
+            "vault_address": "http://127.0.0.1:8200",
+            "role_id": "role-123",
+            "secret_id": "secret-456",
+            "vault_namespace": "test-namespace",
+        }
 
-        authenticator.authenticate(
-            mock_client,
-            vault_address="http://127.0.0.1:8200",
-            role_id="role-123",
-            secret_id="secret-456",
-            vault_namespace="test-namespace",
-        )
+    @patch("requests.post")
+    def test_authenticate_success(
+        self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
+    ):
+        """Test successful AppRole authentication."""
+        successful_mock_response.json.return_value = {"auth": {"client_token": "hvs.123abc"}}
+        mock_post.return_value = successful_mock_response
+
+        authenticator.authenticate(mock_client, **auth_params)
 
         mock_client.set_token.assert_called_once_with("hvs.123abc")
 
     @patch("requests.post")
-    def test_authenticate_custom_path(self, mock_post):
+    def test_authenticate_custom_path(
+        self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
+    ):
         """Test AppRole authentication with custom path."""
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"auth": {"client_token": "hvs.custom"}}
-        mock_response.raise_for_status.return_value = None
-        mock_post.return_value = mock_response
+        successful_mock_response.json.return_value = {"auth": {"client_token": "hvs.custom"}}
+        mock_post.return_value = successful_mock_response
 
-        mock_client = Mock()
-        authenticator = AppRoleAuthenticator()
-
-        authenticator.authenticate(
-            mock_client,
-            vault_address="http://127.0.0.1:8200",
-            role_id="role-123",
-            secret_id="secret-456",
-            vault_namespace="test-namespace",
-            approle_path="custom-approle",
-        )
+        authenticator.authenticate(mock_client, **auth_params, approle_path="custom-approle")
 
         expected_url = "http://127.0.0.1:8200/v1/auth/custom-approle/login"
         mock_post.assert_called_once()
@@ -119,16 +113,12 @@ class TestAppRoleAuthenticator:
         mock_client.set_token.assert_called_once_with("hvs.custom")
 
     @patch("requests.post")
-    def test_authenticate_no_namespace(self, mock_post):
+    def test_authenticate_no_namespace(
+        self, mock_post, mock_client, authenticator, successful_mock_response
+    ):
         """Test AppRole authentication without namespace."""
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"auth": {"client_token": "hvs.nonamespace"}}
-        mock_response.raise_for_status.return_value = None
-        mock_post.return_value = mock_response
-
-        mock_client = Mock()
-        authenticator = AppRoleAuthenticator()
+        successful_mock_response.json.return_value = {"auth": {"client_token": "hvs.nonamespace"}}
+        mock_post.return_value = successful_mock_response
 
         authenticator.authenticate(
             mock_client,
@@ -139,59 +129,34 @@ class TestAppRoleAuthenticator:
 
         mock_client.set_token.assert_called_once_with("hvs.nonamespace")
 
-    def test_authenticate_missing_role_id(self):
+    def test_authenticate_missing_role_id(self, mock_client, authenticator, auth_params):
         """Test AppRole authentication fails without role_id."""
-        mock_client = Mock()
-        authenticator = AppRoleAuthenticator()
-
         with pytest.raises(
             VaultCredentialsError,
             match="role_id and secret_id are required for AppRole authentication.",
         ):
-            authenticator.authenticate(
-                mock_client,
-                vault_address="http://127.0.0.1:8200",
-                role_id=None,
-                secret_id="secret-456",
-                vault_namespace="test-namespace",
-            )
+            authenticator.authenticate(mock_client, **{**auth_params, "role_id": None})
 
-    def test_authenticate_missing_secret_id(self):
+    def test_authenticate_missing_secret_id(self, mock_client, authenticator, auth_params):
         """Test AppRole authentication fails without secret_id."""
-        mock_client = Mock()
-        authenticator = AppRoleAuthenticator()
-
         with pytest.raises(
             VaultCredentialsError,
             match="role_id and secret_id are required for AppRole authentication.",
         ):
-            authenticator.authenticate(
-                mock_client,
-                vault_address="http://127.0.0.1:8200",
-                role_id="role-123",
-                secret_id=None,
-                vault_namespace="test-namespace",
-            )
+            authenticator.authenticate(mock_client, **{**auth_params, "secret_id": None})
 
-    def test_authenticate_missing_both_credentials(self):
+    def test_authenticate_missing_both_credentials(self, mock_client, authenticator, auth_params):
         """Test AppRole authentication fails without both role_id and secret_id."""
-        mock_client = Mock()
-        authenticator = AppRoleAuthenticator()
-
         with pytest.raises(
             VaultCredentialsError,
             match="role_id and secret_id are required for AppRole authentication.",
         ):
             authenticator.authenticate(
-                mock_client,
-                vault_address="http://127.0.0.1:8200",
-                role_id=None,
-                secret_id=None,
-                vault_namespace="test-namespace",
+                mock_client, **{**auth_params, "role_id": None, "secret_id": None}
             )
 
     @patch("requests.post")
-    def test_authenticate_login_failure(self, mock_post):
+    def test_authenticate_login_failure(self, mock_post, mock_client, authenticator, auth_params):
         """Test AppRole authentication handles login failures."""
         mock_response = Mock()
         mock_response.status_code = 401
@@ -204,56 +169,28 @@ class TestAppRoleAuthenticator:
 
         mock_post.return_value = mock_response
 
-        mock_client = Mock()
-        authenticator = AppRoleAuthenticator()
-
         with pytest.raises(
             VaultAppRoleLoginError, match="AppRole login failed: HTTP 401 - permission denied"
         ):
-            authenticator.authenticate(
-                mock_client,
-                vault_address="http://127.0.0.1:8200",
-                role_id="role-123",
-                secret_id="secret-456",
-                vault_namespace="test-namespace",
-            )
+            authenticator.authenticate(mock_client, **auth_params)
 
     @patch("requests.post")
-    def test_authenticate_network_error(self, mock_post):
+    def test_authenticate_network_error(self, mock_post, mock_client, authenticator, auth_params):
         """Test AppRole authentication handles network errors."""
         mock_post.side_effect = requests.ConnectionError("Connection timeout")
-
-        mock_client = Mock()
-        authenticator = AppRoleAuthenticator()
 
         with pytest.raises(
             VaultConnectionError, match="Network error during AppRole login: Connection timeout"
         ):
-            authenticator.authenticate(
-                mock_client,
-                vault_address="http://127.0.0.1:8200",
-                role_id="role-123",
-                secret_id="secret-456",
-                vault_namespace="test-namespace",
-            )
+            authenticator.authenticate(mock_client, **auth_params)
 
     @patch("requests.post")
-    def test_authenticate_invalid_response_format(self, mock_post):
+    def test_authenticate_invalid_response_format(
+        self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
+    ):
         """Test AppRole authentication handles invalid response format."""
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"invalid": "format"}
-        mock_response.raise_for_status.return_value = None
-        mock_post.return_value = mock_response
-
-        mock_client = Mock()
-        authenticator = AppRoleAuthenticator()
+        successful_mock_response.json.return_value = {"invalid": "format"}
+        mock_post.return_value = successful_mock_response
 
         with pytest.raises(VaultAppRoleLoginError, match="Invalid response format from Vault"):
-            authenticator.authenticate(
-                mock_client,
-                vault_address="http://127.0.0.1:8200",
-                role_id="role-123",
-                secret_id="secret-456",
-                vault_namespace="test-namespace",
-            )
+            authenticator.authenticate(mock_client, **auth_params)
