@@ -22,20 +22,22 @@ MOCK_REQUESTS_SESSION = (
 )
 
 
+@pytest.fixture
+def mock_session():
+    """Fixture providing a mock session."""
+    return Mock()
+
+
+@pytest.fixture
+def mock_session_class(mock_session):
+    """Fixture providing a mock session class that returns mock_session."""
+    with patch(MOCK_REQUESTS_SESSION) as mock_class:
+        mock_class.return_value = mock_session
+        yield mock_class
+
+
 class TestVaultClient:
     """Test VaultClient initialization and basic functionality."""
-
-    @pytest.fixture
-    def mock_session(self):
-        """Fixture providing a mock session."""
-        return Mock()
-
-    @pytest.fixture
-    def mock_session_class(self, mock_session):
-        """Fixture providing a mock session class that returns mock_session."""
-        with patch(MOCK_REQUESTS_SESSION) as mock_class:
-            mock_class.return_value = mock_session
-            yield mock_class
 
     def test_vault_client_init_success(self, mock_session_class, mock_session):
         """Test successful VaultClient initialization."""
@@ -103,18 +105,6 @@ class TestVaultClient:
 
 class TestVaultClientIntegrationWithAuthenticators:
     """Test VaultClient working with concrete Authenticator instances."""
-
-    @pytest.fixture
-    def mock_session(self):
-        """Fixture providing a mock session."""
-        return Mock()
-
-    @pytest.fixture
-    def mock_session_class(self, mock_session):
-        """Fixture providing a mock session class that returns mock_session."""
-        with patch(MOCK_REQUESTS_SESSION) as mock_class:
-            mock_class.return_value = mock_session
-            yield mock_class
 
     def test_token_authentication_flow(self, mock_session_class, mock_session):
         """Test the complete token authentication flow."""
