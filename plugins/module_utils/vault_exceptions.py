@@ -40,30 +40,6 @@ class VaultCredentialsError(VaultError):
     pass
 
 
-class VaultAppRoleLoginError(VaultError):
-    """
-    Raised when AppRole authentication fails.
-
-    Attributes:
-        status_code (int, optional): HTTP status code if applicable
-        response_text (str, optional): Response body text if available
-    """
-
-    def __init__(self, message: str, status_code: int = None, response_text: str = None):
-        """
-        Initialize AppRole login error.
-
-        Args:
-            message (str): Error description
-            status_code (int, optional): HTTP status code if applicable
-            response_text (str, optional): Response body text if available
-        """
-
-        super().__init__(message)
-        self.status_code = status_code
-        self.response_text = response_text
-
-
 class VaultConnectionError(VaultError):
     """
     Raised when there are network/connection issues with Vault.
@@ -78,12 +54,34 @@ class VaultConnectionError(VaultError):
     pass
 
 
-class VaultPermissionError(VaultAppRoleLoginError):
+class VaultApiError(VaultError):
+    """
+    Base exception for Vault API errors.
+
+    Attributes:
+        status_code (int, optional): HTTP status code if applicable
+        response_text (str, optional): Response body text if available
+    """
+
+    def __init__(self, message: str, status_code: int = None, response_text: str = None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.response_text = response_text
+
+
+class VaultAppRoleLoginError(VaultApiError):
+    """Raised when AppRole authentication fails."""
+
+    pass
+
+
+class VaultPermissionError(VaultApiError):
     """Raised for HTTP 403 permission denied errors."""
 
     pass
 
-class VaultSecretNotFoundError(VaultAppRoleLoginError):
+
+class VaultSecretNotFoundError(VaultApiError):
     """Raised for HTTP 404 secret not found errors."""
 
     pass

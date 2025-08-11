@@ -46,16 +46,10 @@ def authenticated_client(mocker, vault_config):
         "ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.Authenticator"
     )
 
-    mocker.patch.dict(
-        "os.environ",
-        {
-            "VAULT_ADDR": vault_config["addr"],
-            "VAULT_NAMESPACE": vault_config["namespace"],
-            "VAULT_TOKEN": vault_config["token"],
-        },
+    client = VaultClient(
+        vault_address=vault_config["addr"],
+        vault_namespace=vault_config["namespace"]
     )
-
-    client = VaultClient(auth_method="token")
     client.set_token(vault_config["token"])
     return client
 

@@ -5,7 +5,6 @@
 
 import json  # noqa: F401 # pylint: disable=unused-import
 import logging
-import os
 
 
 try:
@@ -15,11 +14,11 @@ except ImportError as imp_exc:
 else:
     REQUESTS_IMPORT_ERROR = None
 
-from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
+from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (  # noqa F401 # pylint: disable=unused-import
     Authenticator,
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
-    VaultAppRoleLoginError,
+    VaultApiError,
     VaultConfigurationError,
     VaultConnectionError,
     VaultPermissionError,
@@ -158,7 +157,7 @@ class VaultKv2Secrets:
             elif status_code == 404:
                 raise VaultSecretNotFoundError(msg, status_code, errors) from e
             else:
-                raise VaultAppRoleLoginError(msg, status_code, errors) from e
+                raise VaultApiError(msg, status_code, errors) from e
         except requests.exceptions.RequestException as e:
             raise VaultConnectionError(
                 f"Failed to connect to Vault at {self._client.vault_address}. Error: {e}"
