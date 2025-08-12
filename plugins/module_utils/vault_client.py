@@ -14,9 +14,6 @@ except ImportError as imp_exc:
 else:
     REQUESTS_IMPORT_ERROR = None
 
-from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (  # noqa F401 # pylint: disable=unused-import
-    Authenticator,
-)
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
     VaultConfigurationError,

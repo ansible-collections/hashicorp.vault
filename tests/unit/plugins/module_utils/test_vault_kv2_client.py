@@ -1,18 +1,14 @@
-# flake8: noqa: F401
-# pylint: skip-file
-
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import requests
 
-from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (  # noqa: F401 # pylint: disable=unused-import
     VaultClient,
     VaultKv2Secrets,
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
-    VaultConfigurationError,
     VaultConnectionError,
     VaultPermissionError,
     VaultSecretNotFoundError,
@@ -42,10 +38,6 @@ def mock_success_response():
 
 @pytest.fixture
 def authenticated_client(mocker, vault_config):
-    mock_authenticator = mocker.patch(
-        "ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.Authenticator"
-    )
-
     client = VaultClient(
         vault_address=vault_config["addr"], vault_namespace=vault_config["namespace"]
     )
