@@ -47,8 +47,7 @@ def authenticated_client(mocker, vault_config):
     )
 
     client = VaultClient(
-        vault_address=vault_config["addr"],
-        vault_namespace=vault_config["namespace"]
+        vault_address=vault_config["addr"], vault_namespace=vault_config["namespace"]
     )
     client.set_token(vault_config["token"])
     return client
