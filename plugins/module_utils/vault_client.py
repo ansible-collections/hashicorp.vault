@@ -180,6 +180,94 @@ class VaultKv2Secrets:
         response_data = self._make_request("GET", path, params=params)
         return response_data.get("data", {})
 
+    def create_or_update_secret(
+        self, mount_path: str, secret_path: str, secret_data: dict, cas: int = None
+    ) -> dict:
+        """
+        Creates or updates a secret in the KV2 secrets engine.
+
+        Args:
+            mount_path (str): The mount path of the KV2 secrets engine.
+            secret_path (str): The path to the secret.
+            secret_data (dict): The secret data to store.
+            cas (int, optional): Check-and-Set value for conditional updates.
+                                If provided, the update will only succeed if the current
+                                version matches this value. Use 0 to ensure the secret
+                                doesn't exist yet.
+
+        Returns:
+            dict: The response data containing metadata about the created/updated secret.
+
+        Raises:
+            VaultApiError: If the CAS check fails or other API errors occur.
+            VaultPermissionError: If insufficient permissions.
+            VaultConnectionError: If unable to connect to Vault.
+
+        Examples:
+            # Create a new secret
+            result = client.secrets.kv2.create_or_update_secret(
+                mount_path="secret",
+                secret_path="myapp/config",
+                secret_data={"timeout": 60}
+            )
+        """
+        path = f"{mount_path}/data/{secret_path}"
+
+        # Prepare the request body
+        data = {"data": secret_data}
+        if cas is not None:
+            data["options"] = {"cas": cas}
+
+        logger.debug("Creating/updating secret at %s with CAS: %s", secret_path, cas)
+        response_data = self._make_request("PUT", path, json=data)
+        return response_data
+
+    def patch_secret(
+        self, mount_path: str, secret_path: str, secret_data: dict, cas: int = None
+    ) -> dict:
+        """
+        Patches (partially updates) a secret in the KV2 secrets engine.
+
+        Args:
+            mount_path (str): The mount path of the KV2 secrets engine.
+            secret_path (str): The path to the secret.
+            secret_data (dict): The secret data to merge with existing data.
+            cas (int, optional): Check-and-Set value for conditional updates.
+                                If provided, the patch will only succeed if the current
+                                version matches this value.
+
+        Returns:
+            dict: The response data containing metadata about the patched secret.
+
+        Raises:
+            VaultApiError: If the CAS check fails or other API errors occur.
+            VaultPermissionError: If insufficient permissions.
+            VaultSecretNotFoundError: If the secret doesn't exist to patch.
+            VaultConnectionError: If unable to connect to Vault.
+
+        Examples:
+            # Patch with check-and-set
+            result = client.secrets.kv2.patch_secret(
+                mount_path="secret",
+                secret_path="myapp/config",
+                secret_data={"timeout": 60},
+                cas=7
+            )
+        """
+        path = f"{mount_path}/data/{secret_path}"
+
+        # Prepare the request body
+        data = {"data": secret_data}
+        if cas is not None:
+            data["options"] = {"cas": cas}
+
+        # PATCH requires specific content-type header for Vault KV2
+        headers = {"Content-Type": "application/merge-patch+json"}
+
+        logger.debug("Patching secret at %s with CAS: %s", secret_path, cas)
+        response_data = self._make_request("PATCH", path, json=data, headers=headers)
+        return response_data
+
 
 class Secrets:
     """A container class for different secrets engine clients."""
