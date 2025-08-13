@@ -6,6 +6,8 @@
 import json  # noqa: F401
 import logging
 
+from typing import Any, Dict, Literal, Optional
+
 
 try:
     import requests
@@ -180,6 +182,47 @@ class VaultKv2Secrets:
         response_data = self._make_request("GET", path, params=params)
         return response_data.get("data", {})
 
+    def _write_kv2_secret(
+        self,
+        *,
+        method: Literal["POST", "PATCH"],
+        mount_path: str,
+        secret_path: str,
+        secret_data: Dict[str, Any],
+        cas: Optional[int] = None,
+    ) -> dict:
+        """
+        Internal helper to write/patch KV2 secrets with optional CAS.
+
+        Args:
+            method: HTTP method to use (POST for create/update, PATCH for merge)
+            mount_path: The mount path of the KV2 secrets engine
+            secret_path: The path to the secret
+            secret_data: The secret data to store/merge
+            cas: Check-and-Set value for conditional updates
+
+        Returns:
+            dict: The response data from Vault
+
+        Raises:
+            TypeError: If secret_data is not a dictionary
+        """
+        if not isinstance(secret_data, dict):
+            raise TypeError("secret_data must be a dict")
+
+        path = f"{mount_path}/data/{secret_path}"
+        body: Dict[str, Any] = {"data": secret_data}
+        if cas is not None:
+            body["options"] = {"cas": cas}
+
+        headers = None
+        if method == "PATCH":
+            # Required by Vault KV2 for merge-patch semantics
+            headers = {"Content-Type": "application/merge-patch+json"}
+
+        logger.debug("%s secret at %s with CAS: %s", method, secret_path, cas)
+        return self._make_request(method, path, json=body, headers=headers)
+
     def create_or_update_secret(
         self, mount_path: str, secret_path: str, secret_data: dict, cas: int = None
     ) -> dict:
@@ -202,6 +245,7 @@ class VaultKv2Secrets:
             VaultApiError: If the CAS check fails or other API errors occur.
             VaultPermissionError: If insufficient permissions.
             VaultConnectionError: If unable to connect to Vault.
+            TypeError: If secret_data is not a dictionary.
 
         Examples:
             # Create a new secret
@@ -211,16 +255,13 @@ class VaultKv2Secrets:
                 secret_data={"timeout": 60}
             )
         """
-        path = f"{mount_path}/data/{secret_path}"
-
-        # Prepare the request body
-        data = {"data": secret_data}
-        if cas is not None:
-            data["options"] = {"cas": cas}
-
-        logger.debug("Creating/updating secret at %s with CAS: %s", secret_path, cas)
-        response_data = self._make_request("POST", path, json=data)
-        return response_data
+        return self._write_kv2_secret(
+            method="POST",
+            mount_path=mount_path,
+            secret_path=secret_path,
+            secret_data=secret_data,
+            cas=cas,
+        )
 
     def patch_secret(
         self, mount_path: str, secret_path: str, secret_data: dict, cas: int = None
@@ -244,6 +285,7 @@ class VaultKv2Secrets:
             VaultPermissionError: If insufficient permissions.
             VaultSecretNotFoundError: If the secret doesn't exist to patch.
             VaultConnectionError: If unable to connect to Vault.
+            TypeError: If secret_data is not a dictionary.
 
         Examples:
             # Patch with check-and-set
@@ -254,19 +296,13 @@ class VaultKv2Secrets:
                 cas=7
             )
         """
-        path = f"{mount_path}/data/{secret_path}"
-
-        # Prepare the request body
-        data = {"data": secret_data}
-        if cas is not None:
-            data["options"] = {"cas": cas}
-
-        # PATCH requires specific content-type header for Vault KV2
-        headers = {"Content-Type": "application/merge-patch+json"}
-
-        logger.debug("Patching secret at %s with CAS: %s", secret_path, cas)
-        response_data = self._make_request("PATCH", path, json=data, headers=headers)
-        return response_data
+        return self._write_kv2_secret(
+            method="PATCH",
+            mount_path=mount_path,
+            secret_path=secret_path,
+            secret_data=secret_data,
+            cas=cas,
+        )
 
 
 class Secrets:
