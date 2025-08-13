@@ -219,7 +219,7 @@ class VaultKv2Secrets:
             data["options"] = {"cas": cas}
 
         logger.debug("Creating/updating secret at %s with CAS: %s", secret_path, cas)
-        response_data = self._make_request("PUT", path, json=data)
+        response_data = self._make_request("POST", path, json=data)
         return response_data
 
     def patch_secret(

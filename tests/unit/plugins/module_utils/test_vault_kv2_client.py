@@ -150,7 +150,7 @@ def test_create_or_update_secret_success(mocker, authenticated_client, vault_con
         f"{vault_config['addr']}/v1/{vault_config['mount_path']}/data/{vault_config['secret_path']}"
     )
     expected_data = {"data": secret_data}
-    mock_request.assert_called_once_with("PUT", expected_url, json=expected_data)
+    mock_request.assert_called_once_with("POST", expected_url, json=expected_data)
     assert result == mock_response.json.return_value
 
 
@@ -172,7 +172,7 @@ def test_create_or_update_secret_with_cas(mocker, authenticated_client, vault_co
         f"{vault_config['addr']}/v1/{vault_config['mount_path']}/data/{vault_config['secret_path']}"
     )
     expected_data = {"data": secret_data, "options": {"cas": cas_value}}
-    mock_request.assert_called_once_with("PUT", expected_url, json=expected_data)
+    mock_request.assert_called_once_with("POST", expected_url, json=expected_data)
 
 
 def test_patch_secret_success(mocker, authenticated_client, vault_config):
