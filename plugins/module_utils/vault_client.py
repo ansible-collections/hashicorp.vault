@@ -6,7 +6,7 @@
 import json  # noqa: F401
 import logging
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 try:
@@ -183,7 +183,7 @@ class VaultKv2Secrets:
         return response_data.get("data", {})
 
     def create_or_update_secret(
-        self, mount_path: str, secret_path: str, secret_data: dict, cas: int = None
+        self, mount_path: str, secret_path: str, secret_data: dict, cas: Optional[int] = None
     ) -> dict:
         """
         Creates or updates a secret in the KV2 secrets engine.
