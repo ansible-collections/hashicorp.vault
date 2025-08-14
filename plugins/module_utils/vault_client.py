@@ -6,7 +6,7 @@
 import json  # noqa: F401
 import logging
 
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict
 
 
 try:
@@ -182,47 +182,6 @@ class VaultKv2Secrets:
         response_data = self._make_request("GET", path, params=params)
         return response_data.get("data", {})
 
-    def _write_kv2_secret(
-        self,
-        *,
-        method: Literal["POST", "PATCH"],
-        mount_path: str,
-        secret_path: str,
-        secret_data: Dict[str, Any],
-        cas: Optional[int] = None,
-    ) -> dict:
-        """
-        Internal helper to write/patch KV2 secrets with optional CAS.
-
-        Args:
-            method: HTTP method to use (POST for create/update, PATCH for merge)
-            mount_path: The mount path of the KV2 secrets engine
-            secret_path: The path to the secret
-            secret_data: The secret data to store/merge
-            cas: Check-and-Set value for conditional updates
-
-        Returns:
-            dict: The response data from Vault
-
-        Raises:
-            TypeError: If secret_data is not a dictionary
-        """
-        if not isinstance(secret_data, dict):
-            raise TypeError("secret_data must be a dict")
-
-        path = f"{mount_path}/data/{secret_path}"
-        body: Dict[str, Any] = {"data": secret_data}
-        if cas is not None:
-            body["options"] = {"cas": cas}
-
-        headers = None
-        if method == "PATCH":
-            # Required by Vault KV2 for merge-patch semantics
-            headers = {"Content-Type": "application/merge-patch+json"}
-
-        logger.debug("%s secret at %s with CAS: %s", method, secret_path, cas)
-        return self._make_request(method, path, json=body, headers=headers)
-
     def create_or_update_secret(
         self, mount_path: str, secret_path: str, secret_data: dict, cas: int = None
     ) -> dict:
@@ -255,54 +214,16 @@ class VaultKv2Secrets:
                 secret_data={"timeout": 60}
             )
         """
-        return self._write_kv2_secret(
-            method="POST",
-            mount_path=mount_path,
-            secret_path=secret_path,
-            secret_data=secret_data,
-            cas=cas,
-        )
+        if not isinstance(secret_data, dict):
+            raise TypeError("secret_data must be a dict")
 
-    def patch_secret(
-        self, mount_path: str, secret_path: str, secret_data: dict, cas: int = None
-    ) -> dict:
-        """
-        Patches (partially updates) a secret in the KV2 secrets engine.
+        path = f"{mount_path}/data/{secret_path}"
+        body: Dict[str, Any] = {"data": secret_data}
+        if cas is not None:
+            body["options"] = {"cas": cas}
 
-        Args:
-            mount_path (str): The mount path of the KV2 secrets engine.
-            secret_path (str): The path to the secret.
-            secret_data (dict): The secret data to merge with existing data.
-            cas (int, optional): Check-and-Set value for conditional updates.
-                                If provided, the patch will only succeed if the current
-                                version matches this value.
-
-        Returns:
-            dict: The response data containing metadata about the patched secret.
-
-        Raises:
-            VaultApiError: If the CAS check fails or other API errors occur.
-            VaultPermissionError: If insufficient permissions.
-            VaultSecretNotFoundError: If the secret doesn't exist to patch.
-            VaultConnectionError: If unable to connect to Vault.
-            TypeError: If secret_data is not a dictionary.
-
-        Examples:
-            # Patch with check-and-set
-            result = client.secrets.kv2.patch_secret(
-                mount_path="secret",
-                secret_path="myapp/config",
-                secret_data={"timeout": 60},
-                cas=7
-            )
-        """
-        return self._write_kv2_secret(
-            method="PATCH",
-            mount_path=mount_path,
-            secret_path=secret_path,
-            secret_data=secret_data,
-            cas=cas,
-        )
+        logger.debug("POST secret at %s with CAS: %s", secret_path, cas)
+        return self._make_request("POST", path, json=body)
 
 
 class Secrets:
