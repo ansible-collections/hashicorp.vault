@@ -1,6 +1,7 @@
+import json
+
 from unittest.mock import MagicMock
 
-import json
 import pytest
 import requests
 
@@ -145,7 +146,13 @@ def test_connection_error(mocker, authenticated_client, vault_config):
     ],
 )
 def test_delete_secret_success(
-    mocker, authenticated_client, vault_config, version, expected_method, expected_path, expected_data
+    mocker,
+    authenticated_client,
+    vault_config,
+    version,
+    expected_method,
+    expected_path,
+    expected_data,
 ):
     mock_request = mocker.patch("requests.Session.request", return_value=MagicMock())
     mock_request.return_value.raise_for_status.return_value = None
@@ -176,7 +183,13 @@ def test_delete_secret_success(
     ],
 )
 def test_delete_secret_http_errors(
-    mocker, authenticated_client, vault_config, version, status_code, error_response, expected_exception
+    mocker,
+    authenticated_client,
+    vault_config,
+    version,
+    status_code,
+    error_response,
+    expected_exception,
 ):
     mock_response = MagicMock(status_code=status_code)
     mock_response.json.return_value = error_response
@@ -216,7 +229,7 @@ def test_delete_secret_malformed_json_response(mocker, authenticated_client, vau
         authenticated_client.secrets.kv2.delete_secret(
             vault_config["mount_path"], vault_config["secret_path"], version=1
         )
-    
+
     # Verify the error message contains the response text as fallback
     assert "Bad Request: Invalid JSON response" in str(exc_info.value)
 

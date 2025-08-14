@@ -8,6 +8,7 @@ import logging
 
 from typing import Optional
 
+
 try:
     import requests
 except ImportError as imp_exc:
@@ -181,7 +182,9 @@ class VaultKv2Secrets:
         response_data = self._make_request("GET", path, params=params)
         return response_data.get("data", {})
 
-    def delete_secret(self, mount_path: str, secret_path: str, version: Optional[int] = None) -> None:
+    def delete_secret(
+        self, mount_path: str, secret_path: str, version: Optional[int] = None
+    ) -> None:
         """
         Deletes a secret from the KV2 secrets engine; if secret version is not provided
         then it will delete the latest version of the secret.
@@ -201,6 +204,7 @@ class VaultKv2Secrets:
             path = f"{mount_path}/delete/{secret_path}"
             # Even with only a single version specified, the API expects a list of versions
             self._make_request("POST", path, json={"versions": [version]})
+
 
 class Secrets:
     """A container class for different secrets engine clients."""
