@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import json
 import pytest
 import requests
 
@@ -132,3 +133,115 @@ def test_connection_error(mocker, authenticated_client, vault_config):
         authenticated_client.secrets.kv2.read_secret(
             vault_config["mount_path"], vault_config["secret_path"]
         )
+
+
+@pytest.mark.parametrize(
+    "version,expected_method,expected_path,expected_data",
+    [
+        # Delete latest version (i.e., version unspecified)
+        (None, "DELETE", "secret/data/test/my-secret", None),
+        # Delete specific version
+        (123, "POST", "secret/delete/test/my-secret", {"versions": [123]}),
+    ],
+)
+def test_delete_secret_success(
+    mocker, authenticated_client, vault_config, version, expected_method, expected_path, expected_data
+):
+    mock_request = mocker.patch("requests.Session.request", return_value=MagicMock())
+    mock_request.return_value.raise_for_status.return_value = None
+
+    authenticated_client.secrets.kv2.delete_secret(
+        vault_config["mount_path"], vault_config["secret_path"], version=version
+    )
+
+    expected_url = f"{vault_config['addr']}/v1/{expected_path}"
+    if expected_data is None:
+        mock_request.assert_called_once_with(expected_method, expected_url)
+    else:
+        mock_request.assert_called_once_with(expected_method, expected_url, json=expected_data)
+
+
+@pytest.mark.parametrize(
+    "version,status_code,error_response,expected_exception",
+    [
+        # Permission denied errors
+        (None, 403, {"errors": ["permission denied"]}, VaultPermissionError),
+        (1, 403, {"errors": ["insufficient privileges"]}, VaultPermissionError),
+        # Not found errors
+        (None, 404, {"errors": ["secret not found"]}, VaultSecretNotFoundError),
+        (2, 404, {"errors": ["version not found"]}, VaultSecretNotFoundError),
+        # Generic API errors
+        (None, 500, {"errors": ["internal server error"]}, VaultApiError),
+        (3, 400, {"errors": ["bad request"]}, VaultApiError),
+    ],
+)
+def test_delete_secret_http_errors(
+    mocker, authenticated_client, vault_config, version, status_code, error_response, expected_exception
+):
+    mock_response = MagicMock(status_code=status_code)
+    mock_response.json.return_value = error_response
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+        response=mock_response
+    )
+    mocker.patch("requests.Session.request", return_value=mock_response)
+
+    with pytest.raises(expected_exception):
+        authenticated_client.secrets.kv2.delete_secret(
+            vault_config["mount_path"], vault_config["secret_path"], version=version
+        )
+
+
+def test_delete_secret_connection_error(mocker, authenticated_client, vault_config):
+    mocker.patch(
+        "requests.Session.request",
+        side_effect=requests.exceptions.ConnectionError("Failed to connect"),
+    )
+
+    with pytest.raises(VaultConnectionError):
+        authenticated_client.secrets.kv2.delete_secret(
+            vault_config["mount_path"], vault_config["secret_path"]
+        )
+
+
+def test_delete_secret_malformed_json_response(mocker, authenticated_client, vault_config):
+    mock_response = MagicMock(status_code=400)
+    mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
+    mock_response.text = "Bad Request: Invalid JSON response"
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+        response=mock_response
+    )
+    mocker.patch("requests.Session.request", return_value=mock_response)
+
+    with pytest.raises(VaultApiError) as exc_info:
+        authenticated_client.secrets.kv2.delete_secret(
+            vault_config["mount_path"], vault_config["secret_path"], version=1
+        )
+    
+    # Verify the error message contains the response text as fallback
+    assert "Bad Request: Invalid JSON response" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("version", [0, -1, -5])
+def test_delete_secret_invalid_version_numbers(mocker, authenticated_client, vault_config, version):
+    mock_request = mocker.patch("requests.Session.request", return_value=MagicMock())
+    mock_request.return_value.raise_for_status.return_value = None
+
+    authenticated_client.secrets.kv2.delete_secret(
+        vault_config["mount_path"], vault_config["secret_path"], version=version
+    )
+
+    expected_url = f"{vault_config['addr']}/v1/secret/delete/test/my-secret"
+    mock_request.assert_called_once_with("POST", expected_url, json={"versions": [version]})
+
+
+def test_delete_secret_with_special_characters_in_path(mocker, authenticated_client, vault_config):
+    special_path = "test/my-secret with spaces/and-symbols!@#"
+    mock_request = mocker.patch("requests.Session.request", return_value=MagicMock())
+    mock_request.return_value.raise_for_status.return_value = None
+
+    authenticated_client.secrets.kv2.delete_secret(
+        vault_config["mount_path"], special_path, version=1
+    )
+
+    expected_url = f"{vault_config['addr']}/v1/secret/delete/{special_path}"
+    mock_request.assert_called_once_with("POST", expected_url, json={"versions": [1]})
