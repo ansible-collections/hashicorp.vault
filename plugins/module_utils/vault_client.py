@@ -6,6 +6,7 @@
 import json  # noqa: F401
 import logging
 
+from typing import Optional
 
 try:
     import requests
@@ -180,7 +181,7 @@ class VaultKv2Secrets:
         response_data = self._make_request("GET", path, params=params)
         return response_data.get("data", {})
 
-    def delete_secret(self, mount_path: str, secret_path: str, version: int = None) -> None:
+    def delete_secret(self, mount_path: str, secret_path: str, version: Optional[int] = None) -> None:
         """
         Deletes a secret from the KV2 secrets engine; if secret version is not provided
         then it will delete the latest version of the secret.
