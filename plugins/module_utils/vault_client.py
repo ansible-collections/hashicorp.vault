@@ -6,7 +6,7 @@
 import json  # noqa: F401
 import logging
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 
 try:
@@ -182,16 +182,55 @@ class VaultKv2Secrets:
         response_data = self._make_request("GET", path, params=params)
         return response_data.get("data", {})
 
-    def delete_secret(
+    def create_or_update_secret(
+        self, mount_path: str, secret_path: str, secret_data: dict, cas: Optional[int] = None
+    ) -> dict:
+        """
+        Creates or updates a secret in the KV2 secrets engine.
+
+        Args:
+            mount_path (str): The mount path of the KV2 secrets engine.
+            secret_path (str): The path to the secret.
+            secret_data (dict): The secret data to store.
+            cas (int, optional): Check-and-Set value for conditional updates.
+                                If provided, the update will only succeed if the current
+                                version matches this value. Use 0 to ensure the secret
+                                doesn't exist yet.
+
+        Returns:
+            dict: The response data containing metadata about the created/updated secret.
+
+        Raises:
+            VaultApiError: If the CAS check fails or other API errors occur.
+            VaultPermissionError: If insufficient permissions.
+            VaultConnectionError: If unable to connect to Vault.
+            TypeError: If secret_data is not a dictionary.
+
+        Examples:
+            # Create a new secret
+            result = client.secrets.kv2.create_or_update_secret(
+                mount_path="secret",
+                secret_path="myapp/config",
+                secret_data={"timeout": 60}
+            )
+        """
+        if not isinstance(secret_data, dict):
+            raise TypeError("secret_data must be a dict")
+
+        path = f"{mount_path}/data/{secret_path}"
+        body: Dict[str, Any] = {"data": secret_data}
+        if cas is not None:
+            body["options"] = {"cas": cas}
+
+        logger.debug("POST secret at %s with CAS: %s", secret_path, cas)
+        return self._make_request("POST", path, json=body)
+
+      def delete_secret(
         self, mount_path: str, secret_path: str, version: Optional[int] = None
     ) -> None:
         """
         Deletes a secret from the KV2 secrets engine; if secret version is not provided
         then it will delete the latest version of the secret.
-
-        Args:
-            mount_path (str): The mount path of the KV2 secrets engine.
-            secret_path (str): The path to the secret.
             version (int, optional): The version to delete. Defaults to the latest.
 
         Returns:

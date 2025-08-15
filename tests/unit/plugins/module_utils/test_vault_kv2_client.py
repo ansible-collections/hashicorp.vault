@@ -136,6 +136,85 @@ def test_connection_error(mocker, authenticated_client, vault_config):
         )
 
 
+def test_create_or_update_secret_success(mocker, authenticated_client, vault_config):
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "data": {"created_time": "2025-01-20T12:00:00Z", "version": 1}
+    }
+    mock_request = mocker.patch("requests.Session.request", return_value=mock_response)
+
+    secret_data = {"username": "admin", "password": "secret123"}
+    result = authenticated_client.secrets.kv2.create_or_update_secret(
+        vault_config["mount_path"], vault_config["secret_path"], secret_data
+    )
+
+    expected_url = (
+        f"{vault_config['addr']}/v1/{vault_config['mount_path']}/data/{vault_config['secret_path']}"
+    )
+    expected_data = {"data": secret_data}
+    mock_request.assert_called_once_with("POST", expected_url, json=expected_data)
+    assert result == mock_response.json.return_value
+
+
+def test_create_or_update_secret_with_cas(mocker, authenticated_client, vault_config):
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "data": {"created_time": "2025-01-20T12:00:00Z", "version": 2}
+    }
+    mock_request = mocker.patch("requests.Session.request", return_value=mock_response)
+
+    secret_data = {"username": "admin", "password": "newsecret"}
+    cas_value = 1
+
+    authenticated_client.secrets.kv2.create_or_update_secret(
+        vault_config["mount_path"], vault_config["secret_path"], secret_data, cas=cas_value
+    )
+
+    expected_url = (
+        f"{vault_config['addr']}/v1/{vault_config['mount_path']}/data/{vault_config['secret_path']}"
+    )
+    expected_data = {"data": secret_data, "options": {"cas": cas_value}}
+    mock_request.assert_called_once_with("POST", expected_url, json=expected_data)
+
+
+def test_create_or_update_secret_permission_denied_403(mocker, authenticated_client, vault_config):
+    mock_response = MagicMock(status_code=403)
+    mock_response.json.return_value = {"errors": ["permission denied"]}
+
+    with pytest.raises(VaultPermissionError):
+        authenticated_client.secrets.kv2.create_or_update_secret(
+            vault_config["mount_path"], vault_config["secret_path"], {"key": "value"}
+        )
+
+
+def test_create_or_update_secret_cas_conflict_400(mocker, authenticated_client, vault_config):
+    mock_response = MagicMock(status_code=400)
+    mock_response.json.return_value = {
+        "errors": ["check-and-set parameter did not match the current version"]
+    }
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+        response=mock_response
+    )
+    mocker.patch("requests.Session.request", return_value=mock_response)
+
+    with pytest.raises(VaultApiError):
+        authenticated_client.secrets.kv2.create_or_update_secret(
+            vault_config["mount_path"], vault_config["secret_path"], {"key": "value"}, cas=5
+        )
+
+
+def test_create_or_update_secret_connection_error(mocker, authenticated_client, vault_config):
+    mocker.patch(
+        "requests.Session.request",
+        side_effect=requests.exceptions.ConnectionError("Failed to connect"),
+    )
+
+    with pytest.raises(VaultConnectionError):
+        authenticated_client.secrets.kv2.create_or_update_secret(
+            vault_config["mount_path"], vault_config["secret_path"], {"key": "value"}
+        )
+
+
 @pytest.mark.parametrize(
     "version,expected_method,expected_path,expected_data",
     [
