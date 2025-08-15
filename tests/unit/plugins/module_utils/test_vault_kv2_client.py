@@ -180,6 +180,10 @@ def test_create_or_update_secret_with_cas(mocker, authenticated_client, vault_co
 def test_create_or_update_secret_permission_denied_403(mocker, authenticated_client, vault_config):
     mock_response = MagicMock(status_code=403)
     mock_response.json.return_value = {"errors": ["permission denied"]}
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+        response=mock_response
+    )
+    mocker.patch("requests.Session.request", return_value=mock_response)
 
     with pytest.raises(VaultPermissionError):
         authenticated_client.secrets.kv2.create_or_update_secret(

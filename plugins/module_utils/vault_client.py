@@ -225,7 +225,7 @@ class VaultKv2Secrets:
         logger.debug("POST secret at %s with CAS: %s", secret_path, cas)
         return self._make_request("POST", path, json=body)
 
-      def delete_secret(
+    def delete_secret(
         self, mount_path: str, secret_path: str, version: Optional[int] = None
     ) -> None:
         """
