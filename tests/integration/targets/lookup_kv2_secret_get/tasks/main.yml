@@ -1,0 +1,35 @@
+---
+- name: Create KV2 vault secret
+  hashicorp.vault.k2_secret:
+    url: "{{ test_vault_address }}"
+    path: "{{ test_vault_secret }}"
+    data: "{{ item }}"
+  with_items: "{{ test_vault_secret_data }}"
+
+- name: Test kv2_secret_get lookup plugin
+  block:
+    - name: Read the latest version of the secret
+      ansible.builtin.set_fact:
+        secret_latest_version: "{{ lookup('hashicorp.vault.kv2_secret_get', secret=test_vault_secret) }}"
+
+    - name: Ensure the secret data match as expected
+      ansible.builtin.assert:
+        that:
+          - secret_latest_version == test_vault_secret_data[-1]
+
+
+    - name: Read a specific version (first) of the secret
+      ansible.builtin.set_fact:
+        secret_latest_version: "{{ lookup('hashicorp.vault.kv2_secret_get', secret=test_vault_secret, version=1) }}"
+
+    - name: Ensure the secret data match as expected
+      ansible.builtin.assert:
+        that:
+          - secret_latest_version == test_vault_secret_data[0]
+
+  always:
+    - name: Delete all versions of the secret
+      hashicorp.vault.kv2_secret:
+        url: "{{ test_vault_address }}"
+        path: "{{ test_vault_secret }}"
+        state: absent

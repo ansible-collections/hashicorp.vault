@@ -1,0 +1,6 @@
+---
+test_vault_address: ""
+test_vault_secret: "hashicorp-vault-test-secret-{{ lookup('password', '/dev/null', chars='ascii_letters,digits', length=12) }}"
+test_vault_secret_data:
+  - ansible_vault_data_0: "{{ lookup('password', '/dev/null', chars='ascii_letters,digits', length=150) }}"
+  - another_vault_data_1: "{{ lookup('password', '/dev/null', chars='hexdigits,punctuation', length=200) }}"

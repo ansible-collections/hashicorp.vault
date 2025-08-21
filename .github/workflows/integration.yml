@@ -2,14 +2,28 @@
 name: Integration
 
 on: # yamllint disable-line rule:truthy
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - labeled
+      - unlabeled
+      - synchronize
+    branches:
+      - main
+      - stable-*
 
 jobs:
+  safe-to-test:
+    if: ${{ github.event.label.name == 'safe to test' }} || ${{ github.event.action != 'labeled' }}
+    uses: ansible-network/github_actions/.github/workflows/safe-to-test.yml@main
+
   run-integration-tests:
-    name: Run Integration Tests
+    needs:
+      - safe-to-test
     runs-on: ubuntu-latest
+    env:
+      source: "./"
     strategy:
       fail-fast: false
       matrix:
@@ -19,8 +33,12 @@ jobs:
           - devel
         python-version:
           - "3.12"
+    name: "integration-tests-${{ matrix.ansible-version }}-${{ matrix.python-version }}"
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: ${{ env.source }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,29 +48,37 @@ jobs:
       - name: Install ansible-core (${{ matrix.ansible-version }})
         run: python3 -m pip install https://github.com/ansible/ansible/archive/${{ matrix.ansible-version }}.tar.gz --disable-pip-version-check
 
-      - name: Install collection test dependencies
-        run: python3 -m pip install -r test-requirements.txt
+      # Install the source collection
+      - name: Build and install collection
+        id: install-collection
+        uses: ansible-network/github_actions/.github/actions/build_install_collection@main
+        with:
+          install_python_dependencies: true
+          source_path: ${{ env.source }}
 
-      - name: Build and install the collection
-        run: ansible-galaxy collection install . --force
-
-      - name: List all integration test targets
+      - name: Create Hashicorp vault token for test session
+        id: create-token
         run: |
-          cd ~/.ansible/collections/ansible_collections/hashicorp/vault && \
-          ansible-test integration --list-targets || echo "No integration targets found"
+          token=`curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE" --request POST --data '{"role_id": "$VAULT_ROLE_ID", "secret_id": "$VAULT_SECRET_ID"}' $VAULT_ADDR/v1/auth/approle/login | jq -r '.auth.client_token'`; echo "generated_token='$params'" >> ${GITHUB_OUTPUT}
+        shell: bash
+        env:
+          VAULT_ADDR: "{{ secrets.VAULT_ADDR }}"
+          VAULT_NAMESPACE: "{{ secrets.VAULT_NAMESPACE }}"
+          VAULT_ROLE_ID: "{{ secrets.VAULT_ROLE_ID }}"
+          VAULT_SECRET_ID: "{{ secrets.VAULT_SECRET_ID }}"
 
-      - name: Check for integration test targets
-        id: check-targets
+      - name: Set up git
         run: |
-          cd ~/.ansible/collections/ansible_collections/hashicorp/vault
-          if ansible-test integration --list-targets > /dev/null 2>&1; then
-            echo "has-targets=true" >> $GITHUB_OUTPUT
-          else
-            echo "has-targets=false" >> $GITHUB_OUTPUT
-          fi
+          git config --global user.email gha@localhost
+          git config --global user.name "Github Actions"
+        shell: bash
 
-      - name: Run integration tests (${{ matrix.ansible-version }})
-        if: steps.check-targets.outputs.has-targets == 'true'
-        run: |
-          cd ~/.ansible/collections/ansible_collections/hashicorp/vault
-          ansible-test integration --python ${{ matrix.python-version }} --continue-on-error
+      - name: Run integration tests
+        uses: ansible-network/github_actions/.github/actions/ansible_test_integration@main
+        with:
+          collection_path: ${{ steps.install-collection.outputs.collection_path }}
+          python_version: "${{ matrix.python-version }}"
+          ansible_version: "${{ matrix.ansible-version }}"
+          ansible_test_environment: |
+            VAULT_TOKEN={{ steps.create-token.outputs.generated_token }}
+            VAULT_ADDR={{ secrets.VAULT_ADDR }}
