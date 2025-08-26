@@ -30,8 +30,8 @@ class VaultLookupBase(LookupBase):
         else:
             params = {
                 "vault_address": self.get_option("url"),
-                "role_id": self.get_option("url"),
-                "secret_id": self.get_option("url"),
+                "role_id": self.get_option("vault_approle_role_id"),
+                "secret_id": self.get_option("vault_approle_secret_id"),
             }
 
             vault_namespace = self.get_option("namespace")
