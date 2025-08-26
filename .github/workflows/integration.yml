@@ -55,4 +55,11 @@ jobs:
         if: steps.check-targets.outputs.has-targets == 'true'
         run: |
           cd ~/.ansible/collections/ansible_collections/hashicorp/vault
-          ansible-test integration --python ${{ matrix.python-version }} --continue-on-error
+          ansible-test integration --python ${{ matrix.python-version }} --continue-on-error --quiet
+        env:
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_NAMESPACE: ${{ secrets.VAULT_NAMESPACE }}
+          VAULT_APPROLE_ROLE_ID: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
+          VAULT_APPROLE_SECRET_ID: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
+          TEST_READING_GH_ACTION_SECRETS: ${{ secrets.TEST_READING_GH_ACTION_SECRETS }}

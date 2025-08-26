@@ -12,8 +12,8 @@
       X-Vault-Namespace: "{{ lookup('ansible.builtin.env', 'VAULT_NAMESPACE') | default(vault_namespace, true) }}"
     body_format: json
     body:
-      role_id: "{{ lookup('ansible.builtin.env', 'VAULT_ROLE_ID') | default(vault_approle_role_id, true) }}"
-      secret_id: "{{ lookup('ansible.builtin.env', 'VAULT_SECRET_ID') | default(vault_approle_secret_id, true) }}"
+      role_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_ROLE_ID') | default(vault_approle_role_id, true) }}"
+      secret_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_SECRET_ID') | default(vault_approle_secret_id, true) }}"
     return_content: true
   register: vault_login
   no_log: true
