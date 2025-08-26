@@ -1,0 +1,80 @@
+---
+- name: Test Token Authentication with Variable Parameters
+  block:
+    - name: Create test secret with token variable
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}"
+        data: "{{ initial_data }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: present
+      register: secret_creation_result
+      no_log: true
+
+    - name: Verify secret creation succeeded
+      ansible.builtin.assert:
+        that:
+          - secret_creation_result.changed == true
+          - secret_creation_result.secret.data.username == "testuser"
+          - secret_creation_result.secret.data.password == "initial_pass"
+        fail_msg: "Secret creation failed or returned unexpected data"
+
+    - name: Update test secret with token variable
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}"
+        data: "{{ updated_data }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: present
+      register: secret_update_result
+      no_log: true
+
+    - name: Verify secret update succeeded
+      ansible.builtin.assert:
+        that:
+          - secret_update_result.changed == true
+          - secret_update_result.secret.data.password == "updated_pass"
+          - secret_update_result.secret.data.updated == true
+        fail_msg: "Secret update failed or returned unexpected data"
+
+    - name: Delete test secret with token variable
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: absent
+      register: secret_deletion_result
+      no_log: true
+
+    - name: Verify secret deletion succeeded
+      ansible.builtin.assert:
+        that:
+          - secret_deletion_result.changed == true
+          - secret_deletion_result.msg == "Secret deleted successfully"
+        fail_msg: "Secret deletion failed or returned unexpected message"
+
+  rescue:
+    - name: Cleanup - Ensure test secret is removed on failure
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: absent
+      ignore_errors: true
+      no_log: true
+
+    - name: Re-raise the original error
+      ansible.builtin.fail:
+        msg: "Token authentication test failed"

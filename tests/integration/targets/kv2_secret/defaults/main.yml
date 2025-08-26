@@ -1,0 +1,25 @@
+---
+# Vault connection configuration
+vault_url: "{{ lookup('env', 'VAULT_ADDR') | default('http://localhost:8200') }}"
+vault_namespace: "{{ lookup('env', 'VAULT_NAMESPACE') | default('admin/hashicorp-vault-integration-tests') }}"
+vault_token: "{{ lookup('env', 'VAULT_TOKEN') | default('') }}"
+vault_role_id: "{{ lookup('env', 'VAULT_APPROLE_ROLE_ID') | default('') }}"
+vault_secret_id: "{{ lookup('env', 'VAULT_APPROLE_SECRET_ID') | default('') }}"
+test_reading_gh_action_secrets: "{{ lookup('env', 'TEST_READING_GH_ACTION_SECRETS') | default('') }}"
+
+# Test configuration
+secret_mount_path: "kv-integration-tests"
+integration_tests_approle: "approle-integration-tests"
+test_secret_path: "integration-test-test-secret"
+
+# Test data sets
+initial_data:
+  username: "testuser"
+  password: "initial_pass"
+  env: "test"
+
+updated_data:
+  username: "testuser"
+  password: "updated_pass"
+  env: "test"
+  updated: true
