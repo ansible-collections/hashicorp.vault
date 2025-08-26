@@ -117,6 +117,8 @@ RETURN = """
 
 import os
 
+from typing import List, Optional
+
 from ansible.module_utils.basic import AnsibleModule
 
 
@@ -144,15 +146,18 @@ except ImportError as e:
     VAULT_IMPORT_ERROR = str(e)
 
 
-def get_option(module, option_name, env_var=None):
+def get_option(
+    module: AnsibleModule, option_name: str, env_var: Optional[str] = None
+) -> Optional[str]:
+    """Get option value with optional environment variable fallback."""
     value = module.params.get(option_name)
     if not value and env_var:
         value = os.environ.get(env_var)
     return value
 
 
-def _authenticate(module, client):
-
+def _authenticate(module: AnsibleModule, client: VaultClient) -> None:
+    """Authenticate the client using token or AppRole authentication."""
     auth_method = get_option(module, "auth_method")
 
     if auth_method == "token":
@@ -185,8 +190,8 @@ def _authenticate(module, client):
         AppRoleAuthenticator().authenticate(client, **params)
 
 
-def get_authenticated_client(module):
-
+def get_authenticated_client(module: AnsibleModule) -> VaultClient:
+    """Create and authenticate a Vault client using module parameters and environment variables."""
     vault_namespace = get_option(module, "namespace")
     vault_address = get_option(module, "url")
 
@@ -212,8 +217,10 @@ def get_authenticated_client(module):
         module.fail_json(msg=f"Failed to create authenticated Vault client: {e}")
 
 
-def ensure_secret_present(module, secret_mgr, mount_path, secret_path):
-
+def ensure_secret_present(
+    module: AnsibleModule, secret_mgr: VaultSecret, mount_path: str, secret_path: str
+) -> None:
+    """Ensure the secret exists with the specified data by creating or updating it."""
     # Get secret data and options
     data = module.params["data"]
     cas = module.params["cas"]
@@ -239,8 +246,14 @@ def ensure_secret_present(module, secret_mgr, mount_path, secret_path):
         module.fail_json(msg=f"Failed to create/update secret: {e}")
 
 
-def ensure_secret_absent(module, secret_mgr, mount_path, secret_path, versions=None):
-
+def ensure_secret_absent(
+    module: AnsibleModule,
+    secret_mgr: VaultSecret,
+    mount_path: str,
+    secret_path: str,
+    versions: Optional[List[int]] = None,
+) -> None:
+    """Ensure the secret is deleted by removing specified versions or the latest version."""
     try:
         secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
         module.exit_json(changed=True, msg="Secret deleted successfully")
