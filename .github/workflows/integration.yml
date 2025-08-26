@@ -51,10 +51,9 @@ jobs:
             echo "has-targets=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run integration tests (${{ matrix.ansible-version }})
-        if: steps.check-targets.outputs.has-targets == 'true'
+      - name: Run integration tests
         run: |
-          cd ~/.ansible/collections/ansible_collections/hashicorp/vault
+          cd ~/.ansible/collections/ansible_collections/hashicorp/vault && \
           ansible-test integration --python ${{ matrix.python-version }} --continue-on-error
         env:
           VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
