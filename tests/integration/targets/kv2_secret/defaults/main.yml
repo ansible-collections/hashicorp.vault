@@ -1,7 +1,7 @@
 ---
 # Vault connection configuration
 vault_url: "{{ vault_url_from_int_config }}"
-vault_namespace: "{{ vault_namespace_from_int_config   }}"
+vault_namespace: "{{ vault_namespace_from_int_config }}"
 vault_approle_role_id: "{{ vault_approle_role_id_from_int_config }}"
 vault_approle_secret_id: "{{ vault_approle_secret_id_from_int_config }}"
 test_reading_gh_action_secrets: "{{ test_reading_gh_action_secrets_from_int_config }}"

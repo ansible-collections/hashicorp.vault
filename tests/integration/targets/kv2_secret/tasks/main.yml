@@ -1,8 +1,5 @@
 ---
 # Integration tests for kv2_secret module
-- debug: var=test_reading_gh_action_secrets
-- debug: var=vault_namespace
-
 - name: Authenticate with Vault using AppRole
   ansible.builtin.uri:
     url: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') | default(vault_url, true) }}/v1/auth/approle-integration-tests/login"
