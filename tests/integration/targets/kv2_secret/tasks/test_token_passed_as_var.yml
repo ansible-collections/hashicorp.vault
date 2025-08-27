@@ -72,7 +72,7 @@
         vault_approle_path: "{{ integration_tests_approle }}"
         namespace: "{{ vault_namespace }}"
         state: absent
-      ignore_errors: true
+      failed_when: false
       no_log: true
 
     - name: Re-raise the original error
