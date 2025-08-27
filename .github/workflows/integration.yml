@@ -51,14 +51,27 @@ jobs:
             echo "has-targets=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Render integration_config.yml from template
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tests/integration
+          install -m 600 /dev/null tests/integration/integration_config.yml
+
+          # Replace placeholders with secrets
+          sed -e "s|{{ VAULT_ADDR }}|${{ secrets.VAULT_ADDR }}|g" \
+              -e "s|{{ VAULT_NAMESPACE }}|${{ secrets.VAULT_NAMESPACE }}|g" \
+              -e "s|{{ VAULT_APPROLE_ROLE_ID }}|${{ secrets.VAULT_APPROLE_ROLE_ID }}|g" \
+              -e "s|{{ VAULT_APPROLE_SECRET_ID }}|${{ secrets.VAULT_APPROLE_SECRET_ID }}|g" \
+              -e "s|{{ TEST_READING_GH_ACTION_SECRETS }}|${{ secrets.TEST_READING_GH_ACTION_SECRETS }}|g" \
+              tests/integration/integration_config.yml.j2 \
+              > tests/integration/integration_config.yml
+
       - name: Run integration tests
         run: |
           cd ~/.ansible/collections/ansible_collections/hashicorp/vault && \
           ansible-test integration --python ${{ matrix.python-version }} --continue-on-error
-        env:
-          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-          VAULT_NAMESPACE: ${{ secrets.VAULT_NAMESPACE }}
-          VAULT_APPROLE_ROLE_ID: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
-          VAULT_APPROLE_SECRET_ID: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
-          TEST_READING_GH_ACTION_SECRETS: ${{ secrets.TEST_READING_GH_ACTION_SECRETS }}
+
+      - name: Clean up integration config
+        if: always()
+        run: rm -f tests/integration/integration_config.yml

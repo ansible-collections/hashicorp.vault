@@ -2,7 +2,9 @@
 # Integration tests for kv2_secret module
 - name: Debug
   ansible.builtin.debug:
-    msg: "{{ test_reading_gh_action_secrets }}"
+    msg:
+      - "{{ test_reading_gh_action_secrets }}"
+      - "{{ vault_namespace }}"
 
 - name: Authenticate with Vault using AppRole
   ansible.builtin.uri:
