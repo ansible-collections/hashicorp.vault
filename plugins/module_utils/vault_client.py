@@ -241,7 +241,7 @@ class VaultKv2Secrets:
         Returns:
             None
         """
-        if versions:
+        if versions is not None and len(versions) > 0:
             # Delete specific versions using batch deletion
             path = f"{mount_path}/delete/{secret_path}"
             self._make_request("POST", path, json={"versions": versions})
