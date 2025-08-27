@@ -241,7 +241,9 @@ def test_delete_secret_success(
     mock_request.return_value.raise_for_status.return_value = None
 
     authenticated_client.secrets.kv2.delete_secret(
-        vault_config["mount_path"], vault_config["secret_path"], version=version
+        vault_config["mount_path"],
+        vault_config["secret_path"],
+        versions=[version] if version is not None else None,
     )
 
     expected_url = f"{vault_config['addr']}/v1/{expected_path}"
@@ -283,7 +285,9 @@ def test_delete_secret_http_errors(
 
     with pytest.raises(expected_exception):
         authenticated_client.secrets.kv2.delete_secret(
-            vault_config["mount_path"], vault_config["secret_path"], version=version
+            vault_config["mount_path"],
+            vault_config["secret_path"],
+            versions=[version] if version is not None else None,
         )
 
 
@@ -310,7 +314,7 @@ def test_delete_secret_malformed_json_response(mocker, authenticated_client, vau
 
     with pytest.raises(VaultApiError) as exc_info:
         authenticated_client.secrets.kv2.delete_secret(
-            vault_config["mount_path"], vault_config["secret_path"], version=1
+            vault_config["mount_path"], vault_config["secret_path"], versions=[1]
         )
 
     # Verify the error message contains the response text as fallback
@@ -323,7 +327,9 @@ def test_delete_secret_invalid_version_numbers(mocker, authenticated_client, vau
     mock_request.return_value.raise_for_status.return_value = None
 
     authenticated_client.secrets.kv2.delete_secret(
-        vault_config["mount_path"], vault_config["secret_path"], version=version
+        vault_config["mount_path"],
+        vault_config["secret_path"],
+        versions=[version] if version is not None else None,
     )
 
     expected_url = f"{vault_config['addr']}/v1/secret/delete/test/my-secret"
@@ -336,7 +342,7 @@ def test_delete_secret_with_special_characters_in_path(mocker, authenticated_cli
     mock_request.return_value.raise_for_status.return_value = None
 
     authenticated_client.secrets.kv2.delete_secret(
-        vault_config["mount_path"], special_path, version=1
+        vault_config["mount_path"], special_path, versions=[1]
     )
 
     expected_url = f"{vault_config['addr']}/v1/secret/delete/{special_path}"

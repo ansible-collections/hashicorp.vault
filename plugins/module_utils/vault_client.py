@@ -6,7 +6,7 @@
 import json  # noqa: F401
 import logging
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 try:
@@ -135,7 +135,7 @@ class VaultKv2Secrets:
             **kwargs: Additional arguments for the requests library.
 
         Returns:
-            dict: The JSON response data.
+            dict: The JSON response data, or empty dict for successful operations with no content.
         """
 
         url = f"{self._client.vault_address}/v1/{path}"
@@ -143,7 +143,7 @@ class VaultKv2Secrets:
         try:
             response = self._client.session.request(method, url, **kwargs)
             response.raise_for_status()
-            return response.json()
+            return response.json() if response.content else {}
         except requests.exceptions.HTTPError as e:
             status_code = e.response.status_code
             try:
@@ -226,8 +226,8 @@ class VaultKv2Secrets:
         return self._make_request("POST", path, json=body)
 
     def delete_secret(
-        self, mount_path: str, secret_path: str, version: Optional[int] = None
-    ) -> None:
+        self, mount_path: str, secret_path: str, versions: Optional[List[int]] = None
+    ) -> Optional[List[int]]:
         """
         Deletes a secret from the KV2 secrets engine; if secret version is not provided
         then it will delete the latest version of the secret.
@@ -236,13 +236,31 @@ class VaultKv2Secrets:
         Returns:
             None
         """
-        if version is None:
+        if versions:
+            path = f"{mount_path}/delete/{secret_path}"
+            if len(versions) == 1:
+                # Single version deletion
+                self._make_request("POST", path, json={"versions": versions})
+                return versions
+            else:
+                # Multiple version deletion
+                deleted_versions = []
+                for ver in versions:
+                    try:
+                        self._make_request("POST", path, json={"versions": [ver]})
+                        deleted_versions.append(ver)
+                    except VaultSecretNotFoundError:
+                        # Version doesn't exist, continue with other versions
+                        pass
+                    except VaultApiError:
+                        # Version might already be deleted, continue
+                        pass
+                return deleted_versions
+        else:
+            # Delete latest version
             path = f"{mount_path}/data/{secret_path}"
             self._make_request("DELETE", path)
-        else:
-            path = f"{mount_path}/delete/{secret_path}"
-            # Even with only a single version specified, the API expects a list of versions
-            self._make_request("POST", path, json={"versions": [version]})
+            return None
 
 
 class Secrets:
