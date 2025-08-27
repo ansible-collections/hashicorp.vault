@@ -55,8 +55,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p tests/integration
-          install -m 600 /dev/null tests/integration/integration_config.yml
+
+          COLL_DIR="$HOME/.ansible/collections/ansible_collections/hashicorp/vault"
+          mkdir -p "$COLL_DIR/tests/integration"
+          install -m 600 /dev/null "$COLL_DIR/tests/integration/integration_config.yml"
 
           export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
           export VAULT_NAMESPACE="${{ secrets.VAULT_NAMESPACE }}"
@@ -64,8 +66,13 @@ jobs:
           export VAULT_APPROLE_SECRET_ID="${{ secrets.VAULT_APPROLE_SECRET_ID }}"
           export TEST_READING_GH_ACTION_SECRETS="${{ secrets.TEST_READING_GH_ACTION_SECRETS }}"
 
-          ./tests/utils/render.sh tests/integration/integration_config.yml.template \
-            > tests/integration/integration_config.yml
+          # Ensure renderer is usable
+          sed -i 's/\r$//' tests/utils/render.sh || true
+          chmod +x tests/utils/render.sh
+
+          # Render from repo template into the installed collection tree
+          bash tests/utils/render.sh tests/integration/integration_config.yml.template \
+            > "$COLL_DIR/tests/integration/integration_config.yml"
 
       - name: Run integration tests
         run: |
@@ -74,4 +81,4 @@ jobs:
 
       - name: Clean up integration config
         if: always()
-        run: rm -f tests/integration/integration_config.yml
+        run: rm -f "$HOME/.ansible/collections/ansible_collections/hashicorp/vault/tests/integration/integration_config.yml"
