@@ -230,8 +230,9 @@ class VaultKv2Secrets:
     ) -> None:
         """
         Deletes a secret from the KV2 secrets engine.
-        If secret version is not provided, it will delete the latest version of the secret.
+        If secret version is not provided, it will soft delete the latest version of the secret.
         If secret version is provided, it will delete the specified versions of the secret.
+        This performs a soft delete (not a permanent destroy) of the secret version(s).
 
         Args:
             mount_path (str): The mount path of the KV2 secrets engine.
