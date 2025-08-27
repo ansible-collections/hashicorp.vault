@@ -58,14 +58,14 @@ jobs:
           mkdir -p tests/integration
           install -m 600 /dev/null tests/integration/integration_config.yml
 
-          # Replace placeholders with secrets
-          sed -e "s|{{ VAULT_ADDR }}|${{ secrets.VAULT_ADDR }}|g" \
-              -e "s|{{ VAULT_NAMESPACE }}|${{ secrets.VAULT_NAMESPACE }}|g" \
-              -e "s|{{ VAULT_APPROLE_ROLE_ID }}|${{ secrets.VAULT_APPROLE_ROLE_ID }}|g" \
-              -e "s|{{ VAULT_APPROLE_SECRET_ID }}|${{ secrets.VAULT_APPROLE_SECRET_ID }}|g" \
-              -e "s|{{ TEST_READING_GH_ACTION_SECRETS }}|${{ secrets.TEST_READING_GH_ACTION_SECRETS }}|g" \
-              tests/integration/integration_config.yml.j2 \
-              > tests/integration/integration_config.yml
+          export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
+          export VAULT_NAMESPACE="${{ secrets.VAULT_NAMESPACE }}"
+          export VAULT_APPROLE_ROLE_ID="${{ secrets.VAULT_APPROLE_ROLE_ID }}"
+          export VAULT_APPROLE_SECRET_ID="${{ secrets.VAULT_APPROLE_SECRET_ID }}"
+          export TEST_READING_GH_ACTION_SECRETS="${{ secrets.TEST_READING_GH_ACTION_SECRETS }}"
+
+          ./tests/utils/render.sh tests/integration/integration_config.yml.template \
+            > tests/integration/integration_config.yml
 
       - name: Run integration tests
         run: |
