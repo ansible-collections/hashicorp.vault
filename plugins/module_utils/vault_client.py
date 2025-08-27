@@ -227,40 +227,28 @@ class VaultKv2Secrets:
 
     def delete_secret(
         self, mount_path: str, secret_path: str, versions: Optional[List[int]] = None
-    ) -> Optional[List[int]]:
+    ) -> None:
         """
-        Deletes a secret from the KV2 secrets engine; if secret version is not provided
-        then it will delete the latest version of the secret.
-            version (int, optional): The version to delete. Defaults to the latest.
+        Deletes a secret from the KV2 secrets engine.
+        If secret version is not provided, it will delete the latest version of the secret.
+        If secret version is provided, it will delete the specified versions of the secret.
+
+        Args:
+            mount_path (str): The mount path of the KV2 secrets engine.
+            secret_path (str): The path to the secret.
+            versions (List[int], optional): The versions to delete. If not provided, deletes the latest version.
 
         Returns:
             None
         """
         if versions:
+            # Delete specific versions using batch deletion
             path = f"{mount_path}/delete/{secret_path}"
-            if len(versions) == 1:
-                # Single version deletion
-                self._make_request("POST", path, json={"versions": versions})
-                return versions
-            else:
-                # Multiple version deletion
-                deleted_versions = []
-                for ver in versions:
-                    try:
-                        self._make_request("POST", path, json={"versions": [ver]})
-                        deleted_versions.append(ver)
-                    except VaultSecretNotFoundError:
-                        # Version doesn't exist, continue with other versions
-                        pass
-                    except VaultApiError:
-                        # Version might already be deleted, continue
-                        pass
-                return deleted_versions
+            self._make_request("POST", path, json={"versions": versions})
         else:
             # Delete latest version
             path = f"{mount_path}/data/{secret_path}"
             self._make_request("DELETE", path)
-            return None
 
 
 class Secrets:
