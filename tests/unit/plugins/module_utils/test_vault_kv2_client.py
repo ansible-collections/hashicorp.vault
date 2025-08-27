@@ -349,16 +349,17 @@ def test_delete_secret_with_special_characters_in_path(mocker, authenticated_cli
     mock_request.assert_called_once_with("POST", expected_url, json={"versions": [1]})
 
 
-@pytest.mark.parametrize("version", [1, 2, 3])
-def test_delete_secret_multiple_versions(mocker, authenticated_client, vault_config, version):
+def test_delete_secret_multiple_versions(mocker, authenticated_client, vault_config):
     mock_request = mocker.patch("requests.Session.request", return_value=MagicMock())
     mock_request.return_value.raise_for_status.return_value = None
 
+    # Test deleting multiple versions in a single API call
+    versions_to_delete = [1, 2, 3]
     authenticated_client.secrets.kv2.delete_secret(
         vault_config["mount_path"],
         vault_config["secret_path"],
-        versions=[version] if version is not None else None,
+        versions=versions_to_delete,
     )
 
     expected_url = f"{vault_config['addr']}/v1/secret/delete/test/my-secret"
-    mock_request.assert_called_once_with("POST", expected_url, json={"versions": [version]})
+    mock_request.assert_called_once_with("POST", expected_url, json={"versions": [1, 2, 3]})
