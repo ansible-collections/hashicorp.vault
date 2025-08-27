@@ -349,8 +349,8 @@ def test_delete_secret_with_special_characters_in_path(mocker, authenticated_cli
     mock_request.assert_called_once_with("POST", expected_url, json={"versions": [1]})
 
 
-@pytest.mark.parametrize("version", [1,2,3])
-def test_delete_secret_invalid_version_numbers(mocker, authenticated_client, vault_config, version):
+@pytest.mark.parametrize("version", [1, 2, 3])
+def test_delete_secret_multiple_versions(mocker, authenticated_client, vault_config, version):
     mock_request = mocker.patch("requests.Session.request", return_value=MagicMock())
     mock_request.return_value.raise_for_status.return_value = None
 
