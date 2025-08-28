@@ -59,7 +59,11 @@ jobs:
       - name: Create Hashicorp vault token for test session
         id: create-token
         run: |
-          token=`curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE" --request POST --data '{"role_id": "$VAULT_ROLE_ID", "secret_id": "$VAULT_SECRET_ID"}' $VAULT_ADDR/v1/auth/approle/login | jq -r '.auth.client_token'`; echo "generated_token='$params'" >> ${GITHUB_OUTPUT}
+          token=`curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE" \
+                      --request POST \
+                      --data '{"role_id": "$VAULT_ROLE_ID", "secret_id": "$VAULT_SECRET_ID"}' \
+                      $VAULT_ADDR/v1/auth/approle/login | jq -r '.auth.client_token'`;
+          echo "generated_token='$params'" >> ${GITHUB_OUTPUT}
         shell: bash
         env:
           VAULT_ADDR: "{{ secrets.VAULT_ADDR }}"
