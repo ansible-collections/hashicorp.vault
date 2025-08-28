@@ -229,7 +229,9 @@ def ensure_secret_present(
     try:
         # First, try to read the existing secret to check for changes
         try:
-            existing_secret = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
+            existing_secret = secret_mgr.kv2.read_secret(
+                mount_path=mount_path, secret_path=secret_path
+            )
             # The read_secret returns {"data": {...actual_secret_data...}, "metadata": {...}}
             existing_data = existing_secret.get("data", {})
             existing_metadata = existing_secret.get("metadata", {})
@@ -245,7 +247,7 @@ def ensure_secret_present(
                 module.exit_json(
                     changed=False,
                     msg="Secret already exists with the same data",
-                    secret=existing_secret
+                    secret=existing_secret,
                 )
             else:
                 # Data is different, proceed with update
@@ -263,9 +265,7 @@ def ensure_secret_present(
         # Read back to get metadata
         secret_result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
 
-        module.exit_json(
-            changed=True, msg=action_msg, secret=secret_result
-        )
+        module.exit_json(changed=True, msg=action_msg, secret=secret_result)
 
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
@@ -286,7 +286,9 @@ def ensure_secret_absent(
     try:
         # First, check if the secret exists and its current state
         try:
-            existing_secret = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
+            existing_secret = secret_mgr.kv2.read_secret(
+                mount_path=mount_path, secret_path=secret_path
+            )
             existing_data = existing_secret.get("data", {})
             existing_metadata = existing_secret.get("metadata", {})
 
