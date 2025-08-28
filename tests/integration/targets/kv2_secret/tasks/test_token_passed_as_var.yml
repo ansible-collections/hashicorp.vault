@@ -21,7 +21,6 @@
           - secret_creation_result.secret.data.password == "initial_pass"
         fail_msg: "Secret creation failed or returned unexpected data"
 
-    # Idempotency test - Create same secret again
     - name: Create same secret again (idempotency test)
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
@@ -34,7 +33,6 @@
         state: present
       register: secret_creation_idempotent_result
 
-    # Debug - let's see what the data actually looks like
     - name: Create same secret again (idempotency test) - with debug
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
@@ -47,7 +45,7 @@
         state: present
       register: secret_creation_idempotent_result
 
-    - name: Debug - show what we got
+    - name: Debug - to verify idempotency
       ansible.builtin.debug:
         msg:
           - "Changed: {{ secret_creation_idempotent_result.changed }}"
@@ -84,7 +82,6 @@
           - secret_update_result.secret.data.updated == true
         fail_msg: "Secret update failed or returned unexpected data"
 
-    # Idempotency test - Update with same data
     - name: Update secret with same data (idempotency test)
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
@@ -124,7 +121,6 @@
           - secret_deletion_result.msg == "Secret deleted successfully"
         fail_msg: "Secret deletion failed or returned unexpected message"
 
-    # Idempotency test - Delete non-existent secret
     - name: Delete same secret again (idempotency test)
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
@@ -143,7 +139,6 @@
           - secret_deletion_idempotent_result.msg == "Secret already absent"
         fail_msg: "Secret deletion idempotency failed - should return changed=false for non-existent secret"
 
-    # Additional idempotency test - Create after delete should work
     - name: Create secret after deletion (verify clean state)
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
@@ -164,7 +159,6 @@
           - secret_recreate_result.secret.data.password == "initial_pass"
         fail_msg: "Secret recreation failed after deletion"
 
-    # Clean up the recreated secret
     - name: Final cleanup - Delete recreated secret
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
@@ -190,4 +184,4 @@
 
     - name: Re-raise the original error
       ansible.builtin.fail:
-        msg: "Token authentication test failed"
+        msg: "kv2_secret test failed"
