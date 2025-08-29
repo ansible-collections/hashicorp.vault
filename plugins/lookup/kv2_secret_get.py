@@ -40,13 +40,16 @@ options:
     description:
       - The custom AppRole mount path to use to authenticate when O(auth_method=approle).
     type: str
+    default: approle
     env:
       - name: VAULT_APPROLE_PATH
-  mount_point:
+  engine_mount_point:
     description:
       - The mount path of the KV2 secrets engine.
+      - Secret paths are relative to this mount point.
     type: str
-    aliases: ['secret_mount_path']
+    default: secret
+    aliases: ['mount_point', 'secret_mount_path']
   namespace:
     description:
       - Vault namespace where secrets reside.
@@ -55,7 +58,8 @@ options:
     aliases: ['vault_namespace']
   secret:
     description:
-      - Vault path to the secret being requested in the format path[:field]
+      - Vault path to the secret being requested.
+      - Path is relative to the engine_mount_point.
     type: str
     required: true
     aliases: ['secret_path']
@@ -63,6 +67,7 @@ options:
     description:
       - URL of the Vault service.
     type: str
+    required: true
     aliases: ['vault_address']
     env:
       - name: VAULT_ADDR
@@ -77,16 +82,30 @@ options:
 EXAMPLES = """
 - name: Return latest KV2 secret from path
   ansible.builtin.debug:
-    msg: "{{ lookup('hashicorp.vault.kv2_secret_get', secret='secret/data/hello', url='http://myvault_url:8200') }}"
+    msg: "{{ lookup('hashicorp.vault.kv2_secret_get',
+                    secret='secret/data/hello',
+                    url='https://myvault_url:8200') }}"
 
-- name: Return a specific version of the  KV2 secret from path
+- name: Return a specific version of the KV2 secret from path
   ansible.builtin.debug:
-    msg: "{{ lookup('hashicorp.vault.kv2_secret_get', secret='secret/data/hello', version=3, url='http://myvault_url:8200') }}"
+    msg: "{{ lookup('hashicorp.vault.kv2_secret_get',
+                    secret='secret/data/hello',
+                    version=3,
+                    url='https://myvault_url:8200') }}"
+
+- name: Return a secret using AppRole authentication
+  ansible.builtin.debug:
+    msg: "{{ lookup('hashicorp.vault.kv2_secret_get',
+                    secret='secret/data/hello',
+                    auth_method='approle',
+                    vault_approle_role_id='role-123',
+                    vault_approle_secret_id='secret-456',
+                    url='https://myvault_url:8200') }}"
 """
 
 RETURN = """
 _raw:
-  description: Returns the value of the secret stored in AWS Secrets Manager.
+  description: Retrieves the KV2 secret data and metadata stored in HashiCorp Vault.
 """
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
@@ -100,16 +119,17 @@ class LookupModule(VaultLookupBase):
     def run(self, terms, variables=None, **kwargs):
         """
         :arg terms: A list of terms passed to the function
-        :variables: ansible variables active at the time of the lookup
-        :returns: A list of parameter values or a list of dictionaries if bypath=True.
+        :variables: Ansible variables active at the time of the lookup
+        :returns: A list containing the secret data
         """
 
         super().run(terms, variables, **kwargs)
 
         version = self.get_option("version")
-        mount_path = self.get_option("mount_point")
+        mount_path = self.get_option("engine_mount_point")
         secret = self.get_option("secret")
         secret_mgr = VaultSecret(self.client)
+
         result = secret_mgr.kv2.read_secret(
             mount_path=mount_path, secret_path=secret, version=version
         )
