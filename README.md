@@ -1,65 +1,73 @@
 # Hashicorp Vault Collection
 
-This repository contains the `hashicorp.vault` Ansible Collection.
+## Description
 
-<!--start requires_ansible-->
-<!--end requires_ansible-->
+This repository contains the `hashicorp.vault` Ansible Collection. The collection provides Ansible modules and plugins for interacting with HashiCorp Vault, enabling users to manage secrets, authentication, and other Vault operations through Ansible automation.
 
-## External requirements
+## Requirements
 
-Some modules and plugins require external libraries. Please check the
-requirements for each plugin or module you use in the documentation to find out
-which requirements are needed.
+Some modules and plugins require external libraries. Please check the requirements for each plugin or module you use in the documentation to find out which requirements are needed.
 
-## Included content
+## Installation
 
-<!--start collection content-->
-<!--end collection content-->
-
-## Using this collection
+Before using this collection, you need to install it with the Ansible Galaxy command-line tool:
 
 ```bash
-    ansible-galaxy collection install hashicorp.vault
+ansible-galaxy collection install hashicorp.vault
 ```
 
-You can also include it in a `requirements.yml` file and install it via
-`ansible-galaxy collection install -r requirements.yml` using the format:
+You can also include it in a `requirements.yml` file and install it via `ansible-galaxy collection install -r requirements.yml` using the format:
 
 ```yaml
 collections:
   - name: hashicorp.vault
 ```
 
-To upgrade the collection to the latest available version, run the following
-command:
+To upgrade the collection to the latest available version, run the following command:
 
 ```bash
 ansible-galaxy collection install hashicorp.vault --upgrade
 ```
 
-You can also install a specific version of the collection, for example, if you
-need to downgrade when something is broken in the latest version (please report
-an issue in this repository). Use the following syntax where `X.Y.Z` can be any
-[available version](https://galaxy.ansible.com/hashicorp/vault):
+You can also install a specific version of the collection, for example, if you need to downgrade when something is broken in the latest version (please report an issue in this repository). Use the following syntax where `X.Y.Z` can be any [available version](https://galaxy.ansible.com/hashicorp/vault):
 
 ```bash
 ansible-galaxy collection install hashicorp.vault:==X.Y.Z
 ```
 
-See
-[Ansible Using Collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html)
-for more details.
+See [Ansible Using Collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.
 
-## Release notes
+## Use Cases
 
-See the
-[changelog](https://github.com/ansible-collections/hashicorp.vault/tree/main/CHANGELOG.rst).
+Modules in this collection can be used for various operations on Hashicorp Vault.
+Currently the collection supports
+- Managing KV2 secrets in Hashicorp Vault (create, read, update, delete (soft-delete))
 
-## Roadmap
+## Testing
+
+GitHub Actions workflows are used to run tests for the hashicorp.vault collection. These workflows include jobs to run the unit tests, integration tests, sanity tests, linters, changelog check and doc related checks.
+
+To run tests locally, add tests/integration/integration_config.yml and run using `ansible-test integraiton <target>`
+```
+---
+vault_url_from_int_config: "<VAULT_URL_HERE>"
+vault_namespace_from_int_config: "<VAULT_NAMESPACE_HERE>" # example: admin/hashicorp-vault-integration-tests
+vault_approle_role_id_from_int_config: "<VAULT_APPROLE_ROLE_ID_HERE>"
+vault_approle_secret_id_from_int_config: "<VAULT_APPROLE_SECRET_ID_HERE>"
+```
+
+## Support
+
+As Red Hat Ansible Certified Content, this collection is entitled to support through the Ansible Automation Platform (AAP) using the Create issue button on the top right corner. If a support case cannot be opened with Red Hat and the collection has been obtained either from Galaxy or GitHub, there may community help available on the Ansible Forum.
+
+
+## Release Notes and Roadmap
+
+See the [changelog](https://github.com/ansible-collections/hashicorp.vault/tree/main/CHANGELOG.rst).
 
 <!-- Optional. Include the roadmap for this collection, and the proposed release/versioning strategy so users can anticipate the upgrade/update cycle. -->
 
-## More information
+## Related Information
 
 <!-- List out where the user can find additional information, such as working group meeting times, slack/matrix channels, or documentation for the product this collection automates. At a minimum, link to: -->
 
@@ -71,7 +79,7 @@ See the
 - [The Bullhorn (the Ansible Contributor newsletter)](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn)
 - [News for Maintainers](https://forum.ansible.com/tag/news-for-maintainers)
 
-## Licensing
+## License Information
 
 GNU General Public License v3.0 or later.
 
