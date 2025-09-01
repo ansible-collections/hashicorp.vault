@@ -32,11 +32,9 @@ class VaultLookupBase(LookupBase):
                 "vault_address": self.get_option("url"),
                 "role_id": self.get_option("vault_approle_role_id"),
                 "secret_id": self.get_option("vault_approle_secret_id"),
+                "vault_namespace": self.get_option("namespace"),
             }
 
-            vault_namespace = self.get_option("namespace")
-            if vault_namespace is not None:
-                params.update({"vault_namespace": vault_namespace})
             vault_approle_path = self.get_option("vault_approle_path")
             if vault_approle_path is not None:
                 params.update({"approle_path": vault_approle_path})

@@ -1,0 +1,5 @@
+---
+vault_url: {{ lookup('env', 'VAULT_ADDR') }}
+vault_namespace: {{ lookup('env', 'VAULT_NAMESPACE') }}
+vault_approle_role_id: {{ lookup('env', 'VAULT_APPROLE_ROLE_ID') }}
+vault_approle_secret_id: {{ lookup('env', 'VAULT_APPROLE_SECRET_ID') }}

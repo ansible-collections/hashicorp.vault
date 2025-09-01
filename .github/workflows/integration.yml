@@ -2,28 +2,14 @@
 name: Integration
 
 on: # yamllint disable-line rule:truthy
-  pull_request_target:
-    types:
-      - opened
-      - reopened
-      - labeled
-      - unlabeled
-      - synchronize
-    branches:
-      - main
-      - stable-*
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  safe-to-test:
-    if: ${{ github.event.label.name == 'safe to test' }} || ${{ github.event.action != 'labeled' }}
-    uses: ansible-network/github_actions/.github/workflows/safe-to-test.yml@main
-
   run-integration-tests:
-    needs:
-      - safe-to-test
+    name: Run Integration Tests
     runs-on: ubuntu-latest
-    env:
-      source: "./"
     strategy:
       fail-fast: false
       matrix:
@@ -33,12 +19,8 @@ jobs:
           - devel
         python-version:
           - "3.12"
-    name: "integration-tests-${{ matrix.ansible-version }}-${{ matrix.python-version }}"
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: ${{ env.source }}
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,29 +30,39 @@ jobs:
       - name: Install ansible-core (${{ matrix.ansible-version }})
         run: python3 -m pip install https://github.com/ansible/ansible/archive/${{ matrix.ansible-version }}.tar.gz --disable-pip-version-check
 
-      # Install the source collection
-      - name: Build and install collection
-        id: install-collection
-        uses: ansible-network/github_actions/.github/actions/build_install_collection@main
-        with:
-          install_python_dependencies: true
-          source_path: ${{ env.source }}
+      - name: Install collection test dependencies
+        run: python3 -m pip install -r test-requirements.txt
 
-      - name: Set up git
+      - name: Build and install the collection
+        run: ansible-galaxy collection install . --force
+
+      - name: List all integration test targets
         run: |
-          git config --global user.email gha@localhost
-          git config --global user.name "Github Actions"
+          cd ~/.ansible/collections/ansible_collections/hashicorp/vault && \
+          ansible-test integration --list-targets || echo "No integration targets found"
+
+      - name: Check for integration test targets
+        id: check-targets
+        run: |
+          cd ~/.ansible/collections/ansible_collections/hashicorp/vault
+          if ansible-test integration --list-targets > /dev/null 2>&1; then
+            echo "has-targets=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-targets=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Render integration_config.yml from template
         shell: bash
+        run: ansible -m ansible.builtin.template -a 'src=tests/integration/integration_config.yml.template dest=tests/integration/integration_config.yml' localhost # noqa: yaml[line-length]
+        working-directory: /home/runner/.ansible/collections/ansible_collections/hashicorp/vault
+        env:
+          VAULT_ADDR: "${{ secrets.VAULT_ADDR }}"
+          VAULT_NAMESPACE: "${{ secrets.VAULT_NAMESPACE }}"
+          VAULT_APPROLE_ROLE_ID: "${{ secrets.VAULT_APPROLE_ROLE_ID }}"
+          VAULT_APPROLE_SECRET_ID: "${{ secrets.VAULT_APPROLE_SECRET_ID }}"
 
       - name: Run integration tests
+        if: steps.check-targets.outputs.has-targets == 'true'
         run: |
-          # Set environment variables for the test
-          export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
-          export VAULT_NAMESPACE="${{ vars.VAULT_NAMESPACE }}"
-          export VAULT_TOKEN="${{ secrets.VAULT_TOKEN }}"
-          export TEST_VAULT_SECRET_PATH="${{ vars.TEST_VAULT_SECRET_PATH }}"
-
-          # Run the integration test using ansible-test with venv
-          # This allows environment variables to be passed through to the test
-          ansible-test integration lookup_kv2_secret_get --venv --python "${{ matrix.python-version }}"
-        shell: bash
+          cd ~/.ansible/collections/ansible_collections/hashicorp/vault && \
+          ansible-test integration --python ${{ matrix.python-version }} --continue-on-error

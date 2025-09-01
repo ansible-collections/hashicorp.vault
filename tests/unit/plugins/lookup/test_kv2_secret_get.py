@@ -49,6 +49,16 @@ def sample_secret_data():
 class TestKv2SecretGetLookup:
     """Test the kv2_secret_get lookup plugin."""
 
+    def mock_get_option(self, opt):
+        options = {
+            "version": None,
+            "engine_mount_point": "secret",
+            "secret": "test",
+            "namespace": "admin",
+            "url": "https://vault.example.com:8200",
+        }
+        return options.get(opt)
+
     @pytest.mark.parametrize(
         "test_case",
         [
@@ -116,7 +126,7 @@ class TestKv2SecretGetLookup:
             lookup_plugin, "_authenticate"
         ):
 
-            mock_get_option.side_effect = lambda opt: test_case["options"].get(opt)
+            mock_get_option.side_effect = test_case["options"].get
 
             result = lookup_plugin.run([], {})
 
@@ -135,13 +145,7 @@ class TestKv2SecretGetLookup:
 
             mock_vault_client_class.return_value = mock_vault_client
 
-            mock_get_option.side_effect = lambda opt: {
-                "version": None,
-                "engine_mount_point": "secret",
-                "secret": "test/secret",
-                "namespace": "admin",
-                "url": "https://vault.example.com:8200",
-            }.get(opt)
+            mock_get_option.side_effect = self.mock_get_option
 
             mock_vault_secret.return_value.kv2.read_secret.return_value = {}
 
@@ -229,7 +233,7 @@ class TestKv2SecretGetLookup:
             lookup_plugin, "_authenticate"
         ):
 
-            mock_get_option.side_effect = lambda opt: test_case["options"].get(opt)
+            mock_get_option.side_effect = test_case["options"].get
 
             result = lookup_plugin.run([], {})
 
@@ -253,13 +257,7 @@ class TestKv2SecretGetLookup:
         ):
 
             mock_vault_secret_class.return_value = mock_secrets
-            mock_get_option.side_effect = lambda opt: {
-                "version": None,
-                "engine_mount_point": "secret",
-                "secret": "test",
-                "namespace": "admin",
-                "url": "https://vault.example.com:8200",
-            }.get(opt)
+            mock_get_option.side_effect = self.mock_get_option
 
             lookup_plugin.run([], {})
 
@@ -317,13 +315,7 @@ class TestKv2SecretGetLookup:
             lookup_plugin, "_authenticate"
         ):
 
-            mock_get_option.side_effect = lambda opt: {
-                "version": None,
-                "engine_mount_point": "secret",
-                "secret": "test",
-                "namespace": "admin",
-                "url": "https://vault.example.com:8200",
-            }.get(opt)
+            mock_get_option.side_effect = self.mock_get_option
 
             result = lookup_plugin.run([], {})
 

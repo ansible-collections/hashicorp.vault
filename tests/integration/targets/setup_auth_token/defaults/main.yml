@@ -1,0 +1,4 @@
+---
+# this is path to the AppRole auth mount path in Vault and is static for all tests
+# already set up in cloud-content Hashicorp Vault instance -> Authentication -> Authentication Methods
+vault_approle_auth_path: "approle-integration-tests"

@@ -83,20 +83,20 @@ EXAMPLES = """
 - name: Return latest KV2 secret from path
   ansible.builtin.debug:
     msg: "{{ lookup('hashicorp.vault.kv2_secret_get',
-                    secret='secret/data/hello',
+                    secret='hello',
                     url='https://myvault_url:8200') }}"
 
 - name: Return a specific version of the KV2 secret from path
   ansible.builtin.debug:
     msg: "{{ lookup('hashicorp.vault.kv2_secret_get',
-                    secret='secret/data/hello',
+                    secret='bar',
                     version=3,
                     url='https://myvault_url:8200') }}"
 
 - name: Return a secret using AppRole authentication
   ansible.builtin.debug:
     msg: "{{ lookup('hashicorp.vault.kv2_secret_get',
-                    secret='secret/data/hello',
+                    secret='foo',
                     auth_method='approle',
                     vault_approle_role_id='role-123',
                     vault_approle_secret_id='secret-456',
@@ -133,5 +133,4 @@ class LookupModule(VaultLookupBase):
         result = secret_mgr.kv2.read_secret(
             mount_path=mount_path, secret_path=secret, version=version
         )
-
         return [result]
