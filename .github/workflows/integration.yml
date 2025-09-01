@@ -14,13 +14,7 @@ on: # yamllint disable-line rule:truthy
       - stable-*
 
 jobs:
-  safe-to-test:
-    if: ${{ github.event.label.name == 'safe to test' }} || ${{ github.event.action != 'labeled' }}
-    uses: ansible-network/github_actions/.github/workflows/safe-to-test.yml@main
-
   run-integration-tests:
-    needs:
-      - safe-to-test
     runs-on: ubuntu-latest
     env:
       source: "./"
