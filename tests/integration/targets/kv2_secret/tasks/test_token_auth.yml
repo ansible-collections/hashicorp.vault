@@ -3,7 +3,7 @@
   block:
     - name: Generate random string for this test run
       ansible.builtin.set_fact:
-        random_string: "{{ lookup('password', '/dev/null chars=ascii_letters,digit length=6') | lower }}"
+        random_string: "{{ lookup('password', '/dev/null chars=ascii_letters,digit length=12') | lower }}"
 
     - name: Create test secret with token variable
       hashicorp.vault.kv2_secret:

@@ -114,6 +114,44 @@ EXAMPLES = """
 """
 
 RETURN = """
+raw:
+  description: The raw Vault response.
+  returned: changed
+  type: dict
+  sample:
+    auth: null
+    data:
+      created_time: "2023-02-21T19:51:50.801757862Z"
+      custom_metadata: null
+      deletion_time: ""
+      destroyed: false
+      version: 1
+    lease_duration: 0
+    lease_id: ""
+    renewable: false
+    request_id: "52eb1aa7-5a38-9a02-9246-efc5bf9581ec"
+    warnings: null
+    wrap_info: null
+data:
+  description: The raw result of the delete against the given path.
+  returned: success
+  type: dict
+  sample: {}
+secret:
+  description: The secret data and metadata when reading existing secrets.
+  returned: when state=present (both changed and unchanged scenarios)
+  type: dict
+  sample:
+    data:
+      env: "test"
+      password: "initial_pass"
+      username: "testuser"
+    metadata:
+      created_time: "2025-09-01T22:04:48.74947241Z"
+      custom_metadata: null
+      deletion_time: ""
+      destroyed: false
+      version: 42
 """
 
 from typing import List, Optional
@@ -249,8 +287,8 @@ def ensure_secret_present(
 
         # Read back to get metadata
         secret_result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
-
-        module.exit_json(changed=True, msg=action_msg, secret=secret_result)
+        # added `raw` to match retrun value of community.hashi_vault.vault_kv2_write
+        module.exit_json(changed=True, msg=action_msg, raw=result, secret=secret_result)
 
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
@@ -291,8 +329,10 @@ def ensure_secret_absent(
             module.exit_json(changed=False, msg="Secret already absent")
 
         # Delete the secret
-        secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
-        module.exit_json(changed=True, msg="Secret deleted (soft-deleted) successfully")
+        result = secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
+        module.exit_json(
+            changed=True, msg="Secret deleted (soft-deleted) successfully", data=result or {}
+        )
 
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
