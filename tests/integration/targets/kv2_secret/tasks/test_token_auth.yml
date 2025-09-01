@@ -37,18 +37,6 @@
         state: present
       register: secret_creation_idempotent_result
 
-    - name: Create same secret again (idempotency test) - with debug
-      hashicorp.vault.kv2_secret:
-        url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
-        path: "{{ test_secret_path }}-{{ random_string }}"
-        data: "{{ initial_data }}"
-        secret_mount_path: "{{ secret_mount_path }}"
-        vault_approle_path: "{{ integration_tests_approle }}"
-        namespace: "{{ vault_namespace }}"
-        state: present
-      register: secret_creation_idempotent_result
-
     - name: Verify secret creation idempotency
       ansible.builtin.assert:
         that:

@@ -56,7 +56,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          COLL_DIR="$HOME/.ansible/collections/ansible_collections/hashicorp/vault"
+          COLL_DIR="$HOME/${{ secrets.COLLECTION_DIR_PATH }}"
           mkdir -p "$COLL_DIR/tests/integration"
           install -m 600 /dev/null "$COLL_DIR/tests/integration/integration_config.yml"
 
