@@ -119,7 +119,7 @@ RETURN = """
 from typing import List, Optional
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.common.validation import env_fallback
+from ansible.module_utils.basic import env_fallback
 
 
 try:
