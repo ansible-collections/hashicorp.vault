@@ -8,7 +8,7 @@ vault_approle_secret_id: "{{ vault_approle_secret_id_from_int_config }}"
 # Test configuration
 secret_mount_path: "kv-integration-tests"
 integration_tests_approle: "approle-integration-tests"
-test_secret_path: "integration-test-test-secret"
+test_secret_path: "integration-test-secret"
 
 # Test data sets
 initial_data:

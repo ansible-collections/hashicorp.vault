@@ -1,0 +1,195 @@
+---
+- name: Test secret creation with token authentication
+  block:
+    - name: Generate random string for this test run
+      ansible.builtin.set_fact:
+        random_string: "{{ lookup('password', '/dev/null chars=ascii_letters,digit length=6') | lower }}"
+
+    - name: Create test secret with token variable
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        data: "{{ initial_data }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: present
+      register: secret_creation_result
+
+    - name: Verify secret creation succeeded
+      ansible.builtin.assert:
+        that:
+          - secret_creation_result.changed == true
+          - secret_creation_result.secret.data.username == "testuser"
+          - secret_creation_result.secret.data.password == "initial_pass"
+        fail_msg: "Secret creation failed or returned unexpected data"
+
+    - name: Create same secret again (idempotency test)
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        data: "{{ initial_data }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: present
+      register: secret_creation_idempotent_result
+
+    - name: Create same secret again (idempotency test) - with debug
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        data: "{{ initial_data }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: present
+      register: secret_creation_idempotent_result
+
+    - name: Verify secret creation idempotency
+      ansible.builtin.assert:
+        that:
+          - secret_creation_idempotent_result.changed == false
+          - secret_creation_idempotent_result.msg == "Secret already exists with the same data"
+          - secret_creation_idempotent_result.secret.data.username == "testuser"
+          - secret_creation_idempotent_result.secret.data.password == "initial_pass"
+        fail_msg: "Secret creation idempotency failed - should return changed=false for identical data"
+
+    - name: Update test secret with token variable
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        data: "{{ updated_data }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: present
+      register: secret_update_result
+
+    - name: Verify secret update succeeded
+      ansible.builtin.assert:
+        that:
+          - secret_update_result.changed == true
+          - secret_update_result.secret.data.password == "updated_pass"
+          - secret_update_result.secret.data.updated == true
+        fail_msg: "Secret update failed or returned unexpected data"
+
+    - name: Update secret with same data (idempotency test)
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        data: "{{ updated_data }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: present
+      register: secret_update_idempotent_result
+
+    - name: Verify secret update idempotency
+      ansible.builtin.assert:
+        that:
+          - secret_update_idempotent_result.changed == false
+          - secret_update_idempotent_result.msg == "Secret already exists with the same data"
+          - secret_update_idempotent_result.secret.data.password == "updated_pass"
+          - secret_update_idempotent_result.secret.data.updated == true
+        fail_msg: "Secret update idempotency failed - should return changed=false for identical data"
+
+    - name: Delete test secret with token variable
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: absent
+      register: secret_deletion_result
+
+    - name: Verify secret deletion succeeded
+      ansible.builtin.assert:
+        that:
+          - secret_deletion_result.changed == true
+          - secret_deletion_result.msg == "Secret deleted (soft-deleted) successfully"
+        fail_msg: "Secret deletion failed or returned unexpected message"
+
+    - name: Delete same secret again (idempotency test)
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: absent
+      register: secret_deletion_idempotent_result
+
+    - name: Verify secret deletion idempotency
+      ansible.builtin.assert:
+        that:
+          - secret_deletion_idempotent_result.changed == false
+          - secret_deletion_idempotent_result.msg == "Secret already absent"
+        fail_msg: "Secret deletion idempotency failed - should return changed=false for non-existent secret"
+
+    - name: Create secret after deletion (verify clean state)
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        data: "{{ initial_data }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: present
+      register: secret_recreate_result
+
+    - name: Verify secret recreation succeeded
+      ansible.builtin.assert:
+        that:
+          - secret_recreate_result.changed == true
+          - secret_recreate_result.secret.data.username == "testuser"
+          - secret_recreate_result.secret.data.password == "initial_pass"
+        fail_msg: "Secret recreation failed after deletion"
+
+    - name: Final cleanup - Delete recreated secret
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: absent
+      register: final_cleanup_result
+
+    - name: Permanently delete the secret metadata and all versions
+      ansible.builtin.uri:
+        url: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') | default(vault_url, true) }}/v1/{{ secret_mount_path }}/metadata/{{ test_secret_path }}-{{ random_string }}" # noqa: yaml[line-length]
+        method: DELETE
+        headers:
+          X-Vault-Token: "{{ lookup('ansible.builtin.env', 'VAULT_TOKEN') | default(vault_token_to_pass_as_var, true) }}"
+          X-Vault-Namespace: "{{ lookup('ansible.builtin.env', 'VAULT_NAMESPACE') | default(vault_namespace, true) }}"
+        return_content: true
+        status_code: [204]
+      no_log: true
+      register: secret_metadata_deletion_result
+
+  rescue:
+    - name: Cleanup - Ensure test secret is removed on failure
+      hashicorp.vault.kv2_secret:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token_to_pass_as_var }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
+        secret_mount_path: "{{ secret_mount_path }}"
+        vault_approle_path: "{{ integration_tests_approle }}"
+        namespace: "{{ vault_namespace }}"
+        state: absent
+      failed_when: false
+
+    - name: Re-raise the original error
+      ansible.builtin.fail:
+        msg: "kv2_secret test failed"
