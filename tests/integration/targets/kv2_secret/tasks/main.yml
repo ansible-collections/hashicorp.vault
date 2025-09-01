@@ -1,10 +1,8 @@
-# todo: add task to create secret mount path for test and permanently delete it after tests
-
 ---
 # Integration tests for kv2_secret module
 
-# this is needed as we have approle role id and secret id in the gh actions secrets
-# those are used to generate a short lived vault token that is used for the tests
+# this step obtains a short-lived Vault token for use in the integration tests (test_token_auth.yml)
+# values for role_id and secret_id are stored in GitHub Actions secrets
 - name: Authenticate with Vault using AppRole
   ansible.builtin.uri:
     url: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') | default(vault_url, true) }}/v1/auth/approle-integration-tests/login"
@@ -28,4 +26,8 @@
 
 - name: Include token authentication tests
   ansible.builtin.include_tasks:
-    file: test_token_passed_as_var.yml
+    file: test_token_auth.yml
+
+- name: Include AppRole authentication tests
+  ansible.builtin.include_tasks:
+    file: test_approle_auth.yml
