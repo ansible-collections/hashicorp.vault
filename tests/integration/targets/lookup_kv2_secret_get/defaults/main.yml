@@ -2,13 +2,12 @@
 # Test configuration - uses environment variables from integration-config.yml
 # These will be available when running with ansible-test integration --venv
 test_vault_address: "{{ lookup('env', 'VAULT_ADDR') | default('http://localhost:8200') }}"
-test_vault_secret: "{{ lookup('env', 'TEST_VAULT_SECRET_PATH') | default('ansible-test/kv2-plugin') }}"
+test_vault_namespace: "{{ lookup('env', 'VAULT_NAMESPACE') | default('admin') }}"
+test_vault_secret: "test/ansible-test-{{ lookup('password', '/dev/null', chars='ascii_letters,digits', length=8) }}"
 
 # Test data that will be written to Vault for testing
 test_vault_secret_data:
-  - username: "testuser1"
-    password: "{{ lookup('password', '/dev/null', chars='ascii_letters,digits', length=16) }}"
-    environment: "test"
-  - username: "testuser2"
-    password: "{{ lookup('password', '/dev/null', chars='ascii_letters,digits', length=16) }}"
-    environment: "production"
+  - data:
+      foo: bar
+  - data:
+      hello: world

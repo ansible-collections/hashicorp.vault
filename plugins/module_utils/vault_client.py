@@ -99,7 +99,6 @@ class VaultClient:
         self.session.headers.update({"X-Vault-Namespace": vault_namespace})
 
         logger.info("Initialized VaultClient for %s", vault_address)
-        self.secrets = Secrets(self)
 
     def set_token(self, token: str) -> None:
         """
@@ -205,14 +204,6 @@ class VaultKv2Secrets:
             VaultPermissionError: If insufficient permissions.
             VaultConnectionError: If unable to connect to Vault.
             TypeError: If secret_data is not a dictionary.
-
-        Examples:
-            # Create a new secret
-            result = client.secrets.kv2.create_or_update_secret(
-                mount_path="secret",
-                secret_path="myapp/config",
-                secret_data={"timeout": 60}
-            )
         """
         if not isinstance(secret_data, dict):
             raise TypeError("secret_data must be a dict")

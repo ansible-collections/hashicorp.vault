@@ -1,9 +1,18 @@
 ---
-- name: Create KV2 vault secret
-  hashicorp.vault.kv2_secret:
-    url: "{{ test_vault_address }}"
-    path: "{{ test_vault_secret }}"
-    data: "{{ item }}"
+# - name: Create KV2 vault secret
+#   hashicorp.vault.kv2_secret:
+#     url: "{{ test_vault_address }}"
+#     path: "{{ test_vault_secret }}"
+#     data: "{{ item }}"
+#   with_items: "{{ test_vault_secret_data }}"
+
+- name: Create secret data
+  ansible.builtin.command:
+    cmd: >- 
+      curl --header "X-Vault-Token: {{ lookup('env', 'VAULT_TOKEN') }}"
+      --header "X-Vault-Namespace: {{ test_vault_namespace }}"
+      --data '{{ item | to_json }}'
+      "{{ test_vault_address }}/v1/secret/data/{{ test_vault_secret }}"
   with_items: "{{ test_vault_secret_data }}"
 
 - name: Test kv2_secret_get lookup plugin
@@ -12,6 +21,7 @@
       ansible.builtin.set_fact:
         secret_response: "{{ lookup('hashicorp.vault.kv2_secret_get',
                                    secret=test_vault_secret,
+                                   namespace=test_vault_namespace,
                                    url=test_vault_address) }}"
 
     - name: Ensure the secret data matches as expected
@@ -23,6 +33,7 @@
       ansible.builtin.set_fact:
         secret_first_version: "{{ lookup('hashicorp.vault.kv2_secret_get',
                                          secret=test_vault_secret,
+                                         namespace=test_vault_namespace,
                                          version=1,
                                          url=test_vault_address) }}"
 
@@ -32,8 +43,15 @@
           - secret_first_version.data == test_vault_secret_data[0]
 
   always:
-    - name: Delete all versions of the secret
-      hashicorp.vault.kv2_secret:
-        url: "{{ test_vault_address }}"
-        path: "{{ test_vault_secret }}"
-        state: absent
+    # - name: Delete all versions of the secret
+    #   hashicorp.vault.kv2_secret:
+    #     url: "{{ test_vault_address }}"
+    #     path: "{{ test_vault_secret }}"
+    #     state: absent
+    - name: Delete secret
+      ansible.builtin.command:
+        cmd: >- 
+          curl --header "X-Vault-Token: {{ lookup('env', 'VAULT_TOKEN') }}"
+          --header "X-Vault-Namespace: {{ test_vault_namespace }}"
+          --request DELETE
+          "{{ test_vault_address }}/v1/secret/data/{{ test_vault_secret }}"

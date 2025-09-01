@@ -62,15 +62,23 @@ jobs:
           git config --global user.name "Github Actions"
         shell: bash
 
-      - name: Run integration tests
+      - name: Create Hashicorp vault token for test session
+        id: create-token
         run: |
-          # Set environment variables for the test
-          export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
-          export VAULT_NAMESPACE="${{ vars.VAULT_NAMESPACE }}"
-          export VAULT_TOKEN="${{ secrets.VAULT_TOKEN }}"
-          export TEST_VAULT_SECRET_PATH="${{ vars.TEST_VAULT_SECRET_PATH }}"
-
-          # Run the integration test using ansible-test with venv
-          # This allows environment variables to be passed through to the test
-          ansible-test integration lookup_kv2_secret_get --venv --python "${{ matrix.python-version }}"
+          token=`curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE" --request POST --data '{"role_id": "$VAULT_ROLE_ID", "secret_id": "$VAULT_SECRET_ID"}' $VAULT_ADDR/v1/auth/approle/login | jq -r '.auth.client_token'`; echo "generated_token='$params'" >> ${GITHUB_OUTPUT}
         shell: bash
+        env:
+          VAULT_ADDR: "{{ secrets.VAULT_ADDR }}"
+          VAULT_NAMESPACE: "{{ secrets.VAULT_NAMESPACE }}"
+          VAULT_ROLE_ID: "{{ secrets.VAULT_APPROLE_ROLE_ID }}"
+          VAULT_SECRET_ID: "{{ secrets.VAULT_APPROLE_SECRET_ID }}"
+
+      - name: Run integration tests
+        uses: ansible-network/github_actions/.github/actions/ansible_test_integration@main
+        with:
+          collection_path: ${{ steps.install-collection.outputs.collection_path }}
+          python_version: "${{ matrix.python-version }}"
+          ansible_version: "${{ matrix.ansible-version }}"
+          ansible_test_environment: |
+            VAULT_TOKEN={{ steps.create-token.outputs.generated_token }}
+            VAULT_ADDR={{ secrets.VAULT_ADDR }}
