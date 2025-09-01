@@ -45,14 +45,6 @@
         state: present
       register: secret_creation_idempotent_result
 
-    - name: Debug - to verify idempotency
-      ansible.builtin.debug:
-        msg:
-          - "Changed: {{ secret_creation_idempotent_result.changed }}"
-          - "Message: {{ secret_creation_idempotent_result.msg }}"
-          - "Secret data: {{ secret_creation_idempotent_result.secret.data }}"
-          - "Expected data: {{ initial_data }}"
-
     - name: Verify secret creation idempotency
       ansible.builtin.assert:
         that:
