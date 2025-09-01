@@ -15,7 +15,7 @@ short_description: Manage HashiCorp Vault KV version 2 secrets
 version_added: 1.0.0
 author: Mandar Vijay Kulkarni (@mandar242)
 description:
-  - Create, update, or delete secrets in HashiCorp Vault KV version 2 secrets engine
+  - Create, update, or delete (soft-delete) secrets in HashiCorp Vault KV version 2 secrets engine
   - Supports token and AppRole authentication methods
   - Token can be provided as a parameter or as an environment variable VAULT_TOKEN
   - AppRole authentication role_id and secret_id can be provided as parameters or as environment variables VAULT_APPROLE_ROLE_ID and VAULT_APPROLE_SECRET_ID
@@ -185,9 +185,6 @@ def get_authenticated_client(module: AnsibleModule) -> VaultClient:
     vault_namespace = module.params["namespace"]
     vault_address = module.params["url"]
 
-    if not vault_address:
-        module.fail_json(msg="url parameter is required")
-
     try:
         # Create client
         client = VaultClient(vault_address=vault_address, vault_namespace=vault_namespace)
@@ -271,7 +268,7 @@ def ensure_secret_absent(
     secret_path: str,
     versions: Optional[List[int]] = None,
 ) -> None:
-    """Ensure the secret is deleted by removing specified versions or the latest version."""
+    """Ensure the secret is deleted (soft-deleted) by removing specified versions or the latest version."""
     try:
         # First, check if the secret exists and its current state
         try:
@@ -296,7 +293,7 @@ def ensure_secret_absent(
 
         # Delete the secret
         secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
-        module.exit_json(changed=True, msg="Secret deleted successfully")
+        module.exit_json(changed=True, msg="Secret deleted (soft-deleted) successfully")
 
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")

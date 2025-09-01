@@ -3,4 +3,3 @@ vault_url_from_int_config: ${VAULT_ADDR}
 vault_namespace_from_int_config: ${VAULT_NAMESPACE}
 vault_approle_role_id_from_int_config: ${VAULT_APPROLE_ROLE_ID}
 vault_approle_secret_id_from_int_config: ${VAULT_APPROLE_SECRET_ID}
-test_reading_gh_action_secrets_from_int_config: ${TEST_READING_GH_ACTION_SECRETS}

@@ -75,6 +75,7 @@ jobs:
             > "$COLL_DIR/tests/integration/integration_config.yml"
 
       - name: Run integration tests
+        if: steps.check-targets.outputs.has-targets == 'true'
         run: |
           cd ~/.ansible/collections/ansible_collections/hashicorp/vault && \
           ansible-test integration --python ${{ matrix.python-version }} --continue-on-error
