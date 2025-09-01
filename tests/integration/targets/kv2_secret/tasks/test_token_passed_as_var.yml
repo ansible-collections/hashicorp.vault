@@ -118,7 +118,7 @@
       ansible.builtin.assert:
         that:
           - secret_deletion_result.changed == true
-          - secret_deletion_result.msg == "Secret deleted successfully"
+          - secret_deletion_result.msg == "Secret deleted (soft-deleted) successfully"
         fail_msg: "Secret deletion failed or returned unexpected message"
 
     - name: Delete same secret again (idempotency test)
