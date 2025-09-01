@@ -116,11 +116,10 @@ EXAMPLES = """
 RETURN = """
 """
 
-import os
-
 from typing import List, Optional
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.common.validation import env_fallback
 
 
 try:
@@ -147,22 +146,12 @@ except ImportError as e:
     VAULT_IMPORT_ERROR = str(e)
 
 
-def get_option(
-    module: AnsibleModule, option_name: str, env_var: Optional[str] = None
-) -> Optional[str]:
-    """Get option value with optional environment variable fallback."""
-    value = module.params.get(option_name)
-    if not value and env_var:
-        value = os.environ.get(env_var)
-    return value
-
-
 def _authenticate(module: AnsibleModule, client: VaultClient) -> None:
     """Authenticate the client using token or AppRole authentication."""
-    auth_method = get_option(module, "auth_method")
+    auth_method = module.params["auth_method"]
 
     if auth_method == "token":
-        token = get_option(module, "token", "VAULT_TOKEN")
+        token = module.params["token"]
         if not token:
             module.fail_json(
                 msg="Token authentication requires 'token' parameter or VAULT_TOKEN environment variable"
@@ -170,9 +159,9 @@ def _authenticate(module: AnsibleModule, client: VaultClient) -> None:
         TokenAuthenticator().authenticate(client, token=token)
     else:
         params = {
-            "vault_address": get_option(module, "url"),
-            "role_id": get_option(module, "role_id", "VAULT_APPROLE_ROLE_ID"),
-            "secret_id": get_option(module, "secret_id", "VAULT_APPROLE_SECRET_ID"),
+            "vault_address": module.params["url"],
+            "role_id": module.params["role_id"],
+            "secret_id": module.params["secret_id"],
         }
 
         if not params["role_id"] or not params["secret_id"]:
@@ -181,10 +170,10 @@ def _authenticate(module: AnsibleModule, client: VaultClient) -> None:
                 "VAULT_APPROLE_ROLE_ID and VAULT_APPROLE_SECRET_ID environment variables"
             )
 
-        vault_namespace = get_option(module, "namespace")
+        vault_namespace = module.params["namespace"]
         if vault_namespace is not None:
             params.update({"vault_namespace": vault_namespace})
-        vault_approle_path = get_option(module, "vault_approle_path")
+        vault_approle_path = module.params["vault_approle_path"]
         if vault_approle_path is not None:
             params.update({"approle_path": vault_approle_path})
 
@@ -193,8 +182,8 @@ def _authenticate(module: AnsibleModule, client: VaultClient) -> None:
 
 def get_authenticated_client(module: AnsibleModule) -> VaultClient:
     """Create and authenticate a Vault client using module parameters and environment variables."""
-    vault_namespace = get_option(module, "namespace")
-    vault_address = get_option(module, "url")
+    vault_namespace = module.params["namespace"]
+    vault_address = module.params["url"]
 
     if not vault_address:
         module.fail_json(msg="url parameter is required")
@@ -324,9 +313,18 @@ def main():
         url=dict(type="str", required=True, aliases=["vault_address"]),
         namespace=dict(type="str", default="admin", aliases=["vault_namespace"]),
         auth_method=dict(type="str", choices=["token", "approle"], default="token"),
-        token=dict(type="str", no_log=True),
-        role_id=dict(type="str", aliases=["approle_role_id"]),
-        secret_id=dict(type="str", no_log=True, aliases=["approle_secret_id"]),
+        token=dict(type="str", no_log=True, fallback=(env_fallback, ["VAULT_TOKEN"])),
+        role_id=dict(
+            type="str",
+            aliases=["approle_role_id"],
+            fallback=(env_fallback, ["VAULT_APPROLE_ROLE_ID"]),
+        ),
+        secret_id=dict(
+            type="str",
+            no_log=True,
+            aliases=["approle_secret_id"],
+            fallback=(env_fallback, ["VAULT_APPROLE_SECRET_ID"]),
+        ),
         vault_approle_path=dict(type="str", default="approle"),
         # Secret parameters
         engine_mount_point=dict(type="str", default="secret", aliases=["secret_mount_path"]),

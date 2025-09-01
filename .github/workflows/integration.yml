@@ -78,7 +78,3 @@ jobs:
         run: |
           cd ~/.ansible/collections/ansible_collections/hashicorp/vault && \
           ansible-test integration --python ${{ matrix.python-version }} --continue-on-error
-
-      - name: Clean up integration config
-        if: always()
-        run: rm -f "$HOME/.ansible/collections/ansible_collections/hashicorp/vault/tests/integration/integration_config.yml"
