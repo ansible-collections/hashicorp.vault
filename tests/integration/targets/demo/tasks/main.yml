@@ -1,0 +1,7 @@
+---
+- name: Ensure the required authentication variables are defined
+  ansible.builtin.assert:
+    that:
+      - vault_url is defined
+      - vault_namespace is defined
+      - vault_token is defined
