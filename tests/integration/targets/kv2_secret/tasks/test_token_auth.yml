@@ -8,7 +8,7 @@
     - name: Create test secret with token variable
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
+        token: "{{ vault_token_from_setup_auth_token }}"
         path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ initial_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
@@ -28,7 +28,7 @@
     - name: Create same secret again (idempotency test)
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
+        token: "{{ vault_token_from_setup_auth_token }}"
         path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ initial_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
@@ -49,7 +49,7 @@
     - name: Update test secret with token variable
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
+        token: "{{ vault_token_from_setup_auth_token }}"
         path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ updated_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
@@ -69,7 +69,7 @@
     - name: Update secret with same data (idempotency test)
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
+        token: "{{ vault_token_from_setup_auth_token }}"
         path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ updated_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
@@ -90,7 +90,7 @@
     - name: Delete test secret with token variable
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
+        token: "{{ vault_token_from_setup_auth_token }}"
         path: "{{ test_secret_path }}-{{ random_string }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
@@ -108,7 +108,7 @@
     - name: Delete same secret again (idempotency test)
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
+        token: "{{ vault_token_from_setup_auth_token }}"
         path: "{{ test_secret_path }}-{{ random_string }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
@@ -126,7 +126,7 @@
     - name: Create secret after deletion (verify clean state)
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
+        token: "{{ vault_token_from_setup_auth_token }}"
         path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ initial_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
@@ -146,7 +146,7 @@
     - name: Final cleanup - Delete recreated secret
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
+        token: "{{ vault_token_from_setup_auth_token }}"
         path: "{{ test_secret_path }}-{{ random_string }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
@@ -159,7 +159,7 @@
         url: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') | default(vault_url, true) }}/v1/{{ secret_mount_path }}/metadata/{{ test_secret_path }}-{{ random_string }}" # noqa: yaml[line-length]
         method: DELETE
         headers:
-          X-Vault-Token: "{{ lookup('ansible.builtin.env', 'VAULT_TOKEN') | default(vault_token_to_pass_as_var, true) }}"
+          X-Vault-Token: "{{ lookup('ansible.builtin.env', 'VAULT_TOKEN') | default(vault_token_from_setup_auth_token, true) }}"
           X-Vault-Namespace: "{{ lookup('ansible.builtin.env', 'VAULT_NAMESPACE') | default(vault_namespace, true) }}"
         return_content: true
         status_code: [204]
@@ -170,7 +170,7 @@
     - name: Cleanup - Ensure test secret is removed on failure
       hashicorp.vault.kv2_secret:
         url: "{{ vault_url }}"
-        token: "{{ vault_token_to_pass_as_var }}"
+        token: "{{ vault_token_from_setup_auth_token }}"
         path: "{{ test_secret_path }}-{{ random_string }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"

@@ -1,0 +1,24 @@
+---
+- name: Setup auth token for use in integration tests
+  run_once: true
+  block:
+    - name: Authenticate with Vault using AppRole to get a token
+      ansible.builtin.uri:
+        url: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') | default(vault_url, true) }}/v1/auth/{{ vault_approle_auth_path }}/login"
+        method: POST
+        headers:
+          X-Vault-Namespace: "{{ lookup('ansible.builtin.env', 'VAULT_NAMESPACE') | default(vault_namespace, true) }}"
+        body_format: json
+        body:
+          role_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_ROLE_ID') | default(vault_approle_role_id, true) }}"
+          secret_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_SECRET_ID') | default(vault_approle_secret_id, true) }}"
+        return_content: true
+      register: vault_login
+      no_log: true
+      when: vault_approle_role_id is defined and vault_approle_secret_id is defined
+
+    - name: Save Vault token for use in tests
+      ansible.builtin.set_fact:
+        vault_token_from_setup_auth_token: "{{ vault_login.json.auth.client_token }}"
+      no_log: true
+      when: vault_login.json.auth is defined

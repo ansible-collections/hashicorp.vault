@@ -175,7 +175,7 @@
         url: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') | default(vault_url, true) }}/v1/{{ secret_mount_path }}/metadata/{{ test_secret_path }}-{{ random_string }}" # noqa: yaml[line-length]
         method: DELETE
         headers:
-          X-Vault-Token: "{{ lookup('ansible.builtin.env', 'VAULT_TOKEN') | default(vault_token_to_pass_as_var, true) }}"
+          X-Vault-Token: "{{ lookup('ansible.builtin.env', 'VAULT_TOKEN') | default(vault_token_from_setup_auth_token, true) }}"
           X-Vault-Namespace: "{{ lookup('ansible.builtin.env', 'VAULT_NAMESPACE') | default(vault_namespace, true) }}"
         return_content: true
         status_code: [204]

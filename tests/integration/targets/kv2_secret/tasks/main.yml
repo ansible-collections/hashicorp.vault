@@ -1,29 +1,6 @@
 ---
 # Integration tests for kv2_secret module
 
-# this step obtains a short-lived Vault token for use in the integration tests (test_token_auth.yml)
-# values for role_id and secret_id are stored in GitHub Actions secrets
-- name: Authenticate with Vault using AppRole
-  ansible.builtin.uri:
-    url: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') | default(vault_url, true) }}/v1/auth/approle-integration-tests/login"
-    method: POST
-    headers:
-      X-Vault-Namespace: "{{ lookup('ansible.builtin.env', 'VAULT_NAMESPACE') | default(vault_namespace, true) }}"
-    body_format: json
-    body:
-      role_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_ROLE_ID') | default(vault_approle_role_id, true) }}"
-      secret_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_SECRET_ID') | default(vault_approle_secret_id, true) }}"
-    return_content: true
-  register: vault_login
-  no_log: true
-  when: vault_approle_role_id_from_int_config is defined and vault_approle_secret_id_from_int_config is defined
-
-- name: Save Vault token
-  ansible.builtin.set_fact:
-    vault_token_to_pass_as_var: "{{ vault_login.json.auth.client_token }}"
-  no_log: true
-  when: vault_login.json.auth is defined
-
 - name: Include token authentication tests
   ansible.builtin.include_tasks:
     file: test_token_auth.yml
