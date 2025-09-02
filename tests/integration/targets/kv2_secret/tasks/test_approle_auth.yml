@@ -11,7 +11,7 @@
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
-        path: "{{ test_secret_path }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ initial_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
@@ -33,7 +33,7 @@
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
-        path: "{{ test_secret_path }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ initial_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
@@ -56,7 +56,7 @@
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
-        path: "{{ test_secret_path }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ updated_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
@@ -78,7 +78,7 @@
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
-        path: "{{ test_secret_path }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ updated_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
@@ -101,7 +101,7 @@
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
-        path: "{{ test_secret_path }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
         namespace: "{{ vault_namespace }}"
@@ -121,7 +121,7 @@
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
-        path: "{{ test_secret_path }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
         namespace: "{{ vault_namespace }}"
@@ -141,7 +141,7 @@
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
-        path: "{{ test_secret_path }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
         data: "{{ initial_data }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
@@ -163,7 +163,7 @@
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
-        path: "{{ test_secret_path }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
         namespace: "{{ vault_namespace }}"
@@ -189,7 +189,7 @@
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
-        path: "{{ test_secret_path }}"
+        path: "{{ test_secret_path }}-{{ random_string }}"
         secret_mount_path: "{{ secret_mount_path }}"
         vault_approle_path: "{{ integration_tests_approle }}"
         namespace: "{{ vault_namespace }}"
