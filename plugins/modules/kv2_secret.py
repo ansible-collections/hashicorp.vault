@@ -15,10 +15,10 @@ short_description: Manage HashiCorp Vault KV version 2 secrets
 version_added: 1.0.0
 author: Mandar Vijay Kulkarni (@mandar242)
 description:
-  - Create, update, or delete (soft-delete) secrets in HashiCorp Vault KV version 2 secrets engine
-  - Supports token and AppRole authentication methods
-  - Token can be provided as a parameter or as an environment variable VAULT_TOKEN
-  - AppRole authentication role_id and secret_id can be provided as parameters or as environment variables VAULT_APPROLE_ROLE_ID and VAULT_APPROLE_SECRET_ID
+  - Create, update, or delete (soft-delete) secrets in HashiCorp Vault KV version 2 secrets engine.
+  - Supports token and AppRole authentication methods.
+  - Token can be provided as a parameter or as an environment variable E(VAULT_TOKEN).
+  - AppRole authentication O(role_id) and O(secret_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_ROLE_ID) and E(VAULT_APPROLE_SECRET_ID).
   - It does not create the secret engine if it does not exist and will fail if the secret engine path (engine_mount_point) is not enabled.
 options:
   url:
