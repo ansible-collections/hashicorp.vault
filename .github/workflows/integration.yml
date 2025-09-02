@@ -17,6 +17,8 @@ jobs:
   run-integration-tests:
     name: Run Integration Tests
     runs-on: ubuntu-latest
+    env:
+      collection_install_path: "/home/runner/.ansible/collections/ansible_collections/hashicorp/vault/"
     strategy:
       fail-fast: false
       matrix:
@@ -54,7 +56,7 @@ jobs:
           --data '{"role_id": "$VAULT_ROLE_ID", "secret_id": "$VAULT_SECRET_ID"}'
           $VAULT_ADDR/v1/auth/approle/login | jq -r '.auth.client_token' > session_token.txt
         shell: bash
-        working-directory: "${{ steps.install-collection.outputs.collection_path }}/tests/integration"
+        working-directory: "${{ env.collection_install_path }}tests/integration"
         env:
           VAULT_ADDR: "{{ secrets.VAULT_ADDR }}"
           VAULT_NAMESPACE: "{{ secrets.VAULT_NAMESPACE }}"
@@ -64,7 +66,7 @@ jobs:
       - name: Render integration_config.yml from template
         shell: bash
         run: ansible -m ansible.builtin.template -a 'src=integration_config.yml.j2 dest=integration_config.yml' localhost
-        working-directory: "${{ steps.install-collection.outputs.collection_path }}/tests/integration"
+        working-directory: "${{ env.collection_install_path }}tests/integration"
         env:
           VAULT_ADDR: "${{ secrets.VAULT_ADDR }}"
           VAULT_NAMESPACE: "${{ secrets.VAULT_NAMESPACE }}"
@@ -72,6 +74,6 @@ jobs:
       - name: Run integration tests
         uses: ansible-network/github_actions/.github/actions/ansible_test_integration@main
         with:
-          collection_path: ${{ steps.install-collection.outputs.collection_path }}
+          collection_path: "${{ env.collection_install_path }}"
           python_version: "${{ matrix.python-version }}"
           ansible_version: "${{ matrix.ansible-version }}"
