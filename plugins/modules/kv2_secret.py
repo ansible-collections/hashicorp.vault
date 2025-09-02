@@ -18,7 +18,8 @@ description:
   - Create, update, or delete (soft-delete) secrets in HashiCorp Vault KV version 2 secrets engine.
   - Supports token and AppRole authentication methods.
   - Token can be provided as a parameter or as an environment variable E(VAULT_TOKEN).
-  - AppRole authentication O(role_id) and O(secret_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_ROLE_ID) and E(VAULT_APPROLE_SECRET_ID).
+  - AppRole authentication O(role_id) and O(secret_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_ROLE_ID)
+    and E(VAULT_APPROLE_SECRET_ID).
   - It does not create the secret engine if it does not exist and will fail if the secret engine path (engine_mount_point) is not enabled.
 options:
   url:
@@ -154,7 +155,6 @@ secret:
       version: 42
 """
 
-from typing import List, Optional
 
 from ansible.module_utils.basic import AnsibleModule, env_fallback
 
@@ -241,105 +241,82 @@ def get_authenticated_client(module: AnsibleModule) -> VaultClient:
         module.fail_json(msg=f"Failed to create authenticated Vault client: {e}")
 
 
-def ensure_secret_present(
-    module: AnsibleModule, secret_mgr: VaultSecret, mount_path: str, secret_path: str
-) -> None:
+def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> None:
     """Ensure the secret exists with the specified data by creating or updating it."""
     # Get secret data and options
     data = module.params["data"]
     cas = module.params["cas"]
+    mount_path = module.params["engine_mount_point"]
+    secret_path = module.params["path"]
 
+    # First, try to read the existing secret to check for changes
     try:
-        # First, try to read the existing secret to check for changes
-        try:
-            existing_secret = secret_mgr.kv2.read_secret(
-                mount_path=mount_path, secret_path=secret_path
+        existing_secret = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
+        # The read_secret returns {"data": {...actual_secret_data...}, "metadata": {...}}
+        existing_data = existing_secret.get("data", {})
+        existing_metadata = existing_secret.get("metadata", {})
+
+        # Check if the secret was previously deleted (soft-deleted)
+        deletion_time = existing_metadata.get("deletion_time", "")
+
+        if deletion_time:
+            # Secret was soft-deleted, treat as if it doesn't exist for idempotency
+            action_msg = "Secret recreated successfully"
+        elif existing_data == data:
+            # Secret already exists with the same data - no changes needed
+            module.exit_json(
+                changed=False,
+                msg="Secret already exists with the same data",
+                secret=existing_secret,
             )
-            # The read_secret returns {"data": {...actual_secret_data...}, "metadata": {...}}
-            existing_data = existing_secret.get("data", {})
-            existing_metadata = existing_secret.get("metadata", {})
+        else:
+            # Data is different, proceed with update
+            action_msg = "Secret updated successfully"
 
-            # Check if the secret was previously deleted (soft-deleted)
-            deletion_time = existing_metadata.get("deletion_time", "")
+    except VaultSecretNotFoundError:
+        # Secret doesn't exist, proceed with creation
+        action_msg = "Secret created successfully"
 
-            if deletion_time:
-                # Secret was soft-deleted, treat as if it doesn't exist for idempotency
-                action_msg = "Secret recreated successfully"
-            elif existing_data == data:
-                # Secret already exists with the same data - no changes needed
-                module.exit_json(
-                    changed=False,
-                    msg="Secret already exists with the same data",
-                    secret=existing_secret,
-                )
-            else:
-                # Data is different, proceed with update
-                action_msg = "Secret updated successfully"
+    # Create or update the secret
+    result = secret_mgr.kv2.create_or_update_secret(
+        mount_path=mount_path, secret_path=secret_path, secret_data=data, cas=cas
+    )
 
-        except VaultSecretNotFoundError:
-            # Secret doesn't exist, proceed with creation
-            action_msg = "Secret created successfully"
-
-        # Create or update the secret
-        result = secret_mgr.kv2.create_or_update_secret(
-            mount_path=mount_path, secret_path=secret_path, secret_data=data, cas=cas
-        )
-
-        # Read back to get metadata
-        secret_result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
-        # added `raw` to match retrun value of community.hashi_vault.vault_kv2_write
-        module.exit_json(changed=True, msg=action_msg, raw=result, secret=secret_result)
-
-    except VaultPermissionError as e:
-        module.fail_json(msg=f"Permission denied: {e}")
-    except VaultApiError as e:
-        module.fail_json(msg=f"Vault API error: {e}")
-    except Exception as e:
-        module.fail_json(msg=f"Failed to create/update secret: {e}")
+    # Read back to get metadata
+    secret_result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
+    # added `raw` to match retrun value of community.hashi_vault.vault_kv2_write
+    module.exit_json(changed=True, msg=action_msg, raw=result, secret=secret_result)
 
 
-def ensure_secret_absent(
-    module: AnsibleModule,
-    secret_mgr: VaultSecret,
-    mount_path: str,
-    secret_path: str,
-    versions: Optional[List[int]] = None,
-) -> None:
+def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None:
     """Ensure the secret is deleted (soft-deleted) by removing specified versions or the latest version."""
+    mount_path = module.params["engine_mount_point"]
+    secret_path = module.params["path"]
+    versions = module.params["versions"]
+
+    # First, check if the secret exists and its current state
     try:
-        # First, check if the secret exists and its current state
-        try:
-            existing_secret = secret_mgr.kv2.read_secret(
-                mount_path=mount_path, secret_path=secret_path
-            )
-            existing_data = existing_secret.get("data", {})
-            existing_metadata = existing_secret.get("metadata", {})
+        existing_secret = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
+        existing_metadata = existing_secret.get("metadata", {})
 
-            # Check if the secret is already deleted (soft-deleted)
-            deletion_time = existing_metadata.get("deletion_time", "")
+        # Check if the secret is already deleted (soft-deleted)
+        deletion_time = existing_metadata.get("deletion_time", "")
 
-            if deletion_time:
-                # Secret is already soft-deleted, no action needed
-                module.exit_json(changed=False, msg="Secret already absent")
-
-            # Secret exists and is not deleted, proceed with deletion
-
-        except VaultSecretNotFoundError:
-            # Secret doesn't exist, already in desired state
+        if deletion_time:
+            # Secret is already soft-deleted, no action needed
             module.exit_json(changed=False, msg="Secret already absent")
 
-        # Delete the secret
-        result = secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
-        module.exit_json(
-            changed=True, msg="Secret deleted (soft-deleted) successfully", data=result or {}
-        )
+        # Secret exists and is not deleted, proceed with deletion
 
-    except VaultPermissionError as e:
-        module.fail_json(msg=f"Permission denied: {e}")
-    except VaultApiError as e:
-        module.fail_json(msg=f"Vault API error: {e}")
-    except Exception as e:
-        module.fail_json(msg=f"Failed to delete secret: {e}")
+    except VaultSecretNotFoundError:
+        # Secret doesn't exist, already in desired state
+        module.exit_json(changed=False, msg="Secret already absent")
+
+    # Delete the secret
+    result = secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
+    module.exit_json(
+        changed=True, msg="Secret deleted (soft-deleted) successfully", data=result or {}
+    )
 
 
 def main():
@@ -385,17 +362,14 @@ def main():
     # Get authenticated client
     client = get_authenticated_client(module)
 
-    mount_path = module.params["engine_mount_point"]
-    secret_path = module.params["path"]
     state = module.params["state"]
-    versions = module.params["versions"]
 
     try:
         secret_mgr = VaultSecret(client)
         if state == "present":
-            ensure_secret_present(module, secret_mgr, mount_path, secret_path)
+            ensure_secret_present(module, secret_mgr)
         elif state == "absent":
-            ensure_secret_absent(module, secret_mgr, mount_path, secret_path, versions)
+            ensure_secret_absent(module, secret_mgr)
 
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
