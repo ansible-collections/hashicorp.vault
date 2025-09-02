@@ -22,59 +22,59 @@ description:
   - It does not create the secret engine if it does not exist and will fail if the secret engine path (engine_mount_point) is not enabled.
 options:
   url:
-    description: Vault server URL
+    description: Vault server URL.
     required: true
     type: str
     aliases: [vault_address]
   namespace:
-    description: Vault namespace
+    description: Vault namespace.
     default: admin
     type: str
     aliases: [vault_namespace]
   auth_method:
-    description: Authentication method to use
+    description: Authentication method to use.
     choices: ['token', 'approle']
     default: token
     type: str
   token:
-    description: Vault token for authentication
+    description: Vault token for authentication.
     type: str
   role_id:
-    description: Role ID for AppRole authentication
+    description: Role ID for AppRole authentication.
     type: str
     aliases: [approle_role_id]
   secret_id:
-    description: Secret ID for AppRole authentication
+    description: Secret ID for AppRole authentication.
     type: str
     aliases: [approle_secret_id]
   vault_approle_path:
-    description: AppRole auth method mount path
+    description: AppRole auth method mount path.
     default: approle
     type: str
   engine_mount_point:
-    description: KV secrets engine mount point
+    description: KV secrets engine mount point.
     default: secret
     type: str
     aliases: [secret_mount_path]
   path:
-    description: Path to the secret
+    description: Path to the secret.
     required: true
     type: str
     aliases: [secret_path]
   data:
-    description: Secret data as key-value pairs
+    description: Secret data as key-value pairs.
     type: dict
   versions:
-    description: One or more versions of the secret to delete (used with state=absent)
+    description: One or more versions of the secret to delete. Used with O(state=absent).
     type: list
     elements: int
   state:
-    description: Desired state of the secret
+    description: Desired state of the secret.
     choices: ['present', 'absent']
     default: present
     type: str
   cas:
-    description: Check-and-Set value for conditional updates
+    description: Check-and-Set value for conditional updates.
     type: int
 """
 
@@ -139,7 +139,7 @@ data:
   sample: {}
 secret:
   description: The secret data and metadata when reading existing secrets.
-  returned: when state=present (both changed and unchanged scenarios)
+  returned: when O(state=present) (both changed and unchanged scenarios)
   type: dict
   sample:
     data:
