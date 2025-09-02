@@ -54,7 +54,7 @@ jobs:
           curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE"
           --request POST
           --data '{"role_id": "$VAULT_ROLE_ID", "secret_id": "$VAULT_SECRET_ID"}'
-          $VAULT_ADDR/v1/auth/approle/login | jq -r '.auth.client_token' > session_token.txt
+          $VAULT_ADDR/v1/auth/approle/login
         shell: bash
         working-directory: "${{ env.collection_install_path }}tests/integration"
         env:
