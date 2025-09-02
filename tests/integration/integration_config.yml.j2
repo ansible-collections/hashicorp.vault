@@ -1,0 +1,3 @@
+vault_url: {{ lookup('env', 'VAULT_ADDR') }}
+vault_namespace: {{ lookup('env', 'VAULT_NAMESPACE') }}
+vault_token: {{ lookup('file', 'session_token.txt') }}
