@@ -53,13 +53,13 @@ jobs:
 
       - name: Render integration_config.yml from template
         shell: bash
-        run: ansible -m ansible.builtin.template -a 'src=tests/integration/integration_config.yml.template dest=tests/integration/integration_config.yml' localhost
+        run: ansible -m ansible.builtin.template -a 'src=tests/integration/integration_config.yml.template dest=tests/integration/integration_config.yml' localhost # noqa: yaml[line-length]
         working-directory: /home/runner/.ansible/collections/ansible_collections/hashicorp/vault
         env:
-           VAULT_ADDR: "${{ secrets.VAULT_ADDR }}"
-           VAULT_NAMESPACE: "${{ secrets.VAULT_NAMESPACE }}"
-           VAULT_APPROLE_ROLE_ID: "${{ secrets.VAULT_APPROLE_ROLE_ID }}"
-           VAULT_APPROLE_SECRET_ID: "${{ secrets.VAULT_APPROLE_SECRET_ID }}"
+          VAULT_ADDR: "${{ secrets.VAULT_ADDR }}"
+          VAULT_NAMESPACE: "${{ secrets.VAULT_NAMESPACE }}"
+          VAULT_APPROLE_ROLE_ID: "${{ secrets.VAULT_APPROLE_ROLE_ID }}"
+          VAULT_APPROLE_SECRET_ID: "${{ secrets.VAULT_APPROLE_SECRET_ID }}"
 
       - name: Run integration tests
         if: steps.check-targets.outputs.has-targets == 'true'
