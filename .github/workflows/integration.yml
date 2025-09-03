@@ -53,26 +53,13 @@ jobs:
 
       - name: Render integration_config.yml from template
         shell: bash
-        run: |
-          set -euo pipefail
-
-          COLL_DIR="$HOME/${{ secrets.COLLECTION_DIR_PATH }}"
-          mkdir -p "$COLL_DIR/tests/integration"
-          install -m 600 /dev/null "$COLL_DIR/tests/integration/integration_config.yml"
-
-          export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
-          export VAULT_NAMESPACE="${{ secrets.VAULT_NAMESPACE }}"
-          export VAULT_APPROLE_ROLE_ID="${{ secrets.VAULT_APPROLE_ROLE_ID }}"
-          export VAULT_APPROLE_SECRET_ID="${{ secrets.VAULT_APPROLE_SECRET_ID }}"
-          export TEST_READING_GH_ACTION_SECRETS="${{ secrets.TEST_READING_GH_ACTION_SECRETS }}"
-
-          # Ensure renderer is usable
-          sed -i 's/\r$//' tests/utils/render.sh || true
-          chmod +x tests/utils/render.sh
-
-          # Render from repo template into the installed collection tree
-          bash tests/utils/render.sh tests/integration/integration_config.yml.template \
-            > "$COLL_DIR/tests/integration/integration_config.yml"
+        run: ansible -m ansible.builtin.template -a 'src=integration_config.yml.template dest=integration_config.yml' localhost
+        working-directory: /home/runner/.ansible/collections/ansible_collections/hashicorp/vault
+        env:
+           VAULT_ADDR: "${{ secrets.VAULT_ADDR }}"
+           VAULT_NAMESPACE: "${{ secrets.VAULT_NAMESPACE }}"
+           VAULT_APPROLE_ROLE_ID: "${{ secrets.VAULT_APPROLE_ROLE_ID }}"
+           VAULT_APPROLE_SECRET_ID: "${{ secrets.VAULT_APPROLE_SECRET_ID }}"
 
       - name: Run integration tests
         if: steps.check-targets.outputs.has-targets == 'true'
