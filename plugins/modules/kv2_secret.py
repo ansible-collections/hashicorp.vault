@@ -253,7 +253,9 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
 
     # If in check mode, exit here with what would happen
     if module.check_mode:
-        module.exit_json(changed=True, msg="Secret deleted (soft-deleted) successfully (check mode)")
+        module.exit_json(
+            changed=True, msg="Secret deleted (soft-deleted) successfully (check mode)"
+        )
 
     # Delete the secret
     result = secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
