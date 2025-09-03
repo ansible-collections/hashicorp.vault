@@ -17,9 +17,6 @@ author: Mandar Vijay Kulkarni (@mandar242)
 description:
   - Create, update, or delete (soft-delete) secrets in HashiCorp Vault KV version 2 secrets engine.
   - Supports token and AppRole authentication methods.
-  - Token can be provided as a parameter or as an environment variable E(VAULT_TOKEN).
-  - AppRole authentication O(role_id) and O(secret_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_ROLE_ID)
-    and E(VAULT_APPROLE_SECRET_ID).
   - It does not create the secret engine if it does not exist and will fail if the secret engine path (engine_mount_point) is not enabled.
 options:
   url:
@@ -38,14 +35,20 @@ options:
     default: token
     type: str
   token:
-    description: Vault token for authentication.
+    description:
+      - Vault token for authentication.
+      - Token can be provided as a parameter or as an environment variable E(VAULT_TOKEN).
     type: str
   role_id:
-    description: Role ID for AppRole authentication.
+    description:
+      - Role ID for AppRole authentication.
+      - AppRole O(role_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_ROLE_ID).
     type: str
     aliases: [approle_role_id]
   secret_id:
-    description: Secret ID for AppRole authentication.
+    description:
+      - Secret ID for AppRole authentication.
+      - AppRole O(secret_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_SECRET_ID).
     type: str
     aliases: [approle_secret_id]
   vault_approle_path:

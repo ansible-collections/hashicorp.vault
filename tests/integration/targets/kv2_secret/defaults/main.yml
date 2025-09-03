@@ -8,7 +8,7 @@
 # Test configuration
 secret_mount_path: "kv-integration-tests"
 integration_tests_approle: "approle-integration-tests"
-test_secret_path: "integration-test-secret"
+secret_path: "integration-test-secret"
 
 # Test data sets
 initial_data:
