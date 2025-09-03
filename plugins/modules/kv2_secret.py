@@ -212,6 +212,10 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
         # Secret doesn't exist, proceed with creation
         action_msg = "Secret created successfully"
 
+    # If in check mode, exit here with what would happen
+    if module.check_mode:
+        module.exit_json(changed=True, msg=f"{action_msg} (check mode)")
+
     # Create or update the secret
     result = secret_mgr.kv2.create_or_update_secret(
         mount_path=mount_path, secret_path=secret_path, secret_data=data, cas=cas
@@ -246,6 +250,10 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
     except VaultSecretNotFoundError:
         # Secret doesn't exist, already in desired state
         module.exit_json(changed=False, msg="Secret already absent")
+
+    # If in check mode, exit here with what would happen
+    if module.check_mode:
+        module.exit_json(changed=True, msg="Secret deleted (soft-deleted) successfully (check mode)")
 
     # Delete the secret
     result = secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
@@ -291,7 +299,7 @@ def main():
     module = AnsibleModule(
         argument_spec=argument_spec,
         required_if=required_if,
-        supports_check_mode=False,
+        supports_check_mode=True,
     )
 
     # Get authenticated client
