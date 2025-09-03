@@ -53,7 +53,7 @@ jobs:
 
       - name: Render integration_config.yml from template
         shell: bash
-        run: ansible -m ansible.builtin.template -a 'src=integration_config.yml.template dest=integration_config.yml' localhost
+        run: ansible -m ansible.builtin.template -a 'src=tests/integration/integration_config.yml.template dest=tests/integration/integration_config.yml' localhost
         working-directory: /home/runner/.ansible/collections/ansible_collections/hashicorp/vault
         env:
            VAULT_ADDR: "${{ secrets.VAULT_ADDR }}"
