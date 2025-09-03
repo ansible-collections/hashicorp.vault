@@ -1,9 +1,9 @@
 ---
 # Vault connection configuration
-vault_url: "{{ vault_url_from_int_config }}"
-vault_namespace: "{{ vault_namespace_from_int_config }}"
-vault_approle_role_id: "{{ vault_approle_role_id_from_int_config }}"
-vault_approle_secret_id: "{{ vault_approle_secret_id_from_int_config }}"
+# vault_url: READ from integration_config.yml
+# vault_namespace: READ from integration_config.yml
+# vault_approle_role_id: READ from integration_config.yml
+# vault_approle_secret_id: READ from integration_config.yml
 
 # Test configuration
 secret_mount_path: "kv-integration-tests"

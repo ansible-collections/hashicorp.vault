@@ -1,5 +1,5 @@
 ---
-vault_url_from_int_config: ${VAULT_ADDR}
-vault_namespace_from_int_config: ${VAULT_NAMESPACE}
-vault_approle_role_id_from_int_config: ${VAULT_APPROLE_ROLE_ID}
-vault_approle_secret_id_from_int_config: ${VAULT_APPROLE_SECRET_ID}
+vault_url: ${VAULT_ADDR}
+vault_namespace: ${VAULT_NAMESPACE}
+vault_approle_role_id: ${VAULT_APPROLE_ROLE_ID}
+vault_approle_secret_id: ${VAULT_APPROLE_SECRET_ID}
