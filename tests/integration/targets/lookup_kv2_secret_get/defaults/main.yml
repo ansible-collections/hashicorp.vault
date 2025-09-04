@@ -1,6 +1,6 @@
 ---
 secret_mount_path: "kv-integration-tests"
-test_secret_path: "integration-test-secret-{{ lookup('password', '/dev/null', chars='ascii_letters,digits', length=8) }}"
+test_secret_path: "integration-test-secret-{{ vault_resource_suffix }}"
 # Test data that will be written to Vault for testing
 test_secret_data:
   - foo: bar
