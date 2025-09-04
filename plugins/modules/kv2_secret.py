@@ -186,6 +186,7 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
     cas = module.params["cas"]
     mount_path = module.params["engine_mount_point"]
     secret_path = module.params["path"]
+    action = "created"
 
     # First, try to read the existing secret to check for changes
     try:
