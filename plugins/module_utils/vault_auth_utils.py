@@ -37,7 +37,7 @@ def authenticate_module(module, client):
     if auth_method == "token":
         token = module.params["token"]
         if not token:
-            module.fail_json(
+            raise VaultCredentialsError(
                 msg="Token authentication requires 'token' parameter or VAULT_TOKEN environment variable"
             )
         TokenAuthenticator().authenticate(client, token=token)
@@ -49,7 +49,7 @@ def authenticate_module(module, client):
         }
 
         if not params["role_id"] or not params["secret_id"]:
-            module.fail_json(
+            raise VaultCredentialsError(
                 msg="AppRole authentication requires 'role_id' and 'secret_id' parameters or "
                 "VAULT_APPROLE_ROLE_ID and VAULT_APPROLE_SECRET_ID environment variables"
             )

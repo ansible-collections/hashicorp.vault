@@ -120,7 +120,7 @@ EXAMPLES = """
 RETURN = """
 raw:
   description: The raw Vault response.
-  returned: changed
+  returned: changed and state=present
   type: dict
   sample:
     auth: null
@@ -163,7 +163,7 @@ from ansible.module_utils.basic import AnsibleModule, env_fallback
 
 
 try:
-    from ansible_collections.hashicorp.vault.plugins.module_utils.module_helpers import (
+    from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils import (
         get_authenticated_client,
     )
     from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
@@ -210,14 +210,15 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
         else:
             # Data is different, proceed with update
             action_msg = "Secret updated successfully"
+            action = "updated"
 
     except VaultSecretNotFoundError:
         # Secret doesn't exist, proceed with creation
         action_msg = "Secret created successfully"
-
+        action = "created"
     # If in check mode, exit here with what would happen
     if module.check_mode:
-        module.exit_json(changed=True, msg=f"{action_msg} (check mode)")
+        module.exit_json(changed=True, msg=f"Would have {action} the secret if not in check_mode.")
 
     # Create or update the secret
     result = secret_mgr.kv2.create_or_update_secret(
@@ -248,8 +249,6 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
             # Secret is already soft-deleted, no action needed
             module.exit_json(changed=False, msg="Secret already absent")
 
-        # Secret exists and is not deleted, proceed with deletion
-
     except VaultSecretNotFoundError:
         # Secret doesn't exist, already in desired state
         module.exit_json(changed=False, msg="Secret already absent")
@@ -257,7 +256,7 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
     # If in check mode, exit here with what would happen
     if module.check_mode:
         module.exit_json(
-            changed=True, msg="Secret deleted (soft-deleted) successfully (check mode)"
+            changed=True, msg="Would have soft-deleted the secret if not in check_mode."
         )
 
     # Delete the secret
