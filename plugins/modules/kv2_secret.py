@@ -153,6 +153,7 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
     mount_path = module.params["engine_mount_point"]
     secret_path = module.params["path"]
     action = "created"
+    changed = True
 
     # First, try to read the existing secret to check for changes
     try:
@@ -167,8 +168,10 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
         if deletion_time:
             # Secret was soft-deleted, treat as if it doesn't exist for idempotency
             action_msg = "Secret recreated successfully"
+            changed = True
         elif existing_data == data:
             # Secret already exists with the same data - no changes needed
+            changed = False
             module.exit_json(
                 changed=False,
                 msg="Secret already exists with the same data",
@@ -178,14 +181,19 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
             # Data is different, proceed with update
             action_msg = "Secret updated successfully"
             action = "updated"
+            changed = True
 
     except VaultSecretNotFoundError:
         # Secret doesn't exist, proceed with creation
         action_msg = "Secret created successfully"
         action = "created"
+        changed = True
+
     # If in check mode, exit here with what would happen
     if module.check_mode:
-        module.exit_json(changed=True, msg=f"Would have {action} the secret if not in check_mode.")
+        module.exit_json(
+            changed=changed, msg=f"Would have {action} the secret if not in check_mode."
+        )
 
     # Create or update the secret
     result = secret_mgr.kv2.create_or_update_secret(
@@ -194,8 +202,8 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
 
     # Read back to get metadata
     secret_result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
-    # added `raw` to match retrun value of community.hashi_vault.vault_kv2_write
-    module.exit_json(changed=True, msg=action_msg, raw=result, secret=secret_result)
+    # added `raw` to match return value of community.hashi_vault.vault_kv2_write
+    module.exit_json(changed=changed, msg=action_msg, raw=result, secret=secret_result)
 
 
 def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None:
@@ -203,6 +211,7 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
     mount_path = module.params["engine_mount_point"]
     secret_path = module.params["path"]
     versions = module.params["versions"]
+    changed = False
 
     # First, check if the secret exists and its current state
     try:
@@ -214,22 +223,25 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
 
         if deletion_time:
             # Secret is already soft-deleted, no action needed
-            module.exit_json(changed=False, msg="Secret already absent")
+            module.exit_json(changed=changed, msg="Secret already absent")
 
     except VaultSecretNotFoundError:
         # Secret doesn't exist, already in desired state
-        module.exit_json(changed=False, msg="Secret already absent")
+        module.exit_json(changed=changed, msg="Secret already absent")
+
+    # If we reach this point, the secret exists and needs to be deleted
+    changed = True
 
     # If in check mode, exit here with what would happen
     if module.check_mode:
         module.exit_json(
-            changed=True, msg="Would have soft-deleted the secret if not in check_mode."
+            changed=changed, msg="Would have soft-deleted the secret if not in check_mode."
         )
 
     # Delete the secret
     result = secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
     module.exit_json(
-        changed=True, msg="Secret deleted (soft-deleted) successfully", data=result or {}
+        changed=changed, msg="Secret deleted (soft-deleted) successfully", data=result or {}
     )
 
 
