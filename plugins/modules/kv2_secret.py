@@ -16,6 +16,7 @@ version_added: 1.0.0
 author: Mandar Vijay Kulkarni (@mandar242)
 description:
   - Create, update, or delete (soft-delete) secrets in HashiCorp Vault KV version 2 secrets engine.
+  - This module is designed for writing operations only. To read secrets, use the kv2_secret_get lookup plugin.
   - Supports token and AppRole authentication methods.
   - It does not create the secret engine if it does not exist and will fail if the secret engine path (engine_mount_point) is not enabled.
 extends_documentation_fragment:
@@ -104,24 +105,9 @@ raw:
     wrap_info: null
 data:
   description: The raw result of the delete against the given path.
-  returned: success
+  returned: changed and state=absent
   type: dict
   sample: {}
-secret:
-  description: The secret data and metadata when reading existing secrets.
-  returned: when O(state=present) (both changed and unchanged scenarios)
-  type: dict
-  sample:
-    data:
-      env: "test"
-      password: "initial_pass"
-      username: "testuser"
-    metadata:
-      created_time: "2025-09-01T22:04:48.74947241Z"
-      custom_metadata: null
-      deletion_time: ""
-      destroyed: false
-      version: 42
 """
 
 
@@ -175,7 +161,6 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
             module.exit_json(
                 changed=False,
                 msg="Secret already exists with the same data",
-                secret=existing_secret,
             )
         else:
             # Data is different, proceed with update
@@ -200,10 +185,8 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
         mount_path=mount_path, secret_path=secret_path, secret_data=data, cas=cas
     )
 
-    # Read back to get metadata
-    secret_result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
     # added `raw` to match return value of community.hashi_vault.vault_kv2_write
-    module.exit_json(changed=changed, msg=action_msg, raw=result, secret=secret_result)
+    module.exit_json(changed=changed, msg=action_msg, raw=result)
 
 
 def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None:
@@ -268,7 +251,7 @@ def main():
         # Secret parameters
         engine_mount_point=dict(type="str", default="secret", aliases=["secret_mount_path"]),
         path=dict(type="str", required=True, aliases=["secret_path"]),
-        data=dict(type="dict"),
+        data=dict(type="dict", no_log=True),
         cas=dict(type="int"),
         versions=dict(type="list", elements="int"),
         # Other parameters
