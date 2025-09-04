@@ -1,12 +1,32 @@
-# Hashicorp Vault Collection
+# HashiCorp Vault Collection
 
 ## Description
 
-This repository contains the `hashicorp.vault` Ansible Collection. The collection provides Ansible modules and plugins for interacting with HashiCorp Vault, enabling users to manage secrets, authentication, and other Vault operations through Ansible automation.
+This repository contains the `hashicorp.vault` Ansible Collection. The collection provides Ansible modules and plugins for interacting with HashiCorp Vault, enabling users to manage secrets, authentication, and other Vault operations by using Ansible automation.
 
 ## Requirements
 
 Some modules and plugins require external libraries. Please check the requirements for each plugin or module you use in the documentation to find out which requirements are needed.
+
+### Ansible version compatibility
+
+Tested with the Ansible Core >= 2.16.0 versions.
+
+### Python version compatibility
+
+Tested with the Python >= 3.9 versions.
+
+## Included content
+
+### Lookup plugins
+Name | Description
+--- | ---
+[hashicorp.vault.kv2_secret_get](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in Hasicorp vault
+
+### Modules
+Name | Description
+--- | ---
+[hashicorp.vault.kv2_secret](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
 
 ## Installation
 
@@ -39,15 +59,17 @@ See [Ansible Using Collections](https://docs.ansible.com/ansible/latest/user_gui
 
 ## Use Cases
 
-Modules in this collection can be used for various operations on Hashicorp Vault.
-Currently the collection supports
-- Managing KV2 secrets in Hashicorp Vault (create, read, update, delete (soft-delete))
+Modules in this collection can be used for various operations on HashiCorp Vault.
+Currently the collection supports:
+- Managing KV2 secrets in HashiCorp Vault (create, read, update, delete [soft-delete])
 
 ## Testing
 
 GitHub Actions workflows are used to run tests for the hashicorp.vault collection. These workflows include jobs to run the unit tests, integration tests, sanity tests, linters, changelog check and doc related checks.
 
-To run tests locally, add tests/integration/integration_config.yml and run using `ansible-test integraiton <target>`
+To run linter tests locally, run `tox -e linters`. For more information, refer [tox-ansible documentation](https://github.com/ansible/tox-ansible?tab=readme-ov-file#tox-ansible).
+
+To run integration tests locally, copy tests/integration/integration_config.yml.template to tests/integration/integration_config.yml, fill in your Vault details and run the tests using `ansible-test integration <target>`
 ```
 ---
 vault_url_from_int_config: "<VAULT_URL_HERE>"
@@ -58,7 +80,7 @@ vault_approle_secret_id_from_int_config: "<VAULT_APPROLE_SECRET_ID_HERE>"
 
 ## Support
 
-As Red Hat Ansible Certified Content, this collection is entitled to support through the Ansible Automation Platform (AAP) using the Create issue button on the top right corner. If a support case cannot be opened with Red Hat and the collection has been obtained either from Galaxy or GitHub, there may community help available on the Ansible Forum.
+As Red Hat Ansible Certified Content, this collection is entitled to support through the Ansible Automation Platform (AAP) using the **Create issue** button on the top right corner. If a support case cannot be opened with Red Hat and the collection has been obtained either from Galaxy or GitHub, there may be community help available on the [Ansible Forum](https://forum.ansible.com/).
 
 
 ## Release Notes and Roadmap
