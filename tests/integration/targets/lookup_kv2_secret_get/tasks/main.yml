@@ -12,7 +12,9 @@
   with_items: "{{ test_secret_data }}"
   register: secrets
 
-- debug: var=secrets
+- name: Display command result
+  ansible.builtin.debug:
+    var: secrets
 
 - name: Read the test secret
   hashicorp.vault.kv2_secret_info:
@@ -24,7 +26,9 @@
     secret_mount_path: "{{ secret_mount_path }}"
   register: secret_info
 
-- debug: var=secret_info
+- name: Display secret information
+  ansible.builtin.debug:
+    var: secret_info
 
 - name: Test kv2_secret_get lookup plugin
   block:
