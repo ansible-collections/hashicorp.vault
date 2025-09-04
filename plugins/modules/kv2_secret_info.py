@@ -121,16 +121,6 @@ except ImportError as e:
     VAULT_IMPORT_ERROR = str(e)
 
 
-def read_secret(secret_mgr: VaultSecret, mount_path: str, secret_path: str) -> None:
-    """Read the secret value"""
-    # First, try to read the existing secret to check for changes
-    try:
-        secret_result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
-    except VaultSecretNotFoundError:
-        secret_result = {}
-    return secret_result
-
-
 def main():
 
     argument_spec = dict(
@@ -169,9 +159,11 @@ def main():
         secret_mgr = VaultSecret(client)
         mount_path = module.params.get("engine_mount_point")
         secret_path = module.params.get("path")
-        result = read_secret(secret_mgr, mount_path, secret_path)
+        result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
         module.exit_json(changed=False, secret=result)
 
+    except VaultSecretNotFoundError as e:
+        module.fail_json(msg=f"Secret not found: {e}")
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
     except VaultApiError as e:
