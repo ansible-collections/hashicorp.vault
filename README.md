@@ -9,19 +9,23 @@ This repository contains the `hashicorp.vault` Ansible Collection. The collectio
 Some modules and plugins require external libraries. Please check the requirements for each plugin or module you use in the documentation to find out which requirements are needed.
 
 ### Ansible version compatibility
-
+<!--start requires_ansible-->
 Tested with the Ansible Core >= 2.16.0 versions.
+
+<!--end requires_ansible-->
 
 ### Python version compatibility
 
 Tested with the Python >= 3.9 versions.
 
 ## Included content
-
+<!--start collection content-->
 ### Lookup plugins
 Name | Description
 --- | ---
 [hashicorp.vault.kv2_secret_get](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in Hasicorp vault
+
+<!--end collection content-->
 
 ### Modules
 Name | Description
