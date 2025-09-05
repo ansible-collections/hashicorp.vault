@@ -12,37 +12,6 @@ description:
     - Look up KV2 secrets stored in Hasicorp vault.
     - The plugin supports reading latest version as well as specific version of the KV2 secret.
 options:
-  auth_method:
-    description:
-      - Authentication method to use.
-    default: token
-    type: str
-    choices: ['token', 'approle']
-  token:
-    description:
-      - The token to use to authenticate when O(auth_method=token).
-    type: str
-    env:
-      - name: VAULT_TOKEN
-  vault_approle_role_id:
-    description:
-      - The role id to use to authenticate when O(auth_method=approle).
-    type: str
-    env:
-      - name: VAULT_APPROLE_ROLE_ID
-  vault_approle_secret_id:
-    description:
-      - The secret id to use to authenticate when O(auth_method=approle).
-    type: str
-    env:
-      - name: VAULT_APPROLE_SECRET_ID
-  vault_approle_path:
-    description:
-      - The custom AppRole mount path to use to authenticate when O(auth_method=approle).
-    type: str
-    default: approle
-    env:
-      - name: VAULT_APPROLE_PATH
   engine_mount_point:
     description:
       - The mount path of the KV2 secrets engine.
@@ -50,12 +19,6 @@ options:
     type: str
     default: secret
     aliases: ['mount_point', 'secret_mount_path']
-  namespace:
-    description:
-      - Vault namespace where secrets reside.
-    type: str
-    default: admin
-    aliases: ['vault_namespace']
   secret:
     description:
       - Vault path to the secret being requested.
@@ -63,19 +26,13 @@ options:
     type: str
     required: true
     aliases: ['secret_path']
-  url:
-    description:
-      - URL of the Vault service.
-    type: str
-    required: true
-    aliases: ['vault_address']
-    env:
-      - name: VAULT_ADDR
   version:
     description:
       - Specifies the version to return. If not set the latest is returned.
     type: int
     required: false
+extends_documentation_fragment:
+  - hashicorp.vault.vault_auth.plugins
 """
 
 

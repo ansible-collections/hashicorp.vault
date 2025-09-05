@@ -16,45 +16,12 @@ version_added: 1.0.0
 author: Mandar Vijay Kulkarni (@mandar242)
 description:
   - Create, update, or delete (soft-delete) secrets in HashiCorp Vault KV version 2 secrets engine.
+  - This module is designed for writing operations only. To read secrets, use the kv2_secret_get lookup plugin.
   - Supports token and AppRole authentication methods.
   - It does not create the secret engine if it does not exist and will fail if the secret engine path (engine_mount_point) is not enabled.
+extends_documentation_fragment:
+  - hashicorp.vault.vault_auth.modules
 options:
-  url:
-    description: Vault server URL.
-    required: true
-    type: str
-    aliases: [vault_address]
-  namespace:
-    description: Vault namespace.
-    default: admin
-    type: str
-    aliases: [vault_namespace]
-  auth_method:
-    description: Authentication method to use.
-    choices: ['token', 'approle']
-    default: token
-    type: str
-  token:
-    description:
-      - Vault token for authentication.
-      - Token can be provided as a parameter or as an environment variable E(VAULT_TOKEN).
-    type: str
-  role_id:
-    description:
-      - Role ID for AppRole authentication.
-      - AppRole O(role_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_ROLE_ID).
-    type: str
-    aliases: [approle_role_id]
-  secret_id:
-    description:
-      - Secret ID for AppRole authentication.
-      - AppRole O(secret_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_SECRET_ID).
-    type: str
-    aliases: [approle_secret_id]
-  vault_approle_path:
-    description: AppRole auth method mount path.
-    default: approle
-    type: str
   engine_mount_point:
     description: KV secrets engine mount point.
     default: secret
@@ -138,24 +105,9 @@ raw:
     wrap_info: null
 data:
   description: The raw result of the delete against the given path.
-  returned: success
+  returned: changed and state=absent
   type: dict
   sample: {}
-secret:
-  description: The secret data and metadata when reading existing secrets.
-  returned: when O(state=present) (both changed and unchanged scenarios)
-  type: dict
-  sample:
-    data:
-      env: "test"
-      password: "initial_pass"
-      username: "testuser"
-    metadata:
-      created_time: "2025-09-01T22:04:48.74947241Z"
-      custom_metadata: null
-      deletion_time: ""
-      destroyed: false
-      version: 42
 """
 
 
@@ -187,6 +139,7 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
     mount_path = module.params["engine_mount_point"]
     secret_path = module.params["path"]
     action = "created"
+    changed = True
 
     # First, try to read the existing secret to check for changes
     try:
@@ -201,35 +154,39 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
         if deletion_time:
             # Secret was soft-deleted, treat as if it doesn't exist for idempotency
             action_msg = "Secret recreated successfully"
+            changed = True
         elif existing_data == data:
             # Secret already exists with the same data - no changes needed
+            changed = False
             module.exit_json(
                 changed=False,
                 msg="Secret already exists with the same data",
-                secret=existing_secret,
             )
         else:
             # Data is different, proceed with update
             action_msg = "Secret updated successfully"
             action = "updated"
+            changed = True
 
     except VaultSecretNotFoundError:
         # Secret doesn't exist, proceed with creation
         action_msg = "Secret created successfully"
         action = "created"
+        changed = True
+
     # If in check mode, exit here with what would happen
     if module.check_mode:
-        module.exit_json(changed=True, msg=f"Would have {action} the secret if not in check_mode.")
+        module.exit_json(
+            changed=changed, msg=f"Would have {action} the secret if not in check_mode."
+        )
 
     # Create or update the secret
     result = secret_mgr.kv2.create_or_update_secret(
         mount_path=mount_path, secret_path=secret_path, secret_data=data, cas=cas
     )
 
-    # Read back to get metadata
-    secret_result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
-    # added `raw` to match retrun value of community.hashi_vault.vault_kv2_write
-    module.exit_json(changed=True, msg=action_msg, raw=result, secret=secret_result)
+    # added `raw` to match return value of community.hashi_vault.vault_kv2_write
+    module.exit_json(changed=changed, msg=action_msg, raw=result)
 
 
 def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None:
@@ -237,6 +194,7 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
     mount_path = module.params["engine_mount_point"]
     secret_path = module.params["path"]
     versions = module.params["versions"]
+    changed = False
 
     # First, check if the secret exists and its current state
     try:
@@ -248,22 +206,25 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
 
         if deletion_time:
             # Secret is already soft-deleted, no action needed
-            module.exit_json(changed=False, msg="Secret already absent")
+            module.exit_json(changed=changed, msg="Secret already absent")
 
     except VaultSecretNotFoundError:
         # Secret doesn't exist, already in desired state
-        module.exit_json(changed=False, msg="Secret already absent")
+        module.exit_json(changed=changed, msg="Secret already absent")
+
+    # If we reach this point, the secret exists and needs to be deleted
+    changed = True
 
     # If in check mode, exit here with what would happen
     if module.check_mode:
         module.exit_json(
-            changed=True, msg="Would have soft-deleted the secret if not in check_mode."
+            changed=changed, msg="Would have soft-deleted the secret if not in check_mode."
         )
 
     # Delete the secret
     result = secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
     module.exit_json(
-        changed=True, msg="Secret deleted (soft-deleted) successfully", data=result or {}
+        changed=changed, msg="Secret deleted (soft-deleted) successfully", data=result or {}
     )
 
 
@@ -290,7 +251,7 @@ def main():
         # Secret parameters
         engine_mount_point=dict(type="str", default="secret", aliases=["secret_mount_path"]),
         path=dict(type="str", required=True, aliases=["secret_path"]),
-        data=dict(type="dict"),
+        data=dict(type="dict", no_log=True),
         cas=dict(type="int"),
         versions=dict(type="list", elements="int"),
         # Other parameters
