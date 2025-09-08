@@ -17,42 +17,6 @@ author: Aubin Bikouo (@abikouo)
 description:
   - Read secrets in HashiCorp Vault KV version 2 secrets engine.
 options:
-  url:
-    description: Vault server URL.
-    required: true
-    type: str
-    aliases: [vault_address]
-  namespace:
-    description: Vault namespace.
-    default: admin
-    type: str
-    aliases: [vault_namespace]
-  auth_method:
-    description: Authentication method to use.
-    choices: ['token', 'approle']
-    default: token
-    type: str
-  token:
-    description:
-      - Vault token for authentication.
-      - Token can be provided as a parameter or as an environment variable E(VAULT_TOKEN).
-    type: str
-  role_id:
-    description:
-      - Role ID for AppRole authentication.
-      - AppRole O(role_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_ROLE_ID).
-    type: str
-    aliases: [approle_role_id]
-  secret_id:
-    description:
-      - Secret ID for AppRole authentication.
-      - AppRole O(secret_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_SECRET_ID).
-    type: str
-    aliases: [approle_secret_id]
-  vault_approle_path:
-    description: AppRole auth method mount path.
-    default: approle
-    type: str
   engine_mount_point:
     description: KV secrets engine mount point.
     default: secret
@@ -66,17 +30,19 @@ options:
   version:
     description: The version to retrieve.
     type: int
+extends_documentation_fragment:
+  - hashicorp.vault.vault_auth.modules
 """
 
 EXAMPLES = """
 - name: Read a secret with token authentication
-  hashicorp.vault.kv2_secret:
+  hashicorp.vault.kv2_secret_info:
     url: https://vault.example.com:8200
     token: "{{ vault_token }}"
     path: myapp/config
 
 - name: Read a secret with a specific version
-  hashicorp.vault.kv2_secret:
+  hashicorp.vault.kv2_secret_info:
     url: https://vault.example.com:8200
     path: myapp/config
     version: 1
@@ -159,7 +125,10 @@ def main():
         secret_mgr = VaultSecret(client)
         mount_path = module.params.get("engine_mount_point")
         secret_path = module.params.get("path")
-        result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path)
+        version = module.params.get("version")
+        result = secret_mgr.kv2.read_secret(
+            mount_path=mount_path, secret_path=secret_path, version=version
+        )
         module.exit_json(changed=False, secret=result)
 
     except VaultSecretNotFoundError as e:

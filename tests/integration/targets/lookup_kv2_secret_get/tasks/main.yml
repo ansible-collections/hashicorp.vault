@@ -9,12 +9,8 @@
     data: "{{ item }}"
     secret_mount_path: "{{ secret_mount_path }}"
     state: present
-  with_items: "{{ test_secret_data }}"
+  loop: "{{ test_secret_data | flatten(levels=1) }}"
   register: secrets
-
-- name: Display command result
-  ansible.builtin.debug:
-    var: secrets
 
 - name: Read the test secret
   hashicorp.vault.kv2_secret_info:
@@ -25,10 +21,6 @@
     path: "{{ test_secret_path }}"
     secret_mount_path: "{{ secret_mount_path }}"
   register: secret_info
-
-- name: Display secret information
-  ansible.builtin.debug:
-    var: secret_info
 
 - name: Test kv2_secret_get lookup plugin
   block:

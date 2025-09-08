@@ -5,11 +5,11 @@
 
 DOCUMENTATION = """
 name: kv2_secret_get
-short_description: Look up KV2 secrets stored in Hasicorp vault.
+short_description: Look up KV2 secrets stored in HashiCorp Vault.
 author:
     - Aubin Bikouo (@abikouo)
 description:
-    - Look up KV2 secrets stored in Hasicorp vault.
+    - Look up KV2 secrets stored in HashiCorp Vault.
     - The plugin supports reading latest version as well as specific version of the KV2 secret.
 options:
   engine_mount_point:
