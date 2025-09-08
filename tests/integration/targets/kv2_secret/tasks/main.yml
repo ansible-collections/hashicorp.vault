@@ -1,0 +1,19 @@
+---
+# Integration tests for kv2_secret module
+# Tests core functionality with token and AppRole authentication methods
+
+- name: Test kv2_secret with token authentication method
+  ansible.builtin.include_tasks:
+    file: test_kv2_secret_functionality.yml
+  vars:
+    # Token authentication parameters
+    test_token: "{{ vault_token_from_setup_auth_token }}"
+
+- name: Test kv2_secret with AppRole authentication method
+  ansible.builtin.include_tasks:
+    file: test_kv2_secret_functionality.yml
+  vars:
+    # AppRole authentication parameters
+    test_auth_method: approle
+    test_role_id: "{{ vault_approle_role_id }}"
+    test_secret_id: "{{ vault_approle_secret_id }}"

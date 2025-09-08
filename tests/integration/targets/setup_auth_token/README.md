@@ -1,7 +1,7 @@
-# setup Auth Token Role
+# `setup_auth_token` Role
 
 This role provides reusable authentication functionality for HashiCorp Vault integration tests.
-Returns a auth token to cloud-content Hashicorp Vault instance.
+Returns an auth token to cloud-content HashiCorp Vault instance.
 
 ## Purpose
 
@@ -33,8 +33,7 @@ After running this role, the following fact will be available:
 
 ## Requirements
 
-This role expects the following environment variables or configuration:
-
+This role expects the following variables. These can be provided as environment variables or as role variables:```
 - `VAULT_ADDR` or `vault_url`: Vault server URL
 - `VAULT_NAMESPACE` or `vault_namespace`: Vault namespace
 - `VAULT_APPROLE_ROLE_ID` or `vault_approle_role_id`: AppRole role ID

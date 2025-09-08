@@ -1,0 +1,23 @@
+---
+# Vault connection configuration
+# vault_url: READ from integration_config.yml
+# vault_namespace: READ from integration_config.yml
+# vault_approle_role_id: READ from integration_config.yml
+# vault_approle_secret_id: READ from integration_config.yml
+
+# Test configuration
+secret_mount_path: "kv-integration-tests"
+integration_tests_approle: "approle-integration-tests"
+secret_path: "integration-test-secret"
+
+# Test data sets
+initial_data:
+  username: "testuser"
+  password: "initial_pass"
+  env: "test"
+
+updated_data:
+  username: "testuser"
+  password: "updated_pass"
+  env: "test"
+  updated: true

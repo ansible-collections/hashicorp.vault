@@ -16,7 +16,7 @@ version_added: 1.0.0
 author: Mandar Vijay Kulkarni (@mandar242)
 description:
   - Create, update, or delete (soft-delete) secrets in HashiCorp Vault KV version 2 secrets engine.
-  - This module is designed for writing operations only. To read secrets, use the kv2_secret_get lookup plugin.
+  - This module is designed for writing operations only. To read secrets, use the P(hashicorp.vault.kv2_secret_get#lookup) lookup plugin.
   - Supports token and AppRole authentication methods.
   - It does not create the secret engine if it does not exist and will fail if the secret engine path (engine_mount_point) is not enabled.
 extends_documentation_fragment:
@@ -104,7 +104,10 @@ raw:
     warnings: null
     wrap_info: null
 data:
-  description: The raw result of the delete against the given path.
+  description:
+    - The raw result of the delete against the given path.
+    - This is usually empty, but may contain warnings or other information.
+    - Successful delete on Vault KV2 API returns 204 No Content, so the module returns an empty dictionary on successful deletion.
   returned: changed and state=absent
   type: dict
   sample: {}
