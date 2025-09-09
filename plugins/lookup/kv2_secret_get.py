@@ -62,7 +62,21 @@ EXAMPLES = """
 
 RETURN = """
 _raw:
-  description: Retrieves the KV2 secret data and metadata stored in HashiCorp Vault.
+  description:
+      - A dictionary containing the KV2 secret data and metadata stored in HashiCorp Vault.
+      - The 'data' key contains the actual secret key-value pairs.
+      - The 'metadata' key contains version information, timestamps, and other metadata.
+  type: dict
+  elements: dict
+  sample:
+    data:
+      foo: "bar"
+    metadata:
+      created_time: "2025-09-08T18:09:19.403229608Z"
+      custom_metadata: null
+      deletion_time: ""
+      destroyed: false
+      version: 1
 """
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (

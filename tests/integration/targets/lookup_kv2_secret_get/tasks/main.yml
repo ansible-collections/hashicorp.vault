@@ -65,3 +65,15 @@
         secret_mount_path: "{{ secret_mount_path }}"
         namespace: "{{ vault_namespace }}"
         state: absent
+
+    - name: Permanently delete the secret metadata and all versions
+      ansible.builtin.uri:
+        url: "{{ vault_url }}/v1/{{ secret_mount_path }}/metadata/{{ test_secret_path }}"
+        method: DELETE
+        headers:
+          X-Vault-Token: "{{ vault_token_from_setup_auth_token }}"
+          X-Vault-Namespace: "{{ vault_namespace }}"
+        return_content: true
+        status_code: [204]
+      no_log: true
+      register: secret_metadata_deletion_result
