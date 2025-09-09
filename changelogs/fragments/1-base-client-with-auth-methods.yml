@@ -1,2 +1,0 @@
-minor_changes:
-  - Add a base client with support for token and AppRole authentication methods (https://github.com/ansible-automation-platform/hashicorp.vault/pull/2).

@@ -1,2 +1,0 @@
-minor_changes:
-  - Add GitHub Action workflows for testing (https://github.com/ansible-automation-platform/hashicorp.vault/pull/3).

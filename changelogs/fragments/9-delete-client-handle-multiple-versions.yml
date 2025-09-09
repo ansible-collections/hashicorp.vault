@@ -1,2 +1,0 @@
-minor_changes:
-  - Update KV2 secret delete to client to handle deletion of multiple versions (https://github.com/ansible-automation-platform/hashicorp.vault/pull/9).
