@@ -20,7 +20,6 @@ tags: ["hashicorp", "vault"]
 dependencies:
   "ansible.utils": "*" # note: "*" selects the latest version available
 
-# as this collection will only be available through Automation Hub and repository is not public
 repository: https://github.com/ansible
 homepage: http://ansible.com/
 issues: https://access.redhat.com/support/
