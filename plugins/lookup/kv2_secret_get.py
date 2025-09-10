@@ -66,7 +66,7 @@ _raw:
       - A dictionary containing the KV2 secret data and metadata stored in HashiCorp Vault.
       - The 'data' key contains the actual secret key-value pairs.
       - The 'metadata' key contains version information, timestamps, and other metadata.
-  type: dict
+  type: list
   elements: dict
   sample:
     data:
