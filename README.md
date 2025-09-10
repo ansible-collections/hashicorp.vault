@@ -30,11 +30,28 @@ Name | Description
 ### Modules
 Name | Description
 --- | ---
-[hashicorp.vault.kv2_secret](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
+hashicorp.vault.kv2_secret|Manage HashiCorp Vault KV version 2 secrets
+hashicorp.vault.kv2_secret_info|Read HashiCorp Vault KV version 2 secrets
 
 ## Installation
 
-Before using this collection, you need to install it with the Ansible Galaxy command-line tool:
+To install this collection from Automation Hub, the following needs to be added to `ansible.cfg`:
+
+```ini
+[galaxy]
+server_list=automation_hub
+
+[galaxy_server.automation_hub]
+url=https://console.redhat.com/api/automation-hub/content/published/
+auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+token=<SuperSecretToken>
+```
+
+To download contents from Automation Hub using `ansible-galaxy` CLI, you would need to generate and use an offline token.
+If you already have a token, please ensure that it has not expired. Visit [Connect to Hub](https://console.redhat.com/ansible/automation-hub/token) to obtain the necessary token.
+
+
+With this configured and Ansible Galaxy command-line tool installed, run the following command:
 
 ```bash
 ansible-galaxy collection install hashicorp.vault

@@ -55,7 +55,7 @@ notes:
   - Authentication is required for all Vault operations.
   - Token authentication is the default method.
   - For AppRole authentication, both O(role_id) and O(secret_id) are required.
-  - Environment variables take precedence over module parameters when both are provided.
+  - Module parameters take precedence over environment variables when both are provided.
 """
 
     # Common Vault authentication options
