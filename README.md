@@ -30,8 +30,8 @@ Name | Description
 ### Modules
 Name | Description
 --- | ---
-hashicorp.vault.kv2_secret|Manage HashiCorp Vault KV version 2 secrets
-hashicorp.vault.kv2_secret_info|Read HashiCorp Vault KV version 2 secrets
+[hashicorp.vault.kv2_secret](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
+[hashicorp.vault.kv2_secret_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret_info.py)|Read HashiCorp Vault KV version 2 secrets
 
 ## Installation
 
