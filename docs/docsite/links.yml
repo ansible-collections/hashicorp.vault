@@ -1,18 +1,4 @@
 ---
-# This will make sure that plugin and module documentation gets Edit on GitHub links
-# that allow users to directly create a PR for this plugin or module in GitHub's UI.
-# Remove this section if the collection repository is not on GitHub, or if you do not
-# want this functionality for your collection.
-edit_on_github:
-  # TO-DO: Update this if your collection lives in a different GitHub organization.
-  repository: ansible-collections/hashicorp.vault
-  branch: main
-  # If your collection root (the directory containing galaxy.yml) does not coincide with your
-  # repository's root, you have to specify the path to the collection root here. For example,
-  # if the collection root is in a subdirectory ansible_collections/community/REPO_NAME
-  # in your repository, you have to set path_prefix to 'ansible_collections/community/REPO_NAME'.
-  path_prefix: ""
-
 # Here you can add arbitrary extra links. Please keep the number of links down to a
 # minimum! Also please keep the description short, since this will be the text put on
 # a button.
@@ -26,12 +12,4 @@ edit_on_github:
 
 extra_links:
   - description: Report an issue
-    # TO-DO: Update this if your collection lives in a different GitHub organization.
-    url: https://github.com/ansible-collections/hashicorp.vault/issues/new/choose
-
-# Specify communication channels for your collection. We suggest to not specify more
-# than one place for communication per communication tool to avoid confusion.
-communication:
-  forum:
-    - topic: Ansible Forum
-      url: https://forum.ansible.com/
+    url: https://access.redhat.com/support/
