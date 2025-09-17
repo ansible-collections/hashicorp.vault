@@ -7,6 +7,11 @@ Hashicorp.Vault Release Notes
 v1.0.0
 ======
 
+Release Summary
+---------------
+
+This marks the first release of the hashicorp.vault collection.
+
 New Plugins
 -----------
 

@@ -14,3 +14,4 @@ releases:
           name: kv2_secret_get
           namespace: null
     release_date: '2025-09-19'
+    release_summary: This marks the first release of the hashicorp.vault collection.
