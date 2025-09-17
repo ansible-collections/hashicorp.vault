@@ -1,6 +1,22 @@
-This should be updated by antsibull-changelog. Do not edit this manually!
+=============================
+Hashicorp.Vault Release Notes
+=============================
 
-See https://github.com/ansible-community/antsibull-changelog/blob/main/docs/changelogs.rst for
-information on how to use antsibull-changelog.
+.. contents:: Topics
 
-Check out ``changelogs/config.yaml`` for its configuration. You need to change at least the ``title`` field in there.
+v1.0.0
+======
+
+New Plugins
+-----------
+
+Lookup
+~~~~~~
+
+- hashicorp.vault.kv2_secret_get - Look up KV2 secrets stored in HashiCorp Vault.
+
+New Modules
+-----------
+
+- hashicorp.vault.kv2_secret - Manage HashiCorp Vault KV version 2 secrets
+- hashicorp.vault.kv2_secret_info - Read HashiCorp Vault KV version 2 secrets

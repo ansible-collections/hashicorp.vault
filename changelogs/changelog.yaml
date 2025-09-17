@@ -1,0 +1,16 @@
+ancestor: null
+releases:
+  1.0.0:
+    modules:
+    - description: Manage HashiCorp Vault KV version 2 secrets
+      name: kv2_secret
+      namespace: ''
+    - description: Read HashiCorp Vault KV version 2 secrets
+      name: kv2_secret_info
+      namespace: ''
+    plugins:
+      lookup:
+      - description: Look up KV2 secrets stored in HashiCorp Vault.
+        name: kv2_secret_get
+        namespace: null
+    release_date: '2025-09-19'

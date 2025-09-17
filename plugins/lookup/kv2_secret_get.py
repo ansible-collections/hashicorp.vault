@@ -6,6 +6,7 @@
 DOCUMENTATION = """
 name: kv2_secret_get
 short_description: Look up KV2 secrets stored in HashiCorp Vault.
+version_added: 1.0.0
 author:
     - Aubin Bikouo (@abikouo)
 description:
