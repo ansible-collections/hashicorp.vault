@@ -13,7 +13,6 @@ authors:
 description: An Ansible Collection for managing Hashicorp Vault.
 license_file: LICENSE
 
-# TO-DO: update the tags based on your content type
 tags: ["hashicorp", "vault", "security", "infrastructure"]
 
 # TO-DO: maintain this list to reflect the collection's dependencies

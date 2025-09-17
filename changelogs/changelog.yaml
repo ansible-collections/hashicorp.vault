@@ -1,6 +1,10 @@
 ancestor: null
 releases:
   1.0.0:
+    changes:
+      release_summary: This marks the first release of the hashicorp.vault collection.
+    fragments:
+      - v1.0.0.yml
     modules:
       - description: Manage HashiCorp Vault KV version 2 secrets
         name: kv2_secret
@@ -14,4 +18,3 @@ releases:
           name: kv2_secret_get
           namespace: null
     release_date: '2025-09-19'
-    release_summary: This marks the first release of the hashicorp.vault collection.
