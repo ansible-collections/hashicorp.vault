@@ -10,7 +10,7 @@ readme: README.md
 authors:
   - Ansible (https://github.com/ansible)
 
-description: An Ansible Collection for managing Hashicorp Vault.
+description: An Ansible Collection for managing HashiCorp Vault.
 license_file: LICENSE
 
 tags: ["hashicorp", "vault", "security", "infrastructure"]
