@@ -1,8 +1,10 @@
 # HashiCorp Vault Collection
 
+This repository contains the `hashicorp.vault` Ansible Collection.
+
 ## Description
 
-This repository contains the `hashicorp.vault` Ansible Collection. The collection provides Ansible modules and plugins for interacting with HashiCorp Vault, enabling users to manage secrets, authentication, and other Vault operations by using Ansible automation.
+The primary purpose of this collection is to provide seamless integration between Ansible Automation Platform and Hashicorp Vault. It contains modules and plugins that support managing secrets, namespaces, authentication, and other Vault operations through Ansible automation.
 
 ## Requirements
 
