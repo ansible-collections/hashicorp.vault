@@ -18,7 +18,7 @@ Tested with the Ansible Core >= 2.16.0 versions.
 
 ### Python version compatibility
 
-Tested with the Python >= 3.9 versions.
+Tested with the Python >= 3.10 versions.
 
 ## Included content
 <!--start collection content-->
