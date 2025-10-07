@@ -271,45 +271,21 @@ class VaultKv1Secrets:
         """
         self._client = client
 
-    def read_secret(
-        self, mount_path: str, secret_path: str, recover_snapshot_id: str = None
-    ) -> dict:
+    def read_secret(self, mount_path: str, secret_path: str) -> dict:
         """
         Reads a secret from the KV1 secrets engine.
 
         Args:
             mount_path (str): The mount path of the KV1 secrets engine.
             secret_path (str): The path to the secret.
-            recover_snapshot_id (str, optional): The ID of a snapshot previously loaded into Vault
-                                                that contains secrets at the provided path.
 
         Returns:
             dict: The secret's data and metadata.
         """
         path = f"v1/{mount_path}/{secret_path}"
         params = {}
-        if recover_snapshot_id is not None:
-            params["read_snapshot_id"] = recover_snapshot_id
 
         response_data = self._client._make_request("GET", path, params=params)
-        return response_data.get("data", {})
-
-    def recover_secret(self, mount_path: str, secret_path: str, recover_snapshot_id: str) -> dict:
-        """
-        Recovers a secret at the specified location from the given loaded snapshot from the KV1 secrets engine.
-
-        Args:
-            secret_path (str): The path to the secret.
-            recover_snapshot_id (str): The ID of a snapshot previously loaded into Vault
-                                        that contains secrets at the provided path.
-
-        Returns:
-            dict: The secret's data and metadata.
-        """
-        path = f"v1/{mount_path}/{secret_path}"
-        params = {"recover_snapshot_id": recover_snapshot_id}
-
-        response_data = self._client._make_request("POST", path, params=params)
         return response_data.get("data", {})
 
     def create_or_update_secret(self, mount_path: str, secret_path: str, secret_data: dict) -> dict:

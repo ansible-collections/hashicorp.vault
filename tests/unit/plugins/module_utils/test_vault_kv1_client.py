@@ -45,38 +45,6 @@ def test_read_secret(vault_kv1_secret, mock_success_response):
     assert secret == mock_success_response["data"]
 
 
-def test_read_secret_with_recover_snapshot_id(vault_kv1_secret, mock_success_response):
-    vault_kv1_secret._client._make_request.return_value = mock_success_response
-
-    engine_mount_point = random_string(length=16)
-    secret_path = random_string()
-    recover_snapshot_id = MagicMock()
-
-    secret = vault_kv1_secret.read_secret(engine_mount_point, secret_path, recover_snapshot_id)
-
-    expected_path = f"v1/{engine_mount_point}/{secret_path}"
-    vault_kv1_secret._client._make_request.assert_called_once_with(
-        "GET", expected_path, params={"read_snapshot_id": recover_snapshot_id}
-    )
-    assert secret == mock_success_response["data"]
-
-
-def test_recover_secret(vault_kv1_secret, mock_success_response):
-    vault_kv1_secret._client._make_request.return_value = mock_success_response
-
-    engine_mount_point = random_string(length=16)
-    secret_path = random_string()
-    recover_snapshot_id = MagicMock()
-
-    secret = vault_kv1_secret.recover_secret(engine_mount_point, secret_path, recover_snapshot_id)
-
-    expected_path = f"v1/{engine_mount_point}/{secret_path}"
-    vault_kv1_secret._client._make_request.assert_called_once_with(
-        "POST", expected_path, params={"recover_snapshot_id": recover_snapshot_id}
-    )
-    assert secret == mock_success_response["data"]
-
-
 def test_delete_secret(vault_kv1_secret):
     vault_kv1_secret._client._make_request.return_value = mock_success_response
 

@@ -1,6 +1,4 @@
 ---
-- debug:
-    msg: "token -> {{ vault_token_from_setup_auth_token }}"
 - name: Run kv1_secret tests
   collections:
     - hashicorp.vault
@@ -166,4 +164,3 @@
       hashicorp.vault.kv1_secret:
         path: "{{ secret_path }}"
         state: absent
-      ignore_errors: true

@@ -28,11 +28,6 @@ options:
     required: true
     type: str
     aliases: [secret_path]
-  recover_snapshot_id:
-    description:
-      - The ID of a snapshot previously loaded into Vault that contains
-        secrets at the provided path.
-    type: str
 extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
 """
@@ -43,12 +38,6 @@ EXAMPLES = """
     url: https://vault.example.com:8200
     token: "{{ vault_token }}"
     path: sample
-
-- name: Read a secret with a specified snapshot location id
-  hashicorp.vault.kv2_secret_info:
-    url: https://vault.example.com:8200
-    path: myapp/config
-    recover_snapshot_id: '2403d301-94f2-46a1-a39d-02be83e2831a'
 """
 
 RETURN = """
@@ -61,12 +50,6 @@ secret:
       env: "test"
       password: "initial_pass"
       username: "testuser"
-    metadata:
-      created_time: "2025-09-01T22:04:48.74947241Z"
-      custom_metadata: null
-      deletion_time: ""
-      destroyed: false
-      version: 42
 """
 
 import copy
@@ -90,7 +73,6 @@ def main():
     argument_spec.update(
         dict(
             path=dict(type="str", required=True, aliases=["secret_path"]),
-            recover_snapshot_id=dict(type="str"),
             engine_mount_point=dict(default="secret", aliases=["secret_mount_path"]),
         )
     )
@@ -104,12 +86,9 @@ def main():
     client = get_authenticated_client(module)
     mount_path = module.params.get("engine_mount_point")
     path = module.params.get("path")
-    recover_snapshot_id = module.params.get("recover_snapshot_id")
 
     try:
-        result = client.secrets.kv1.read_secret(
-            mount_path=mount_path, secret_path=path, recover_snapshot_id=recover_snapshot_id
-        )
+        result = client.secrets.kv1.read_secret(mount_path=mount_path, secret_path=path)
         module.exit_json(changed=False, secret=result)
 
     except VaultSecretNotFoundError as e:
