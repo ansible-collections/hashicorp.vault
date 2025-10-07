@@ -8,9 +8,11 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
+from requests.exceptions import HTTPError
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
     AppRoleAuthenticator,
@@ -18,7 +20,10 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.authentication imp
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import VaultClient
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultApiError,
     VaultConfigurationError,
+    VaultPermissionError,
+    VaultSecretNotFoundError,
 )
 
 
@@ -30,7 +35,9 @@ MOCK_REQUESTS_SESSION = (
 @pytest.fixture
 def mock_session():
     """Fixture providing a mock session."""
-    return Mock()
+    session = Mock()
+    session.request = Mock()
+    return session
 
 
 @pytest.fixture
@@ -173,3 +180,47 @@ class TestVaultClientIntegrationWithAuthenticators:
 
         assert mock_session.headers.update.call_count == 2
         mock_session.headers.update.assert_called_with({"X-Vault-Token": "hvs.token-456"})
+
+
+class TestVaultClientMakeRequest:
+    """Test method _make_request() from VaultClient."""
+
+    def test_make_request_success(self, mock_session_class, mock_session):
+        """Test _make_request() success."""
+        client = VaultClient(
+            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
+        )
+        response = MagicMock()
+        mock_session.request = MagicMock()
+        mock_session.request.return_value = response
+        path = "some/path"
+        client._make_request("GET", path)
+        expected_url = "https://vault.example.com:8200/some/path"
+        client.session.request.assert_called_once_with("GET", expected_url)
+
+    @pytest.mark.parametrize(
+        "status_code,expected_exception",
+        [
+            (403, VaultPermissionError),
+            (404, VaultSecretNotFoundError),
+            (500, VaultApiError),
+            (400, VaultApiError),
+        ],
+    )
+    def test_make_request_permission_denied_403(
+        self, mock_session_class, mock_session, status_code, expected_exception
+    ):
+        """Test _make_request() request error."""
+        client = VaultClient(
+            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
+        )
+        response = MagicMock(status_code=status_code)
+        response.json.return_value = {"errors": ["error while making request"]}
+        response.raise_for_status.side_effect = HTTPError(response=response)
+        mock_session.request = MagicMock()
+        mock_session.request.return_value = response
+        path = "some/path"
+        with pytest.raises(expected_exception):
+            client._make_request("GET", path)
+        expected_url = "https://vault.example.com:8200/some/path"
+        client.session.request.assert_called_once_with("GET", expected_url)

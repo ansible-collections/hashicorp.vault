@@ -115,21 +115,6 @@ class VaultClient:
         self.session.headers.update({"X-Vault-Token": token})
         logger.debug("Token set for VaultClient")
 
-
-class VaultKv2Secrets:
-    """
-    Handles interactions with the KV version 2 secrets engine.
-    """
-
-    def __init__(self, client):
-        """
-        Initializes the KV2 secrets client.
-
-        Args:
-            client (VaultClient): An authenticated instance of the main VaultClient.
-        """
-        self._client = client
-
     def _make_request(self, method: str, path: str, **kwargs) -> dict:
         """
         Make requests to the Vault API.
@@ -143,10 +128,10 @@ class VaultKv2Secrets:
             dict: The JSON response data, or empty dict for successful operations with no content.
         """
 
-        url = f"{self._client.vault_address}/v1/{path}"
+        url = f"{self.vault_address}/{path}"
         logger.debug("Making %s request to %s with params: %s", method, url, kwargs.get("params"))
         try:
-            response = self._client.session.request(method, url, **kwargs)
+            response = self.session.request(method, url, **kwargs)
             response.raise_for_status()
             return response.json() if response.content else {}
         except requests.exceptions.HTTPError as e:
@@ -164,8 +149,23 @@ class VaultKv2Secrets:
                 raise VaultApiError(msg, status_code, errors) from e
         except requests.exceptions.RequestException as e:
             raise VaultConnectionError(
-                f"Failed to connect to Vault at {self._client.vault_address}. Error: {e}"
+                f"Failed to connect to Vault at {self.vault_address}. Error: {e}"
             ) from e
+
+
+class VaultKv2Secrets:
+    """
+    Handles interactions with the KV version 2 secrets engine.
+    """
+
+    def __init__(self, client):
+        """
+        Initializes the KV2 secrets client.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+        """
+        self._client = client
 
     def read_secret(self, mount_path: str, secret_path: str, version: int = None) -> dict:
         """
@@ -179,12 +179,12 @@ class VaultKv2Secrets:
         Returns:
             dict: The secret's data and metadata.
         """
-        path = f"{mount_path}/data/{secret_path}"
+        path = f"v1/{mount_path}/data/{secret_path}"
         params = {}
         if version is not None:
             params["version"] = version
 
-        response_data = self._make_request("GET", path, params=params)
+        response_data = self._client._make_request("GET", path, params=params)
         return response_data.get("data", {})
 
     def create_or_update_secret(
@@ -222,13 +222,13 @@ class VaultKv2Secrets:
         if not isinstance(secret_data, dict):
             raise TypeError("secret_data must be a dict")
 
-        path = f"{mount_path}/data/{secret_path}"
+        path = f"v1/{mount_path}/data/{secret_path}"
         body: Dict[str, Any] = {"data": secret_data}
         if cas is not None:
             body["options"] = {"cas": cas}
 
         logger.debug("POST secret at %s with CAS: %s", secret_path, cas)
-        return self._make_request("POST", path, json=body)
+        return self._client._make_request("POST", path, json=body)
 
     def delete_secret(
         self, mount_path: str, secret_path: str, versions: Optional[List[int]] = None
@@ -249,12 +249,108 @@ class VaultKv2Secrets:
         """
         if versions:
             # Delete specific versions using batch deletion
-            path = f"{mount_path}/delete/{secret_path}"
-            self._make_request("POST", path, json={"versions": versions})
+            path = f"v1/{mount_path}/delete/{secret_path}"
+            self._client._make_request("POST", path, json={"versions": versions})
         else:
             # Delete latest version
-            path = f"{mount_path}/data/{secret_path}"
-            self._make_request("DELETE", path)
+            path = f"v1/{mount_path}/data/{secret_path}"
+            self._client._make_request("DELETE", path)
+
+
+class VaultKv1Secrets:
+    """
+    Handles interactions with the KV version 1 secrets engine.
+    """
+
+    def __init__(self, client):
+        """
+        Initializes the KV1 secrets client.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+        """
+        self._client = client
+
+    def read_secret(
+        self, mount_path: str, secret_path: str, recover_snapshot_id: str = None
+    ) -> dict:
+        """
+        Reads a secret from the KV1 secrets engine.
+
+        Args:
+            mount_path (str): The mount path of the KV1 secrets engine.
+            secret_path (str): The path to the secret.
+            recover_snapshot_id (str, optional): The ID of a snapshot previously loaded into Vault
+                                                that contains secrets at the provided path.
+
+        Returns:
+            dict: The secret's data and metadata.
+        """
+        path = f"v1/{mount_path}/{secret_path}"
+        params = {}
+        if recover_snapshot_id is not None:
+            params["read_snapshot_id"] = recover_snapshot_id
+
+        response_data = self._client._make_request("GET", path, params=params)
+        return response_data.get("data", {})
+
+    def recover_secret(self, mount_path: str, secret_path: str, recover_snapshot_id: str) -> dict:
+        """
+        Recovers a secret at the specified location from the given loaded snapshot from the KV1 secrets engine.
+
+        Args:
+            secret_path (str): The path to the secret.
+            recover_snapshot_id (str): The ID of a snapshot previously loaded into Vault
+                                        that contains secrets at the provided path.
+
+        Returns:
+            dict: The secret's data and metadata.
+        """
+        path = f"v1/{mount_path}/{secret_path}"
+        params = {"recover_snapshot_id": recover_snapshot_id}
+
+        response_data = self._client._make_request("POST", path, params=params)
+        return response_data.get("data", {})
+
+    def create_or_update_secret(self, mount_path: str, secret_path: str, secret_data: dict) -> dict:
+        """
+        Creates or updates a secret in the KV1 secrets engine.
+
+        Args:
+            mount_path (str): The mount path of the KV1 secrets engine.
+            secret_path (str): The path to the secret.
+            secret_data (dict): The secret data to store.
+
+        Returns:
+            dict: The response data containing metadata about the created/updated secret.
+
+        Raises:
+            VaultApiError: If the CAS check fails or other API errors occur.
+            VaultPermissionError: If insufficient permissions.
+            VaultConnectionError: If unable to connect to Vault.
+            TypeError: If secret_data is not a dictionary.
+        """
+        if not isinstance(secret_data, dict):
+            raise TypeError("secret_data must be a dict")
+
+        path = f"v1/{mount_path}/{secret_path}"
+        body: Dict[str, Any] = {"data": secret_data}
+        logger.debug("POST secret at %s", secret_path)
+        return self._client._make_request("POST", path, json=body)
+
+    def delete_secret(self, mount_path: str, secret_path: str) -> None:
+        """
+        Deletes the secret at the specified location.
+
+        Args:
+            mount_path (str): The mount path of the KV1 secrets engine.
+            secret_path (str): The path to the secret.
+
+        Returns:
+            None
+        """
+        path = f"v1/{mount_path}/{secret_path}"
+        self._client._make_request("DELETE", path)
 
 
 class Secrets:
@@ -262,3 +358,4 @@ class Secrets:
 
     def __init__(self, client):
         self.kv2 = VaultKv2Secrets(client)
+        self.kv1 = VaultKv1Secrets(client)

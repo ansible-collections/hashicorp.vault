@@ -16,7 +16,8 @@ version_added: 1.0.0
 author: Mandar Vijay Kulkarni (@mandar242)
 description:
   - Create, update, or delete (soft-delete) secrets in HashiCorp Vault KV version 2 secrets engine.
-  - This module is designed for writing operations only. To read secrets, use the P(hashicorp.vault.kv2_secret_get#lookup) lookup plugin.
+  - This module is designed for writing operations only. To read secrets, use the P(hashicorp.vault.kv2_secret_get#lookup) lookup plugin or
+    The M(hashicorp.vault.kv2_secret_info) module.
   - Supports token and AppRole authentication methods.
   - It does not create the secret engine if it does not exist and will fail if the secret engine path (engine_mount_point) is not enabled.
 extends_documentation_fragment:
@@ -33,7 +34,9 @@ options:
     type: str
     aliases: [secret_path]
   data:
-    description: Secret data as key-value pairs.
+    description:
+      - The secret data as key-value pairs.
+      - Required when O(state=present).
     type: dict
   versions:
     description: One or more versions of the secret to delete. Used with O(state=absent).
@@ -113,8 +116,11 @@ data:
   sample: {}
 """
 
+import copy
 
-from ansible.module_utils.basic import AnsibleModule, env_fallback
+from ansible.module_utils.basic import AnsibleModule
+
+from ansible_collections.hashicorp.vault.plugins.module_utils.args_common import AUTH_ARG_SPEC
 
 
 try:
@@ -233,32 +239,18 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
 
 def main():
 
-    argument_spec = dict(
-        # Authentication parameters
-        url=dict(type="str", required=True, aliases=["vault_address"]),
-        namespace=dict(type="str", default="admin", aliases=["vault_namespace"]),
-        auth_method=dict(type="str", choices=["token", "approle"], default="token"),
-        token=dict(type="str", no_log=True, fallback=(env_fallback, ["VAULT_TOKEN"])),
-        role_id=dict(
-            type="str",
-            aliases=["approle_role_id"],
-            fallback=(env_fallback, ["VAULT_APPROLE_ROLE_ID"]),
-        ),
-        secret_id=dict(
-            type="str",
-            no_log=True,
-            aliases=["approle_secret_id"],
-            fallback=(env_fallback, ["VAULT_APPROLE_SECRET_ID"]),
-        ),
-        vault_approle_path=dict(type="str", default="approle"),
-        # Secret parameters
-        engine_mount_point=dict(type="str", default="secret", aliases=["secret_mount_path"]),
-        path=dict(type="str", required=True, aliases=["secret_path"]),
-        data=dict(type="dict", no_log=True),
-        cas=dict(type="int"),
-        versions=dict(type="list", elements="int"),
-        # Other parameters
-        state=dict(type="str", choices=["present", "absent"], default="present"),
+    argument_spec = copy.deepcopy(AUTH_ARG_SPEC)
+    argument_spec.update(
+        dict(
+            # Secret parameters
+            engine_mount_point=dict(type="str", default="secret", aliases=["secret_mount_path"]),
+            path=dict(type="str", required=True, aliases=["secret_path"]),
+            data=dict(type="dict", no_log=True),
+            cas=dict(type="int"),
+            versions=dict(type="list", elements="int"),
+            # Other parameters
+            state=dict(type="str", choices=["present", "absent"], default="present"),
+        )
     )
 
     required_if = [

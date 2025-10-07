@@ -1,0 +1,13 @@
+---
+# Test configuration
+integration_tests_approle: "approle-integration-tests"
+secret_path: "ansible-test-vault-secret-{{ vault_resource_suffix }}"
+kv1_secret_engine_mount_point: "kv1-integration-tests"
+
+initial_data:
+  foo: bar
+  resource_suffix: "{{ vault_resource_suffix }}"
+
+updated_data:
+  test: integration
+  resource_suffix: "{{ vault_resource_suffix }}-updated"
