@@ -310,7 +310,7 @@ class VaultKv1Secrets:
             raise TypeError("secret_data must be a dict")
 
         path = f"v1/{mount_path}/{secret_path}"
-        body: Dict[str, Any] = {"data": secret_data}
+        body: Dict[str, Any] = secret_data
         logger.debug("POST secret at %s", secret_path)
         return self._client._make_request("POST", path, json=body)
 

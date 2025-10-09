@@ -51,7 +51,7 @@ EXAMPLES = """
 RETURN = """
 secret:
   description: The secret data and metadata when reading existing secrets.
-  returned: always
+  returned: when the secret exists
   type: dict
   sample:
     data:
@@ -112,10 +112,10 @@ def main():
         result = secret_mgr.kv2.read_secret(
             mount_path=mount_path, secret_path=secret_path, version=version
         )
-        module.exit_json(changed=False, secret=result)
+        module.exit_json(secret={"data": result})
 
     except VaultSecretNotFoundError as e:
-        module.fail_json(msg=f"Secret not found: {e}")
+        module.exit_json(secret={})
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
     except VaultApiError as e:

@@ -12,7 +12,7 @@ DOCUMENTATION = """
 ---
 module: kv1_secret
 short_description: Manage HashiCorp Vault KV version 1 secrets
-version_added: 2.0.0
+version_added: 1.1.0
 author: Aubin Bikouo (@abikouo)
 description:
   - Create, update, delete, or recover secrets in HashiCorp Vault KV version 1 secrets engine.
@@ -131,7 +131,7 @@ def ensure_present(module: AnsibleModule, client: VaultClient) -> None:
     action = "created"
     if existing:
         # update the secret if the data does not match
-        if existing.get("data") == data:
+        if existing == data:
             module.exit_json(changed=changed, msg="The secret already exists with the same data.")
         action = "updated"
 

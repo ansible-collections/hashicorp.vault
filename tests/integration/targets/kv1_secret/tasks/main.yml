@@ -22,13 +22,13 @@
       hashicorp.vault.kv1_secret_info:
         path: "{{ secret_path }}"
       register: secret_info
-      failed_when:
-        - (secret_info is successful) or ("Secret not found" not in secret_info.msg)
 
     - name: Ensure the module reported change while the secret was not created
       ansible.builtin.assert:
         that:
           - create_check_mode is changed
+          - create_check_mode.msg == "Would have created the secret if not in check mode."
+          - secret_info.secret == {}
 
     - name: Create secret
       hashicorp.vault.kv1_secret:
@@ -75,6 +75,7 @@
       ansible.builtin.assert:
         that:
           - update_secret_check_mode is changed
+          - update_secret_check_mode.msg == "Would have updated the secret if not in check mode."
           - secret_info.secret.data == initial_data
 
     - name: Update secret with new data
@@ -112,7 +113,7 @@
           - secret_info.secret.data == updated_data
 
     # Delete the secret (check mode)
-    - name: Delete the secret ()
+    - name: Delete the secret (check mode)
       hashicorp.vault.kv1_secret:
         path: "{{ secret_path }}"
         state: absent
@@ -128,7 +129,8 @@
       ansible.builtin.assert:
         that:
           - delete_secret_check_mode is changed
-          - secret_info is successful
+          - delete_secret_check_mode.msg == "Would have deleted the secret if not in check_mode."
+          - secret_info.secret != {}
 
     - name: Delete the secret
       hashicorp.vault.kv1_secret:
@@ -136,17 +138,20 @@
         state: absent
       register: delete_secret
 
+    - name: Wait for the secret to be deleted
+      ansible.builtin.pause:
+        seconds: 3
+
     - name: Read secret
       hashicorp.vault.kv1_secret_info:
         path: "{{ secret_path }}"
       register: secret_info
-      failed_when:
-        - (secret_info is successful) or ("Secret not found" not in secret_info.msg)
 
     - name: Ensure the module reported change and the secret was updated
       ansible.builtin.assert:
         that:
           - delete_secret is changed
+          - secret_info.secret == {}
 
     - name: Delete the secret once again (idempotency)
       hashicorp.vault.kv1_secret:

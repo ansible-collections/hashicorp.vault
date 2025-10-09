@@ -12,7 +12,7 @@ DOCUMENTATION = """
 ---
 module: kv1_secret_info
 short_description: Read HashiCorp Vault KV version 1 secrets
-version_added: 2.0.0
+version_added: 1.1.0
 author: Aubin Bikouo (@abikouo)
 description:
   - Read secrets in HashiCorp Vault KV version 1 secrets engine.
@@ -43,7 +43,7 @@ EXAMPLES = """
 RETURN = """
 secret:
   description: The secret data and metadata when reading existing secrets.
-  returned: always
+  returned: when the secret exists
   type: dict
   sample:
     data:
@@ -89,10 +89,10 @@ def main():
 
     try:
         result = client.secrets.kv1.read_secret(mount_path=mount_path, secret_path=path)
-        module.exit_json(changed=False, secret=result)
+        module.exit_json(secret={"data": result})
 
     except VaultSecretNotFoundError as e:
-        module.fail_json(msg=f"Secret not found: {e}")
+        module.exit_json(secret={})
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
     except VaultApiError as e:
