@@ -15,7 +15,7 @@ short_description: Manage HashiCorp Vault KV version 1 secrets
 version_added: 1.1.0
 author: Aubin Bikouo (@abikouo)
 description:
-  - Create, update, delete, or recover secrets in HashiCorp Vault KV version 1 secrets engine.
+  - Create, update, or delete secrets in HashiCorp Vault KV version 1 secrets engine.
   - This module is designed for writing operations only.
   - Supports token and AppRole authentication methods.
   - It does not create the secret engine if it does not exist.

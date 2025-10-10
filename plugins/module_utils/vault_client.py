@@ -301,7 +301,7 @@ class VaultKv1Secrets:
             dict: The response data containing metadata about the created/updated secret.
 
         Raises:
-            VaultApiError: If the CAS check fails or other API errors occur.
+            VaultApiError: If API errors occur.
             VaultPermissionError: If insufficient permissions.
             VaultConnectionError: If unable to connect to Vault.
             TypeError: If secret_data is not a dictionary.
