@@ -1,0 +1,43 @@
+---
+- name: Integration tests for lookup plugin kv1_secret_get
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: "token"
+      token: "{{ vault_token_from_setup_auth_token }}"
+      engine_mount_point: "{{ secret_mount_path }}"
+  vars:
+    test_secret_path: "ansible-test-secret-{{ vault_resource_suffix }}"
+    secret_data:
+      test_resource_prefix: "{{ vault_resource_suffix }}"
+      hello: world
+  block:
+    - name: Create test secret
+      hashicorp.vault.kv2_secret:
+        path: "{{ test_secret_path }}"
+        data: "{{ secret_data }}"
+        state: present
+      register: create_secret
+
+    - name: Read the secret data
+      ansible.builtin.set_fact:
+        secret_response: "{{ lookup('hashicorp.vault.kv2_secret_get',
+                              auth_method='token',
+                              token=vault_token_from_setup_auth_token,
+                              secret=test_secret_path,
+                              secret_mount_path=secret_mount_path,
+                              namespace=vault_namespace,
+                              url=vault_url) }}"
+
+    - name: Validate lookup response
+      ansible.builtin.assert:
+        that:
+          - secret_response.data == secret_data
+
+  always:
+    - name: Delete test secret
+      hashicorp.vault.kv2_secret:
+        path: "{{ test_secret_path }}"
+        state: absent
+      when: create_secret is successful
