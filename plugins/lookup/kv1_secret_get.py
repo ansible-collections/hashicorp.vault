@@ -41,13 +41,12 @@ EXAMPLES = """
 RETURN = """
 _raw:
   description:
-      - A list of dictionary containing the KV1 secret data stored in HashiCorp Vault.
+      - A list of dictionaries containing the KV1 secret data stored in HashiCorp Vault.
       - The 'data' key contains the actual secret key-value pairs.
   type: list
   elements: dict
   sample:
-    data:
-      foo: "bar"
+    foo: "bar"
 """
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (

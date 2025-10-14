@@ -14,7 +14,7 @@
       hello: world
   block:
     - name: Create test secret
-      hashicorp.vault.kv2_secret:
+      hashicorp.vault.kv1_secret:
         path: "{{ test_secret_path }}"
         data: "{{ secret_data }}"
         state: present
@@ -22,7 +22,7 @@
 
     - name: Read the secret data
       ansible.builtin.set_fact:
-        secret_response: "{{ lookup('hashicorp.vault.kv2_secret_get',
+        secret_response: "{{ lookup('hashicorp.vault.kv1_secret_get',
                               auth_method='token',
                               token=vault_token_from_setup_auth_token,
                               secret=test_secret_path,
@@ -33,11 +33,11 @@
     - name: Validate lookup response
       ansible.builtin.assert:
         that:
-          - secret_response.data == secret_data
+          - secret_response == secret_data
 
   always:
     - name: Delete test secret
-      hashicorp.vault.kv2_secret:
+      hashicorp.vault.kv1_secret:
         path: "{{ test_secret_path }}"
         state: absent
       when: create_secret is successful
