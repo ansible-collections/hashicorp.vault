@@ -60,7 +60,7 @@ class LookupModule(VaultLookupBase):
     def run(self, terms, variables=None, **kwargs):
         """
         :arg terms: A list of terms passed to the function
-        :variables: Ansible variables active at the time of the lookup
+        :arg variables: Ansible variables active at the time of the lookup
         :returns: A list containing the secret data
         """
 
