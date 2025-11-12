@@ -19,3 +19,4 @@ jobs:
     uses: ansible-network/github_actions/.github/workflows/backport-labeller.yml@main
     with:
       label_minor_release: backport-1
+      label_bugfix_release: backport-1
