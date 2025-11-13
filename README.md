@@ -26,6 +26,7 @@ Tested with the Python >= 3.10 versions.
 Name | Description
 --- | ---
 [hashicorp.vault.kv2_secret_get](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in Hasicorp vault
+[hashicorp.vault.kv1_secret_get](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/lookup/kv1_secret_get.py)|Look up KV1 secrets stored in Hasicorp vault
 
 <!--end collection content-->
 
@@ -34,6 +35,8 @@ Name | Description
 --- | ---
 [hashicorp.vault.kv2_secret](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
 [hashicorp.vault.kv2_secret_info](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/modules/kv2_secret_info.py)|Read HashiCorp Vault KV version 2 secrets
+[hashicorp.vault.kv1_secret](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/modules/kv1_secret.py)|Manage HashiCorp Vault KV version 1 secrets
+[hashicorp.vault.kv1_secret_info](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/modules/kv1_secret_info.py)|Read HashiCorp Vault KV version 1 secrets
 
 ## Installation
 
@@ -85,6 +88,7 @@ See [Ansible Using Collections](https://docs.ansible.com/ansible/latest/user_gui
 Modules in this collection can be used for various operations on HashiCorp Vault.
 Currently the collection supports:
 - Managing KV2 secrets in HashiCorp Vault (create, read, update, delete [soft-delete])
+- Managing KV1 secrets in HashiCorp Vault (create, read, update, delete [soft-delete])
 
 ## Testing
 
