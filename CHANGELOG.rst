@@ -7,6 +7,11 @@ Hashicorp.Vault Release Notes
 v1.1.0
 ======
 
+Release Summary
+---------------
+
+This release includes new modules and lookup plugin for KV1 secret management.
+
 Minor Changes
 -------------
 
