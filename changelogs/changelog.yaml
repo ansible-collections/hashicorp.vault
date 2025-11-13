@@ -4,17 +4,39 @@ releases:
     changes:
       release_summary: This marks the first release of the hashicorp.vault collection.
     fragments:
-      - v1.0.0.yml
+    - v1.0.0.yml
     modules:
-      - description: Manage HashiCorp Vault KV version 2 secrets
-        name: kv2_secret
-        namespace: ''
-      - description: Read HashiCorp Vault KV version 2 secrets
-        name: kv2_secret_info
-        namespace: ''
+    - description: Manage HashiCorp Vault KV version 2 secrets
+      name: kv2_secret
+      namespace: ''
+    - description: Read HashiCorp Vault KV version 2 secrets
+      name: kv2_secret_info
+      namespace: ''
     plugins:
       lookup:
-        - description: Look up KV2 secrets stored in HashiCorp Vault.
-          name: kv2_secret_get
-          namespace: null
+      - description: Look up KV2 secrets stored in HashiCorp Vault.
+        name: kv2_secret_get
+        namespace: null
     release_date: '2025-09-19'
+  1.1.0:
+    changes:
+      minor_changes:
+      - Add an action group for the collection modules ``kv1_secret``, ``kv1_secret_info``,
+        ``kv2_secret``, ``kv2_secret_info`` (https://github.com/ansible-automation-platform/hashicorp.vault/pull/23).
+      - kv2_secret_info - module will not fail when the requested secret does not
+        exists instead returns an empty response (https://github.com/ansible-automation-platform/hashicorp.vault/pull/23).
+    fragments:
+    - 20251007-add-action-group.yaml
+    modules:
+    - description: Manage HashiCorp Vault KV version 1 secrets
+      name: kv1_secret
+      namespace: ''
+    - description: Read HashiCorp Vault KV version 1 secrets
+      name: kv1_secret_info
+      namespace: ''
+    plugins:
+      lookup:
+      - description: Look up KV1 secrets stored in HashiCorp Vault.
+        name: kv1_secret_get
+        namespace: null
+    release_date: '2025-11-13'
