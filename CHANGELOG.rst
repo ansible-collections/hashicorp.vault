@@ -16,7 +16,7 @@ Minor Changes
 -------------
 
 - Add an action group for the collection modules ``kv1_secret``, ``kv1_secret_info``, ``kv2_secret``, ``kv2_secret_info`` (https://github.com/ansible-automation-platform/hashicorp.vault/pull/23).
-- kv2_secret_info - module will not fail when the requested secret does not exists instead returns an empty response (https://github.com/ansible-automation-platform/hashicorp.vault/pull/23).
+- kv2_secret_info - module will not fail when the requested secret does not exist instead returns an empty response (https://github.com/ansible-automation-platform/hashicorp.vault/pull/23).
 
 New Plugins
 -----------
