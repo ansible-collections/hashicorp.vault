@@ -22,7 +22,7 @@ The following tests run on every pull request:
 
 ### Python Version Compatibility by ansible-core Version
 
-These are outlined in the collection's [/tox.ini](/tox.ini) file and GitHub Actions workflow configurations.
+These are outlined in the collection's [`/tox.ini`](/tox.ini) file and GitHub Actions workflow configurations.
 
 | ansible-core Version | Sanity Tests | Unit Tests |
 | -------------------- | ------------ | ---------- |

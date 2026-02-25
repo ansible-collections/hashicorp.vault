@@ -5,14 +5,14 @@ The Ansible HashiCorp Vault collection includes a variety of Ansible content to 
 
 - [Description](#description)
 - [Requirements](#requirements)
-  - [Ansible version compatibility](#ansible-version-compatibility)
-  - [Python version compatibility](#python-version-compatibility)
-- [Included content](#included-content)
+  - [Ansible Version Compatibility](#ansible-version-compatibility)
+  - [Python Version Compatibility](#python-version-compatibility)
+- [Included Content](#included-content)
 - [Installation](#installation)
 - [Use Cases](#use-cases)
 - [Testing](#testing)
 - [Support](#support)
-- [Release notes](#release-notes)
+- [Release Notes](#release-notes)
 - [Related Information](#related-information)
 - [License Information](#license-information)
 
@@ -26,17 +26,17 @@ Being Red Hat Ansible Certified Content, this collection is eligible for support
 
 Some modules and plugins require external libraries. Please check the requirements for each plugin or module you use in the documentation to find out which requirements are needed.
 
-### Ansible version compatibility
+### Ansible Version Compatibility
 <!--start requires_ansible-->
 Tested with the Ansible Core >= 2.16.0 versions.
 
 <!--end requires_ansible-->
 
-### Python version compatibility
+### Python Version Compatibility
 
 Tested with the Python >= 3.10 versions.
 
-## Included content
+## Included Content
 <!--start collection content-->
 ### Lookup plugins
 Name | Description
@@ -115,7 +115,7 @@ This collection is tested using GitHub Actions. To learn more about testing, ref
 As Red Hat Ansible Certified Content, this collection is entitled to support through the Ansible Automation Platform (AAP) using the **Create issue** button on the top right corner. If a support case cannot be opened with Red Hat and the collection has been obtained from Galaxy or GitHub, community help may be available on the [Ansible Forum](https://forum.ansible.com/).
 
 
-## Release notes
+## Release Notes
 
 See the [changelog](https://github.com/ansible-collections/hashicorp.vault/tree/main/CHANGELOG.rst).
 
