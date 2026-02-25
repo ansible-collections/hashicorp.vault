@@ -1,10 +1,26 @@
 # HashiCorp Vault Collection
+The Ansible HashiCorp Vault collection includes a variety of Ansible content to help automate the management of HashiCorp Vault. This collection is maintained by the Ansible Cloud Content team.
 
-This repository contains the `hashicorp.vault` Ansible Collection.
+## Contents
+
+- [Description](#description)
+- [Requirements](#requirements)
+  - [Ansible version compatibility](#ansible-version-compatibility)
+  - [Python version compatibility](#python-version-compatibility)
+- [Included content](#included-content)
+- [Installation](#installation)
+- [Use Cases](#use-cases)
+- [Testing](#testing)
+- [Support](#support)
+- [Release notes](#release-notes)
+- [Related Information](#related-information)
+- [License Information](#license-information)
 
 ## Description
 
-The primary purpose of this collection is to provide seamless integration between Ansible Automation Platform and HashiCorp Vault. It contains modules and plugins that support managing secrets, namespaces, authentication, and other Vault operations by using Ansible automation.
+The primary purpose of this collection is to provide seamless integration between Ansible Automation Platform and HashiCorp Vault. It contains modules and plugins that support managing secrets, namespaces, authentication, and other Vault operations through Ansible automation.
+
+Being Red Hat Ansible Certified Content, this collection is eligible for support through the [Ansible Automation Platform](https://www.redhat.com/en/technologies/management/ansible).
 
 ## Requirements
 
@@ -25,15 +41,18 @@ Tested with the Python >= 3.10 versions.
 ### Lookup plugins
 Name | Description
 --- | ---
-[hashicorp.vault.kv2_secret_get](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in Hasicorp vault
+[hashicorp.vault.kv1_secret_get](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/lookup/kv1_secret_get.py)|Look up KV1 secrets stored in HashiCorp Vault
+[hashicorp.vault.kv2_secret_get](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in HashiCorp Vault
 
 <!--end collection content-->
 
 ### Modules
 Name | Description
 --- | ---
-[hashicorp.vault.kv2_secret](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
-[hashicorp.vault.kv2_secret_info](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/modules/kv2_secret_info.py)|Read HashiCorp Vault KV version 2 secrets
+[hashicorp.vault.kv1_secret](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv1_secret.py)|Manage HashiCorp Vault KV version 1 secrets
+[hashicorp.vault.kv1_secret_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv1_secret_info.py)|Read HashiCorp Vault KV version 1 secrets
+[hashicorp.vault.kv2_secret](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
+[hashicorp.vault.kv2_secret_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret_info.py)|Read HashiCorp Vault KV version 2 secrets
 
 ## Installation
 
@@ -84,48 +103,32 @@ See [Ansible Using Collections](https://docs.ansible.com/ansible/latest/user_gui
 
 Modules in this collection can be used for various operations on HashiCorp Vault.
 Currently the collection supports:
+- Managing KV1 secrets in HashiCorp Vault (create, read, update, delete)
 - Managing KV2 secrets in HashiCorp Vault (create, read, update, delete [soft-delete])
 
 ## Testing
 
-GitHub Actions workflows are used to run tests for the hashicorp.vault collection. These workflows include jobs to run the unit tests, integration tests, sanity tests, linters, changelog check and doc related checks.
-
-To run linter tests locally, run `tox -e linters`. For more information, refer [tox-ansible documentation](https://github.com/ansible/tox-ansible?tab=readme-ov-file#tox-ansible).
-
-To run integration tests locally, copy tests/integration/integration_config.yml.template to tests/integration/integration_config.yml, fill in your Vault details and run the tests using `ansible-test integration <target>`
-```
----
-vault_url_from_int_config: "<VAULT_URL_HERE>"
-vault_namespace_from_int_config: "<VAULT_NAMESPACE_HERE>" # example: admin/hashicorp-vault-integration-tests
-vault_approle_role_id_from_int_config: "<VAULT_APPROLE_ROLE_ID_HERE>"
-vault_approle_secret_id_from_int_config: "<VAULT_APPROLE_SECRET_ID_HERE>"
-```
+This collection is tested using GitHub Actions. To learn more about testing, refer to [CI.md](https://github.com/ansible-collections/hashicorp.vault/blob/main/CI.md).
 
 ## Support
 
-As Red Hat Ansible Certified Content, this collection is entitled to support through the Ansible Automation Platform (AAP) using the **Create issue** button on the top right corner. If a support case cannot be opened with Red Hat and the collection has been obtained either from Galaxy or GitHub, there may be community help available on the [Ansible Forum](https://forum.ansible.com/).
+As Red Hat Ansible Certified Content, this collection is entitled to support through the Ansible Automation Platform (AAP) using the **Create issue** button on the top right corner. If a support case cannot be opened with Red Hat and the collection has been obtained from Galaxy or GitHub, community help may be available on the [Ansible Forum](https://forum.ansible.com/).
 
 
-## Release Notes and Roadmap
+## Release notes
 
 See the [changelog](https://github.com/ansible-collections/hashicorp.vault/tree/main/CHANGELOG.rst).
 
-<!-- Optional. Include the roadmap for this collection, and the proposed release/versioning strategy so users can anticipate the upgrade/update cycle. -->
-
 ## Related Information
 
-<!-- List out where the user can find additional information, such as working group meeting times, slack/matrix channels, or documentation for the product this collection automates. At a minimum, link to: -->
-
-- [Ansible collection development forum](https://forum.ansible.com/c/project/collection-development/27)
-- [Ansible User guide](https://docs.ansible.com/ansible/devel/user_guide/index.html)
-- [Ansible Developer guide](https://docs.ansible.com/ansible/devel/dev_guide/index.html)
-- [Ansible Collections Checklist](https://docs.ansible.com/ansible/devel/community/collection_contributors/collection_requirements.html)
-- [Ansible Community code of conduct](https://docs.ansible.com/ansible/devel/community/code_of_conduct.html)
-- [The Bullhorn (the Ansible Contributor newsletter)](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn)
-- [News for Maintainers](https://forum.ansible.com/tag/news-for-maintainers)
+- [Ansible Collection overview](https://github.com/ansible-collections/overview)
+- [Ansible User guide](https://docs.ansible.com/ansible/latest/user_guide/index.html)
+- [Ansible Developer guide](https://docs.ansible.com/ansible/latest/dev_guide/index.html)
+- [Ansible Collection Developer Guide](https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html)
+- [Ansible Community code of conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html)
 
 ## License Information
 
 GNU General Public License v3.0 or later.
 
-See [LICENSE](https://www.gnu.org/licenses/gpl-3.0.txt) to see the full text.
+See [COPYING](https://www.gnu.org/licenses/gpl-3.0.txt) to see the full text.
