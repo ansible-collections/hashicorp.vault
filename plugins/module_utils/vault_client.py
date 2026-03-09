@@ -153,6 +153,69 @@ class VaultClient:
             ) from e
 
 
+class VaultDatabaseConnection:
+    """
+    Handles interactions with the Vault Database Secrets Engine.
+    """
+    def __init__(self, client):
+        """
+        Initializes the Database connection client.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+        """
+        self._client = client
+        self._mount_path = "database"
+
+    def list_connections(self):
+        """
+        List all available connections.
+        """
+        path = f"v1/{self._mount_path}/config"
+        pass
+
+    def read_connection(self, name: str):
+        """
+        Read the configuration settings of a database connection.
+
+        Args:
+            name (str): The name of the connection to read.
+        """
+        path = f"v1/{self._mount_path}/config/{name}"
+        pass
+
+    def create_or_update_connection(self, name: str):
+        """
+        Create a new database connection or update an existing one.
+
+        Args:
+            name (str): The name of the connection to create or update.
+        """
+        path = f"v1/{self._mount_path}/config/{name}"
+        pass
+
+    def delete_connection(self, name: str):
+        """
+        Delete a database connection.
+
+        Args:
+            name (str): The name of the connection to delete.
+        """
+        path = f"v1/{self._mount_path}/config/{name}"
+        pass
+
+    def reset_connection(self, name: str):
+        """
+        Reset a database connection by closing the connection and its underlying plugin,
+        then restarting it.
+
+        Args:
+            name (str): The name of the connection to reset.
+        """
+        path = f"v1/{self._mount_path}/reset/{name}"
+        pass
+
+
 class VaultKv2Secrets:
     """
     Handles interactions with the KV version 2 secrets engine.
