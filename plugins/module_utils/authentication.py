@@ -132,7 +132,7 @@ class AppRoleAuthenticator(Authenticator):
             headers["X-Vault-Namespace"] = vault_namespace
 
         try:
-            response = requests.post(login_url, json=payload, headers=headers)
+            response = requests.post(login_url, json=payload, headers=headers, timeout=30)
 
             response.raise_for_status()
 
