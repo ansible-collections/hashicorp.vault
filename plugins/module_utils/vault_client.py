@@ -160,7 +160,7 @@ class VaultDatabaseConnection:
         self._client = client
         self._mount_path = mount_path
 
-    def list_connections(self) -> List:
+    def list_connections(self) -> list:
         """
         List all available connections.
 
@@ -174,7 +174,7 @@ class VaultDatabaseConnection:
 
         return connections
 
-    def read_connection(self, name: str) -> Dict:
+    def read_connection(self, name: str) -> dict:
         """
         Read the configuration settings of a database connection.
 
