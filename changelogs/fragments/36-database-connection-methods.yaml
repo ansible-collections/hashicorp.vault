@@ -1,0 +1,7 @@
+---
+minor_changes:
+  - module_utils/vault_client.py - Implement database connection management methods in VaultDatabaseConnection class:
+    ``create_or_update_connection()``,
+    ``delete_connection()``,
+    ``reset_connection()``
+    (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
