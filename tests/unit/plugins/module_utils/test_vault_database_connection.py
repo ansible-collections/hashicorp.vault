@@ -16,6 +16,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client impor
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultPermissionError,
+    VaultSecretNotFoundError,
     VaultApiError,
 )
 
@@ -27,6 +28,7 @@ def vault_config():
         "addr": "http://mock-vault:8200",
         "token": "mock-token",
         "namespace": "root",
+        "custom_mount_path": "my-db",
         "database_name": "test-database",
     }
 
@@ -44,11 +46,11 @@ def authenticated_client(mocker, vault_config):
 def sample_db_config():
     """Sample database configuration for testing."""
     return {
-        "plugin_name": "postgresql-database-plugin",
-        "connection_url": "postgresql://{{username}}:{{password}}@localhost:5432/mydb",
-        "username": "vault",
-        "password": "secret",
-        "allowed_roles": ["readonly", "readwrite"],
+        "plugin_name": "mysql-database-plugin",
+        "allowed_roles": "readonly",
+        "connection_url": "{{username}}:{{password}}@tcp(127.0.0.1:3306)/",
+        "username": "vaultuser",
+        "password": "secretpassword",
     }
 
 @pytest.fixture
@@ -78,8 +80,10 @@ def test_read_connection_success(authenticated_client, vault_config):
 def test_read_connection_error(authenticated_client, vault_config):
     pass
 
+
 class TestCreateOrUpdateConnection:
     """Test suite for create_or_update_connection."""
+    
     def test_create_or_update_connection_success(
         self, authenticated_client, vault_config, sample_db_config, mock_configure_response):
         """Test that create_or_update_connection creates a new connection if it doesn't exist."""
@@ -89,7 +93,7 @@ class TestCreateOrUpdateConnection:
         result = db_conn.create_or_update_connection(
             vault_config["database_name"], sample_db_config
         )
-        expected_path = f"v1/{db_conn._mount_path}/config/{vault_config['database_name']}"
+        expected_path = f"v1/database/config/{vault_config['database_name']}"
         authenticated_client._make_request.assert_called_once_with("POST", expected_path, json=sample_db_config)
         
         assert result == mock_configure_response
@@ -132,7 +136,7 @@ class TestCreateOrUpdateConnection:
           vault_config["database_name"], minimal_config
       )
 
-      expected_path = f"v1/{db_conn._mount_path}/config/{vault_config['database_name']}"
+      expected_path = f"v1/database/config/{vault_config['database_name']}"
       authenticated_client._make_request.assert_called_once_with(
           "POST", expected_path, json=minimal_config
       )
@@ -141,6 +145,7 @@ class TestCreateOrUpdateConnection:
 
 class TestDeleteConnection:
     """Test suite for delete_connection."""
+    
     def test_delete_connection_success(
         self, authenticated_client, vault_config, mock_configure_response):
         """Test that delete_connection deletes a connection if it exists."""
@@ -151,11 +156,10 @@ class TestDeleteConnection:
             vault_config["database_name"]
         )
         
-        expected_path = f"v1/{db_conn._mount_path}/config/{vault_config['database_name']}"
+        expected_path = f"v1/database/config/{vault_config['database_name']}"
         authenticated_client._make_request.assert_called_once_with("DELETE", expected_path)
         
         assert result is None
-
 
     def test_delete_connection_error(
         self, authenticated_client, vault_config):
@@ -168,8 +172,10 @@ class TestDeleteConnection:
                 vault_config["database_name"]
             )
 
+
 class TestResetConnection:
     """Test suite for reset_connection."""
+    
     def test_reset_connection_success(
         self, authenticated_client, vault_config, mock_configure_response):
         """Test that reset_connection resets a connection if it exists."""
@@ -180,11 +186,10 @@ class TestResetConnection:
             vault_config["database_name"]
         )
         
-        expected_path = f"v1/{db_conn._mount_path}/reset/{vault_config['database_name']}"
+        expected_path = f"v1/database/reset/{vault_config['database_name']}"
         authenticated_client._make_request.assert_called_once_with("POST", expected_path, json={})
         
         assert result is None
-
 
     def test_reset_connection_error(
         self, authenticated_client, vault_config):
