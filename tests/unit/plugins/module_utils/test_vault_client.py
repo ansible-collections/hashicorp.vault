@@ -5,6 +5,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+
 __metaclass__ = type
 
 from unittest.mock import MagicMock, Mock, patch
@@ -24,6 +25,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions i
     VaultPermissionError,
     VaultSecretNotFoundError,
 )
+
 
 MOCK_REQUESTS_SESSION = (
     "ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.requests.Session"
