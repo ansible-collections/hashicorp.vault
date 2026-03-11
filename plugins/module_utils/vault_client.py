@@ -183,49 +183,49 @@ class VaultDatabaseConnection:
         pass
 
     def create_or_update_connection(self, name: str, config: dict) -> dict:
-      """
-      Configure a database connection.
-   
-      Args:
-          name (str): The name of the database connection
-          config (dict): Connection configuration containing:
-              - plugin_name (str, required): Database plugin type (e.g., 'postgresql-database-plugin')
-              - plugin_version (str, optional): Semantic version of the plugin
-              - allowed_roles (list, optional): Roles allowed to use this connection
-              - verify_connection (bool, optional): Verify during setup (default: true)
-              - root_rotation_statements (list, optional): Statements to execute during root rotation
-              - password_policy (str, optional): Password policy to use for the connection
-              - Other common fields (reference the individual plugin documentation to determine support)
-                - connection_url (str): Database connection string
-                - username (str, optional): Database username
-                - password (str, optional): Database password
-                - disable_escaping (bool, optional): Disable escaping of special characters in the connection URL (default: false)
-   
-      Returns:
-          dict: Response from Vault
-   
-      Raises:
-          VaultApiError: If any API errors occur.
-          VaultPermissionError: If insufficient permissions.
-          VaultConnectionError: If unable to connect to Vault.
-          TypeError: If config is not a dict.
-   
-      Example:
-          db.create_or_update_connection(
-            name="my-postgres-db",
-            config={
-                "plugin_name": "postgresql-database-plugin",
-                "connection_url": "postgresql://{{username}}:{{password}}@localhost:5432/mydb",
-                "username": "vault",
-                "password": "secret",
-                "allowed_roles": ["readonly", "readwrite"]}
-            )
-      """
-      if not isinstance(config, dict):
-          raise TypeError("config must be a dict")
+        """
+        Configure a database connection.
 
-      path = f"v1/{self._mount_path}/config/{name}"
-      return self._client._make_request("POST", path, json=config)
+        Args:
+            name (str): The name of the database connection
+            config (dict): Connection configuration containing:
+                - plugin_name (str, required): Database plugin type (e.g., 'postgresql-database-plugin')
+                - plugin_version (str, optional): Semantic version of the plugin
+                - allowed_roles (list, optional): Roles allowed to use this connection
+                - verify_connection (bool, optional): Verify during setup (default: true)
+                - root_rotation_statements (list, optional): Statements to execute during root rotation
+                - password_policy (str, optional): Password policy to use for the connection
+                - Other common fields (reference the individual plugin documentation to determine support)
+                  - connection_url (str): Database connection string
+                  - username (str, optional): Database username
+                  - password (str, optional): Database password
+                  - disable_escaping (bool, optional): Disable escaping of special characters in the connection URL (default: false)
+
+        Returns:
+            dict: Response from Vault
+
+        Raises:
+            VaultApiError: If any API errors occur.
+            VaultPermissionError: If insufficient permissions.
+            VaultConnectionError: If unable to connect to Vault.
+            TypeError: If config is not a dict.
+
+        Example:
+            db.create_or_update_connection(
+              name="my-postgres-db",
+              config={
+                  "plugin_name": "postgresql-database-plugin",
+                  "connection_url": "postgresql://{{username}}:{{password}}@localhost:5432/mydb",
+                  "username": "vault",
+                  "password": "secret",
+                  "allowed_roles": ["readonly", "readwrite"]}
+              )
+        """
+        if not isinstance(config, dict):
+            raise TypeError("config must be a dict")
+
+        path = f"v1/{self._mount_path}/config/{name}"
+        return self._client._make_request("POST", path, json=config)
 
     def delete_connection(self, name: str) -> None:
         """
