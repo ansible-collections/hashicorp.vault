@@ -156,6 +156,7 @@ class VaultDatabaseConnection:
 
         Args:
             client (VaultClient): An authenticated instance of the main VaultClient.
+            mount_path (str): The mount path of the database secrets engine. Defaults to "database".
         """
         self._client = client
         self._mount_path = mount_path
