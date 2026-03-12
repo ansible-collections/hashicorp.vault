@@ -5,12 +5,14 @@
 
 from __future__ import absolute_import, division, print_function
 
+
 __metaclass__ = type
 
 import json  # noqa: F401
 import logging
 
 from typing import Any, Dict, List, Optional
+
 
 try:
     import requests
@@ -26,6 +28,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions i
     VaultPermissionError,
     VaultSecretNotFoundError,
 )
+
 
 logger = logging.getLogger(__name__)
 

@@ -5,9 +5,11 @@
 
 from __future__ import absolute_import, division, print_function
 
+
 __metaclass__ = type
 
 from abc import ABC, abstractmethod
+
 
 try:
     import requests
@@ -15,6 +17,7 @@ except ImportError as imp_exc:
     REQUESTS_IMPORT_ERROR = imp_exc
 else:
     REQUESTS_IMPORT_ERROR = None
+
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultAppRoleLoginError,

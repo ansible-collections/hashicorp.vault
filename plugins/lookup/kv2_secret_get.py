@@ -56,8 +56,8 @@ EXAMPLES = """
     msg: "{{ lookup('hashicorp.vault.kv2_secret_get',
                     secret='foo',
                     auth_method='approle',
-                    vault_approle_role_id='role-123',
-                    vault_approle_secret_id='secret-456',
+                    role_id='role-123',
+                    secret_id='secret-456',
                     url='https://myvault_url:8200') }}"
 """
 
