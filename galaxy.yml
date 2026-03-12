@@ -19,7 +19,7 @@ tags: ["hashicorp", "vault", "security", "infrastructure"]
 dependencies:
   "ansible.utils": "*" # note: "*" selects the latest version available
 
-repository: https://github.com/ansible
+repository: https://github.com/ansible-collections/hashicorp.vault
 homepage: http://ansible.com/
 issues: https://access.redhat.com/support/
 
