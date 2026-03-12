@@ -5,7 +5,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-
 __metaclass__ = type
 
 DOCUMENTATION = """
@@ -65,7 +64,6 @@ import copy
 from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.args_common import AUTH_ARG_SPEC
-
 
 try:
     from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils import (
