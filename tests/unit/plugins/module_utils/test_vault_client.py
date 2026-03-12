@@ -10,7 +10,6 @@ __metaclass__ = type
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-
 from requests.exceptions import HTTPError
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (

@@ -8,7 +8,6 @@ __metaclass__ = type
 
 import random
 import string
-
 from unittest.mock import MagicMock
 
 import pytest

@@ -9,7 +9,6 @@ __metaclass__ = type
 
 import json  # noqa: F401
 import logging
-
 from typing import Any, Dict, List, Optional
 
 try:
