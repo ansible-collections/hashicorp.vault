@@ -55,6 +55,26 @@
         that:
           - secret_first_version.data == test_secret_data[0]
 
+    - name: Test kv2_secret_get lookup plugin with AppRole authentication (role_id and secret_id)
+      block:
+        - name: Read the secret via lookup using AppRole role_id and secret_id
+          ansible.builtin.set_fact:
+            secret_response_approle: "{{ lookup('hashicorp.vault.kv2_secret_get',
+                                                auth_method='approle',
+                                                role_id=vault_approle_role_id,
+                                                secret_id=vault_approle_secret_id,
+                                                secret=test_secret_path,
+                                                secret_mount_path=secret_mount_path,
+                                                namespace=vault_namespace,
+                                                url=vault_url,
+                                                vault_approle_path=vault_approle_auth_path) }}"
+
+        - name: Ensure the secret data matches when using AppRole lookup
+          ansible.builtin.assert:
+            that:
+              - secret_response_approle.data == test_secret_data[-1]
+      when: vault_approle_role_id is defined and vault_approle_secret_id is defined
+
   always:
     - name: Delete the test secret
       hashicorp.vault.kv2_secret:

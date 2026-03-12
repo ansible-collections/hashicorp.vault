@@ -18,6 +18,7 @@ except ImportError as imp_exc:
 else:
     REQUESTS_IMPORT_ERROR = None
 
+
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultAppRoleLoginError,
     VaultConnectionError,
