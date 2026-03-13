@@ -25,15 +25,15 @@ Tested with the Python >= 3.10 versions.
 ### Lookup plugins
 Name | Description
 --- | ---
-[hashicorp.vault.kv2_secret_get](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in Hasicorp vault
+[hashicorp.vault.kv2_secret_get](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in Hasicorp vault
 
 <!--end collection content-->
 
 ### Modules
 Name | Description
 --- | ---
-[hashicorp.vault.kv2_secret](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
-[hashicorp.vault.kv2_secret_info](https://github.com/ansible-automation-platform/hashicorp.vault/blob/main/plugins/modules/kv2_secret_info.py)|Read HashiCorp Vault KV version 2 secrets
+[hashicorp.vault.kv2_secret](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
+[hashicorp.vault.kv2_secret_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret_info.py)|Read HashiCorp Vault KV version 2 secrets
 
 ## Installation
 
