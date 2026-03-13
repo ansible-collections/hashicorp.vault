@@ -196,7 +196,7 @@ class VaultDatabaseConnection:
                 - root_rotation_statements (list, optional): Statements to execute during root rotation
                 - password_policy (str, optional): Password policy to use for the connection
                 - Other common fields (reference the individual plugin documentation to determine support)
-                  - connection_url (str): Database connection string
+                  - connection_url (str, optional): Database connection string
                   - username (str, optional): Database username
                   - password (str, optional): Database password
                   - disable_escaping (bool, optional): Disable escaping of special characters in the connection URL (default: false)
@@ -205,10 +205,8 @@ class VaultDatabaseConnection:
             dict: Response from Vault
 
         Raises:
-            VaultApiError: If any API errors occur.
-            VaultPermissionError: If insufficient permissions.
-            VaultConnectionError: If unable to connect to Vault.
-            TypeError: If config is not a dict.
+            TypeError: If config is not a dict, or if config does not contain
+                "plugin_name" with a string value.
 
         Example:
             db.create_or_update_connection(
@@ -223,6 +221,10 @@ class VaultDatabaseConnection:
         """
         if not isinstance(config, dict):
             raise TypeError("config must be a dict")
+        if "plugin_name" not in config:
+            raise TypeError('config must contain "plugin_name"')
+        if not isinstance(config["plugin_name"], str):
+            raise TypeError('config["plugin_name"] must be a str')
 
         path = f"v1/{self._mount_path}/config/{name}"
         return self._client._make_request("POST", path, json=config)

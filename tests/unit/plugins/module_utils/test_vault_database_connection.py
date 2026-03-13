@@ -121,6 +121,36 @@ class TestCreateOrUpdateConnection:
             db_conn.create_or_update_connection(vault_config["database_name"], "invalid_config")
         authenticated_client._make_request.assert_not_called()
 
+    def test_create_or_update_connection_missing_plugin_name(
+        self, authenticated_client, vault_config
+    ):
+        """Test that create_or_update_connection raises TypeError if config lacks plugin_name."""
+        db_conn = VaultDatabaseConnection(authenticated_client)
+        config_without_plugin = {
+            "connection_url": "postgresql://localhost:5432/mydb",
+            "username": "vault",
+        }
+
+        with pytest.raises(TypeError, match='config must contain "plugin_name"'):
+            db_conn.create_or_update_connection(vault_config["database_name"], config_without_plugin)
+        authenticated_client._make_request.assert_not_called()
+
+    def test_create_or_update_connection_plugin_name_not_string(
+        self, authenticated_client, vault_config
+    ):
+        """Test that create_or_update_connection raises TypeError if plugin_name is not a str."""
+        db_conn = VaultDatabaseConnection(authenticated_client)
+        config_plugin_name_not_str = {
+            "plugin_name": 123,
+            "connection_url": "postgresql://localhost:5432/mydb",
+        }
+
+        with pytest.raises(TypeError, match='config\\["plugin_name"\\] must be a str'):
+            db_conn.create_or_update_connection(
+                vault_config["database_name"], config_plugin_name_not_str
+            )
+        authenticated_client._make_request.assert_not_called()
+
     def test_create_or_update_connection_with_minimal_config(
         self, authenticated_client, vault_config, mock_configure_response
     ):
