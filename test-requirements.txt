@@ -5,6 +5,4 @@ pytest-xdist
 requests
 # Linting and code formatting tools
 tox
-black
-flake8
-isort
+-r requirements-linters.txt
