@@ -4,6 +4,19 @@ Hashicorp.Vault Release Notes
 
 .. contents:: Topics
 
+v1.1.1
+======
+
+Release Summary
+---------------
+
+This release fixes a bug in the ``kv2_secret_get`` lookup plugin's authentication parameters names so parameters must be passed by correct names.
+
+Bugfixes
+--------
+
+- Fix parameter names used by authentication methods so parameters must be passed by correct names. See https://github.com/ansible-collections/hashicorp.vault/pull/35 for more details.
+
 v1.1.0
 ======
 

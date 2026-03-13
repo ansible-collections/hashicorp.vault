@@ -1,4 +1,0 @@
----
-bugfixes:
-  - Fix parameter names used by authentication methods so parameters must be passed by correct names.
-    See https://github.com/ansible-collections/hashicorp.vault/pull/35 for more details.
