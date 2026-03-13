@@ -43,3 +43,15 @@ releases:
         name: kv1_secret_get
         namespace: null
     release_date: '2025-11-13'
+  1.1.1:
+    changes:
+      bugfixes:
+      - Fix parameter names used by authentication methods so parameters must be passed
+        by correct names. See https://github.com/ansible-collections/hashicorp.vault/pull/35
+        for more details.
+      release_summary: This release fixes a bug in the ``kv2_secret_get`` lookup plugin's
+        authentication parameters names so parameters must be passed by correct names.
+    fragments:
+    - 20260311-fix-auth-param-names.yaml
+    - v1.1.1.yml
+    release_date: '2026-03-13'
