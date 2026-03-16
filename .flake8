@@ -50,7 +50,7 @@ extend-ignore =
   DOC
 
 # Accessibility/large fonts and PEP8 unfriendly:
-max-line-length = 100
+max-line-length = 120
 
 # Allow certain violations in certain files:
 # Please keep both sections of this list sorted, as it will be easier for others to find and add entries in the future
