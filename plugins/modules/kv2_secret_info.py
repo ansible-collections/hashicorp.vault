@@ -69,9 +69,7 @@ try:
     from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils import (
         get_authenticated_client,
     )
-    from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
-        Secrets as VaultSecret,
-    )
+    from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import Secrets as VaultSecret
     from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
         VaultApiError,
         VaultPermissionError,
@@ -107,9 +105,7 @@ def main():
         mount_path = module.params.get("engine_mount_point")
         secret_path = module.params.get("path")
         version = module.params.get("version")
-        result = secret_mgr.kv2.read_secret(
-            mount_path=mount_path, secret_path=secret_path, version=version
-        )
+        result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret_path, version=version)
         module.exit_json(secret={"data": result})
 
     except VaultSecretNotFoundError as e:
