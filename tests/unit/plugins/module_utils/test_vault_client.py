@@ -5,13 +5,11 @@
 
 from __future__ import absolute_import, division, print_function
 
-
 __metaclass__ = type
 
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-
 from requests.exceptions import HTTPError
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
@@ -26,10 +24,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions i
     VaultSecretNotFoundError,
 )
 
-
-MOCK_REQUESTS_SESSION = (
-    "ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.requests.Session"
-)
+MOCK_REQUESTS_SESSION = "ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.requests.Session"
 
 
 @pytest.fixture
@@ -53,9 +48,7 @@ class TestVaultClient:
 
     def test_vault_client_init_success(self, mock_session_class, mock_session):
         """Test successful VaultClient initialization."""
-        client = VaultClient(
-            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
-        )
+        client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="test-namespace")
 
         assert client.vault_address == "https://vault.example.com:8200"
         assert client.vault_namespace == "test-namespace"
@@ -82,15 +75,11 @@ class TestVaultClient:
     def test_vault_client_missing_vault_namespace(self, vault_namespace):
         """Test VaultClient fails with invalid vault_namespace."""
         with pytest.raises(VaultConfigurationError, match="vault_namespace is required"):
-            VaultClient(
-                vault_address="https://vault.example.com:8200", vault_namespace=vault_namespace
-            )
+            VaultClient(vault_address="https://vault.example.com:8200", vault_namespace=vault_namespace)
 
     def test_vault_client_set_token(self, mock_session_class, mock_session):
         """Test VaultClient set_token method."""
-        client = VaultClient(
-            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
-        )
+        client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="test-namespace")
 
         mock_session.headers.update.reset_mock()
 
@@ -100,9 +89,7 @@ class TestVaultClient:
 
     def test_vault_client_multiple_token_updates(self, mock_session_class, mock_session):
         """Test that set_token can be called multiple times."""
-        client = VaultClient(
-            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
-        )
+        client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="test-namespace")
 
         mock_session.headers.update.reset_mock()
 
@@ -155,9 +142,7 @@ class TestVaultClientIntegrationWithAuthenticators:
 
     def test_client_without_authentication(self, mock_session_class, mock_session):
         """Test that VaultClient can be created without immediate authentication."""
-        client = VaultClient(
-            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
-        )
+        client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="test-namespace")
 
         assert client.vault_address == "https://vault.example.com:8200"
         assert client.vault_namespace == "test-namespace"
@@ -166,9 +151,7 @@ class TestVaultClientIntegrationWithAuthenticators:
 
     def test_multiple_authentication_methods(self, mock_session_class, mock_session):
         """Test that different authenticators can be used with the same client."""
-        client = VaultClient(
-            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
-        )
+        client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="test-namespace")
 
         mock_session.headers.update.reset_mock()
 
@@ -187,9 +170,7 @@ class TestVaultClientMakeRequest:
 
     def test_make_request_success(self, mock_session_class, mock_session):
         """Test _make_request() success."""
-        client = VaultClient(
-            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
-        )
+        client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="test-namespace")
         response = MagicMock()
         mock_session.request = MagicMock()
         mock_session.request.return_value = response
@@ -211,9 +192,7 @@ class TestVaultClientMakeRequest:
         self, mock_session_class, mock_session, status_code, expected_exception
     ):
         """Test _make_request() request error."""
-        client = VaultClient(
-            vault_address="https://vault.example.com:8200", vault_namespace="test-namespace"
-        )
+        client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="test-namespace")
         response = MagicMock(status_code=status_code)
         response.json.return_value = {"errors": ["error while making request"]}
         response.raise_for_status.side_effect = HTTPError(response=response)

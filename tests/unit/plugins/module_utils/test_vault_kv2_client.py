@@ -4,7 +4,6 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 from __future__ import absolute_import, division, print_function
 
-
 __metaclass__ = type
 
 from unittest.mock import MagicMock
@@ -43,17 +42,13 @@ def mock_success_response():
 
 @pytest.fixture
 def authenticated_client(mocker, vault_config):
-    client = VaultClient(
-        vault_address=vault_config["addr"], vault_namespace=vault_config["namespace"]
-    )
+    client = VaultClient(vault_address=vault_config["addr"], vault_namespace=vault_config["namespace"])
     client.set_token(vault_config["token"])
     client._make_request = MagicMock()
     return client
 
 
-def test_read_secret_latest_version_success(
-    authenticated_client, vault_config, mock_success_response
-):
+def test_read_secret_latest_version_success(authenticated_client, vault_config, mock_success_response):
 
     authenticated_client._make_request.return_value = mock_success_response
     kv2_secret = VaultKv2Secrets(authenticated_client)
@@ -64,27 +59,19 @@ def test_read_secret_latest_version_success(
     assert secret == mock_success_response["data"]
 
 
-def test_read_secret_specific_version_success(
-    authenticated_client, vault_config, mock_success_response
-):
+def test_read_secret_specific_version_success(authenticated_client, vault_config, mock_success_response):
     authenticated_client._make_request.return_value = mock_success_response
     secret_version = 2
     kv2_secret = VaultKv2Secrets(authenticated_client)
-    secret = kv2_secret.read_secret(
-        vault_config["mount_path"], vault_config["secret_path"], version=secret_version
-    )
+    secret = kv2_secret.read_secret(vault_config["mount_path"], vault_config["secret_path"], version=secret_version)
 
     expected_url = f"v1/{vault_config['mount_path']}/data/{vault_config['secret_path']}"
-    authenticated_client._make_request.assert_called_once_with(
-        "GET", expected_url, params={"version": secret_version}
-    )
+    authenticated_client._make_request.assert_called_once_with("GET", expected_url, params={"version": secret_version})
     assert secret == mock_success_response["data"]
 
 
 def test_read_secret_error(authenticated_client, vault_config):
-    authenticated_client._make_request.side_effect = VaultPermissionError(
-        "error while reading secret"
-    )
+    authenticated_client._make_request.side_effect = VaultPermissionError("error while reading secret")
     kv2_secret = VaultKv2Secrets(authenticated_client)
     with pytest.raises(VaultPermissionError):
         kv2_secret.read_secret(vault_config["mount_path"], vault_config["secret_path"])
@@ -96,15 +83,11 @@ def test_create_or_update_secret_success(authenticated_client, vault_config):
 
     secret_data = {"username": "admin", "password": "secret123"}
     kv2_secret = VaultKv2Secrets(authenticated_client)
-    result = kv2_secret.create_or_update_secret(
-        vault_config["mount_path"], vault_config["secret_path"], secret_data
-    )
+    result = kv2_secret.create_or_update_secret(vault_config["mount_path"], vault_config["secret_path"], secret_data)
 
     expected_path = f"v1/{vault_config['mount_path']}/data/{vault_config['secret_path']}"
     expected_data = {"data": secret_data}
-    authenticated_client._make_request.assert_called_once_with(
-        "POST", expected_path, json=expected_data
-    )
+    authenticated_client._make_request.assert_called_once_with("POST", expected_path, json=expected_data)
     assert result == json_data
 
 
@@ -121,21 +104,15 @@ def test_create_or_update_secret_with_cas(authenticated_client, vault_config):
 
     expected_path = f"v1/{vault_config['mount_path']}/data/{vault_config['secret_path']}"
     expected_data = {"data": secret_data, "options": {"cas": cas_value}}
-    authenticated_client._make_request.assert_called_once_with(
-        "POST", expected_path, json=expected_data
-    )
+    authenticated_client._make_request.assert_called_once_with("POST", expected_path, json=expected_data)
 
 
 def test_create_or_update_secret_error(authenticated_client, vault_config):
-    authenticated_client._make_request.side_effect = VaultPermissionError(
-        "error while deleting secret"
-    )
+    authenticated_client._make_request.side_effect = VaultPermissionError("error while deleting secret")
     secret_data = {"username": "admin", "password": "newsecret"}
     kv2_secret = VaultKv2Secrets(authenticated_client)
     with pytest.raises(VaultPermissionError):
-        kv2_secret.create_or_update_secret(
-            vault_config["mount_path"], vault_config["secret_path"], secret_data
-        )
+        kv2_secret.create_or_update_secret(vault_config["mount_path"], vault_config["secret_path"], secret_data)
 
 
 def test_delete_secret(authenticated_client, vault_config):
@@ -152,15 +129,11 @@ def test_delete_secret_with_versions(authenticated_client, vault_config):
     kv2_secret.delete_secret(vault_config["mount_path"], vault_config["secret_path"], versions)
 
     expected_path = f"v1/{vault_config['mount_path']}/delete/{vault_config['secret_path']}"
-    authenticated_client._make_request.assert_called_once_with(
-        "POST", expected_path, json={"versions": versions}
-    )
+    authenticated_client._make_request.assert_called_once_with("POST", expected_path, json={"versions": versions})
 
 
 def test_delete_secret_error(authenticated_client, vault_config):
-    authenticated_client._make_request.side_effect = VaultPermissionError(
-        "error while deleting secret"
-    )
+    authenticated_client._make_request.side_effect = VaultPermissionError("error while deleting secret")
     kv2_secret = VaultKv2Secrets(authenticated_client)
     with pytest.raises(VaultPermissionError):
         kv2_secret.delete_secret(vault_config["mount_path"], vault_config["secret_path"])
