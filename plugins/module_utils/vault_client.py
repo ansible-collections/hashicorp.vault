@@ -99,6 +99,7 @@ class VaultClient:
 
         logger.info("Initialized VaultClient for %s", vault_address)
         self.secrets = Secrets(self)
+        self.acl_policies = VaultAclPolicies(self)
 
     def set_token(self, token: str) -> None:
         """
@@ -436,6 +437,104 @@ class VaultKv1Secrets:
             None
         """
         path = f"v1/{mount_path}/{secret_path}"
+        self._client._make_request("DELETE", path)
+
+
+class VaultAclPolicies:
+    """
+    Handles interactions with the Vault ACL policy HTTP API (/sys/policy).
+
+    Used by the ACL policy Ansible module and ACL policy _info module for
+    create, update, delete, list, and read operations. Integrates with the
+    collection's connection and authentication (base URL, token,
+    X-Vault-Namespace).
+    """
+
+    def __init__(self, client):
+        """
+        Initializes the Vault ACL policies API client.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+        """
+        self._client = client
+
+    def list_acl_policies(self) -> List[str]:
+        """
+        List all Vault ACL policy names.
+
+        Returns:
+            list: ACL policy names (e.g. ["root", "deploy"]).
+
+        Raises:
+            VaultApiError: If the API request fails.
+            VaultPermissionError: If insufficient permissions.
+            VaultConnectionError: If unable to connect to Vault.
+        """
+        path = "v1/sys/policy"
+        response = self._client._make_request("GET", path)
+        return response.get("policies", [])
+
+    def read_acl_policy(self, name: str) -> dict:
+        """
+        Read a Vault ACL policy by name.
+
+        Args:
+            name (str): The name of the ACL policy to read.
+
+        Returns:
+            dict: ACL policy data with "name" and "rules" keys.
+
+        Raises:
+            VaultSecretNotFoundError: If the ACL policy does not exist (404).
+            VaultApiError: If the API request fails.
+            VaultPermissionError: If insufficient permissions.
+            VaultConnectionError: If unable to connect to Vault.
+        """
+        path = f"v1/sys/policy/{name}"
+        return self._client._make_request("GET", path)
+
+    def create_or_update_acl_policy(self, name: str, acl_policy_rules: str) -> dict:
+        """
+        Create a new Vault ACL policy or update an existing one.
+
+        Args:
+            name (str): The name of the ACL policy (URL path segment).
+            acl_policy_rules (str): The ACL policy rules string (request JSON field ``policy``).
+
+        Returns:
+            dict: The JSON response from Vault (often empty for success).
+
+        Raises:
+            VaultApiError: If the API request fails.
+            VaultPermissionError: If insufficient permissions.
+            VaultConnectionError: If unable to connect to Vault.
+            TypeError: If the ACL policy rules are not a string.
+        """
+        if not isinstance(acl_policy_rules, str):
+            raise TypeError("ACL policy rules must be a string")
+
+        path = f"v1/sys/policy/{name}"
+        body: Dict[str, Any] = {"policy": acl_policy_rules}
+        logger.debug("POST ACL policy at %s", name)
+        return self._client._make_request("POST", path, json=body)
+
+    def delete_acl_policy(self, name: str) -> None:
+        """
+        Delete a Vault ACL policy by name.
+
+        Args:
+            name (str): The name of the ACL policy to delete.
+
+        Returns:
+            None
+
+        Raises:
+            VaultApiError: If the API request fails.
+            VaultPermissionError: If insufficient permissions.
+            VaultConnectionError: If unable to connect to Vault.
+        """
+        path = f"v1/sys/policy/{name}"
         self._client._make_request("DELETE", path)
 
 
