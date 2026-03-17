@@ -150,32 +150,45 @@ class VaultDatabaseConnection:
     Handles interactions with the Vault Database Secrets Engine.
     """
 
-    def __init__(self, client):
+    def __init__(self, client, mount_path="database"):
         """
         Initializes the Database connection client.
 
         Args:
             client (VaultClient): An authenticated instance of the main VaultClient.
+            mount_path (str): The mount path of the database secrets engine. Defaults to "database".
         """
         self._client = client
-        self._mount_path = "database"
+        self._mount_path = mount_path
 
-    def list_connections(self):
+    def list_connections(self) -> list:
         """
         List all available connections.
+
+        Returns:
+            List[str]: A list of connection names.
         """
         path = f"v1/{self._mount_path}/config"
-        pass
+        response_data = self._client._make_request("LIST", path)
 
-    def read_connection(self, name: str):
+        connections = response_data.get("data", {}).get("keys", [])
+
+        return connections
+
+    def read_connection(self, name: str) -> dict:
         """
         Read the configuration settings of a database connection.
 
         Args:
             name (str): The name of the connection to read.
+
+        Returns:
+            dict: The connection configuration data.
         """
         path = f"v1/{self._mount_path}/config/{name}"
-        pass
+        response_data = self._client._make_request("GET", path)
+
+        return response_data.get("data", {})
 
     def create_or_update_connection(self, name: str):
         """
