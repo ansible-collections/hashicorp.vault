@@ -5,11 +5,9 @@
 
 from __future__ import absolute_import, division, print_function
 
-
 __metaclass__ = type
 
 from abc import ABC, abstractmethod
-
 
 try:
     import requests
@@ -98,18 +96,12 @@ class AppRoleAuthenticator(Authenticator):
             ) from REQUESTS_IMPORT_ERROR
 
         if not role_id or not secret_id:
-            raise VaultCredentialsError(
-                "role_id and secret_id are required for AppRole authentication."
-            )
+            raise VaultCredentialsError("role_id and secret_id are required for AppRole authentication.")
 
-        token = self._login_with_approle(
-            vault_address, role_id, secret_id, vault_namespace, approle_path
-        )
+        token = self._login_with_approle(vault_address, role_id, secret_id, vault_namespace, approle_path)
         client.set_token(token)
 
-    def _login_with_approle(
-        self, vault_address, role_id, secret_id, vault_namespace=None, approle_path="approle"
-    ):
+    def _login_with_approle(self, vault_address, role_id, secret_id, vault_namespace=None, approle_path="approle"):
         """
         Login to Vault using AppRole credentials.
 

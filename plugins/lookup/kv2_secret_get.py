@@ -80,9 +80,7 @@ _raw:
       version: 1
 """
 
-from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
-    Secrets as VaultSecret,
-)
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import Secrets as VaultSecret
 from ansible_collections.hashicorp.vault.plugins.plugin_utils.base import VaultLookupBase
 
 
@@ -102,7 +100,5 @@ class LookupModule(VaultLookupBase):
         secret = self.get_option("secret")
         secret_mgr = VaultSecret(self.client)
 
-        result = secret_mgr.kv2.read_secret(
-            mount_path=mount_path, secret_path=secret, version=version
-        )
+        result = secret_mgr.kv2.read_secret(mount_path=mount_path, secret_path=secret, version=version)
         return [result]

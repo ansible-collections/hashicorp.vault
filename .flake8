@@ -43,7 +43,11 @@ extend-ignore =
   # line-length
   E501,
   # module level import not at top of file
-  E402
+  E402,
+  # whitespace before ':' (black compatibility)
+  E203,
+  # documentation-related errors
+  DOC
 
 # Accessibility/large fonts and PEP8 unfriendly:
 max-line-length = 120
@@ -56,6 +60,8 @@ per-file-ignores =
   # If other ignores are added for a specific file in the section following this,
   # these will need to be added to that line as well.
 
+  # E402: Allow module level import not at top of file in modules
+  plugins/modules/*:E402
 
    # S101: Allow the use of assert within the tests directory, since tests require it.
   tests/**.py: S101

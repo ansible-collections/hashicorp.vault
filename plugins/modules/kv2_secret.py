@@ -5,7 +5,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-
 __metaclass__ = type
 
 DOCUMENTATION = """
@@ -122,14 +121,11 @@ from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.args_common import AUTH_ARG_SPEC
 
-
 try:
     from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils import (
         get_authenticated_client,
     )
-    from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
-        Secrets as VaultSecret,
-    )
+    from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import Secrets as VaultSecret
     from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
         VaultApiError,
         VaultPermissionError,
@@ -185,9 +181,7 @@ def ensure_secret_present(module: AnsibleModule, secret_mgr: VaultSecret) -> Non
 
     # If in check mode, exit here with what would happen
     if module.check_mode:
-        module.exit_json(
-            changed=changed, msg=f"Would have {action} the secret if not in check_mode."
-        )
+        module.exit_json(changed=changed, msg=f"Would have {action} the secret if not in check_mode.")
 
     # Create or update the secret
     result = secret_mgr.kv2.create_or_update_secret(
@@ -226,15 +220,11 @@ def ensure_secret_absent(module: AnsibleModule, secret_mgr: VaultSecret) -> None
 
     # If in check mode, exit here with what would happen
     if module.check_mode:
-        module.exit_json(
-            changed=changed, msg="Would have soft-deleted the secret if not in check_mode."
-        )
+        module.exit_json(changed=changed, msg="Would have soft-deleted the secret if not in check_mode.")
 
     # Delete the secret
     result = secret_mgr.kv2.delete_secret(mount_path, secret_path, versions)
-    module.exit_json(
-        changed=changed, msg="Secret deleted (soft-deleted) successfully", data=result or {}
-    )
+    module.exit_json(changed=changed, msg="Secret deleted (soft-deleted) successfully", data=result or {})
 
 
 def main():

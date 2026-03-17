@@ -4,12 +4,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 from __future__ import absolute_import, division, print_function
 
-
 __metaclass__ = type
 
 import random
 import string
-
 from unittest.mock import MagicMock
 
 import pytest
@@ -67,9 +65,7 @@ def test_create_or_update_secret(vault_kv1_secret):
     result = vault_kv1_secret.create_or_update_secret(engine_mount_point, secret_path, secret_data)
 
     expected_path = f"v1/{engine_mount_point}/{secret_path}"
-    vault_kv1_secret._client._make_request.assert_called_once_with(
-        "POST", expected_path, json=secret_data
-    )
+    vault_kv1_secret._client._make_request.assert_called_once_with("POST", expected_path, json=secret_data)
 
     assert result == mock_success_response
 

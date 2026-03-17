@@ -5,7 +5,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-
 __metaclass__ = type
 
 DOCUMENTATION = """
@@ -137,9 +136,7 @@ def ensure_present(module: AnsibleModule, client: VaultClient) -> None:
 
     changed = True
     if module.check_mode:
-        module.exit_json(
-            changed=changed, msg=f"Would have {action} the secret if not in check mode."
-        )
+        module.exit_json(changed=changed, msg=f"Would have {action} the secret if not in check mode.")
 
     result = client.secrets.kv1.create_or_update_secret(
         mount_path=mount_path, secret_path=secret_path, secret_data=data
