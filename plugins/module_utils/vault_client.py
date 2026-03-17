@@ -149,6 +149,7 @@ class VaultDatabaseConnection:
     """
     Handles interactions with the Vault Database Secrets Engine.
     """
+
     def __init__(self, client):
         """
         Initializes the Database connection client.
