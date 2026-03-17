@@ -159,7 +159,7 @@ class VaultDatabaseConnection:
             mount_path (str): The mount path of the database secrets engine. Defaults to "database".
         """
         self._client = client
-        self._mount_path = mount_path
+        self._mount_path = (mount_path or "database").strip().strip("/")
 
     def list_connections(self) -> list:
         """
