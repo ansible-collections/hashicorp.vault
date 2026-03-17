@@ -71,6 +71,19 @@ def authenticated_client(mocker, vault_config):
 
 
 @pytest.fixture
+def mock_configure_response():
+    """Mock response from Vault for configure/update operations."""
+    return {
+        "request_id": "1234567890",
+        "lease_id": "",
+        "lease_duration": 0,
+        "renewable": False,
+        "data": None,
+        "warnings": None,
+    }
+
+
+@pytest.fixture
 def sample_db_config():
     """Sample database configuration for testing."""
     return {
@@ -150,35 +163,6 @@ class TestDatabaseReadConnection:
         db_conn = VaultDatabaseConnection(client=authenticated_client)
         with pytest.raises(VaultSecretNotFoundError):
             db_conn.read_connection(vault_config["database_name"])
-
-
-@pytest.fixture
-def mock_configure_response():
-    """Mock response from Vault for configure/update operations."""
-    return {
-        "request_id": "1234567890",
-        "lease_id": "",
-        "lease_duration": 0,
-        "renewable": False,
-        "data": None,
-        "warnings": None,
-    }
-
-
-def test_list_connections_success(authenticated_client, vault_config):
-    pass
-
-
-def test_list_connections_error(authenticated_client, vault_config):
-    pass
-
-
-def test_read_connection_success(authenticated_client, vault_config):
-    pass
-
-
-def test_read_connection_error(authenticated_client, vault_config):
-    pass
 
 
 class TestCreateOrUpdateConnection:
