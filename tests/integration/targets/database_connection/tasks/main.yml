@@ -1,0 +1,300 @@
+---
+- name: Run database_connection tests
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: "token"
+      token: "{{ vault_token_from_setup_auth_token }}"
+      vault_approle_path: "{{ vault_approle_path }}"
+      database_mount_path: "{{ vault_database_mount_path }}"
+  vars:
+    mysql_connection_url: "mysql://ansible:secret123@localhost:3306/mydb"
+    mysql_username: "ansible"
+    mysql_password: "secret123"
+    mysql_dbconnection_name: "mysql-{{ vault_resource_suffix }}"
+    mysql_plugin_name: "mysql-database-plugin"
+    mysql_allowed_roles: "readonly"
+  block:
+    # Create database connection
+    - name: Trying to create without required parameters
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        connection_url: "{{ mysql_connection_url }}"
+        verify_connection: false
+        allowed_roles: "{{ mysql_allowed_roles }}"
+        username: "{{ mysql_username }}"
+        password: "{{ mysql_password }}"
+      ignore_errors: true
+      register: create_missing_params
+
+    - name: Ensure task failed
+      ansible.builtin.assert:
+        that:
+          - create_missing_params is failed
+          - 'create_missing_params.msg == "state is present but all of the following are missing: plugin_name"'
+
+    - name: Create database connection (check mode)
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        connection_url: "{{ mysql_connection_url }}"
+        verify_connection: false
+        plugin_name: "{{ mysql_plugin_name }}"
+        allowed_roles: "{{ mysql_allowed_roles }}"
+        username: "{{ mysql_username }}"
+        password: "{{ mysql_password }}"
+      check_mode: true
+      register: create_check_mode
+
+    - name: Read existing database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module reported change while the connection was not created
+      ansible.builtin.assert:
+        that:
+          - create_check_mode is changed
+          - db_connection.database_connection == {}
+
+    - name: Create database connection
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        connection_url: "{{ mysql_connection_url }}"
+        verify_connection: false
+        plugin_name: "{{ mysql_plugin_name }}"
+        allowed_roles: "{{ mysql_allowed_roles }}"
+        username: "{{ mysql_username }}"
+        password: "{{ mysql_password }}"
+      register: create_conn
+
+    - name: Read existing database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module reported change and the connection was created
+      ansible.builtin.assert:
+        that:
+          - create_conn is changed
+          - db_connection.database_connection == create_conn.database_connection
+
+    - name: Create database connection (idempotency)
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        connection_url: "{{ mysql_connection_url }}"
+        verify_connection: false
+        plugin_name: "{{ mysql_plugin_name }}"
+        allowed_roles: "{{ mysql_allowed_roles }}"
+        username: "{{ mysql_username }}"
+        password: "{{ mysql_password }}"
+      register: create_idempotency
+
+    - name: Read existing database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module is idempotent for creation
+      ansible.builtin.assert:
+        that:
+          - create_idempotency is not changed
+          - create_idempotency.database_connection == create_conn.database_connection
+
+    # Update database connection
+    - name: Update database connection (check mode)
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        connection_url: "{{ mysql_connection_url }}"
+        verify_connection: false
+        plugin_name: "{{ mysql_plugin_name }}"
+        allowed_roles: "{{ mysql_allowed_roles }}"
+        username: "{{ mysql_username }}"
+        password: "{{ mysql_password }}"
+        plugin_options:
+          tls_skip_verify: true
+      check_mode: true
+      register: update_check_mode
+
+    - name: Read database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module reported change while the connection was not updated
+      ansible.builtin.assert:
+        that:
+          - update_check_mode is changed
+          - db_connection.database_connection == create_conn.database_connection
+
+    - name: Update database connection
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        connection_url: "{{ mysql_connection_url }}"
+        verify_connection: false
+        plugin_name: "{{ mysql_plugin_name }}"
+        allowed_roles: "{{ mysql_allowed_roles }}"
+        username: "{{ mysql_username }}"
+        password: "{{ mysql_password }}"
+        plugin_options:
+          tls_skip_verify: true
+      register: update_conn
+
+    - name: Read the database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module reported change and the connection was updated
+      ansible.builtin.assert:
+        that:
+          - update_conn is changed
+          - db_connection.database_connection == update_conn.database_connection
+
+    - name: Update database connection (idempotency)
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        connection_url: "{{ mysql_connection_url }}"
+        verify_connection: false
+        plugin_name: "{{ mysql_plugin_name }}"
+        allowed_roles: "{{ mysql_allowed_roles }}"
+        username: "{{ mysql_username }}"
+        password: "{{ mysql_password }}"
+        plugin_options:
+          tls_skip_verify: true
+      register: update_idempotency
+
+    - name: Read existing database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module is idempotent for update
+      ansible.builtin.assert:
+        that:
+          - update_idempotency is not changed
+          - db_connection.database_connection == update_conn.database_connection
+
+    # Reset database connection
+    - name: Reset the database connection (check mode)
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        state: reset
+      check_mode: true
+      register: reset_check_mode
+
+    - name: Read the database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module reported change while the connection was not reset
+      ansible.builtin.assert:
+        that:
+          - reset_check_mode is changed
+          - db_connection.database_connection == update_conn.database_connection
+
+    - name: Reset the database connection
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        state: reset
+      register: reset_conn
+
+    - name: Read the database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module reported change and the connection was reset
+      ansible.builtin.assert:
+        that:
+          - reset_conn is changed
+          - db_connection.database_connection == update_conn.database_connection
+
+    - name: Reset the database connection once again
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        state: reset
+      register: reset_again
+
+    - name: Validate that module is not idempotent for reset
+      ansible.builtin.assert:
+        that:
+          - reset_again is changed
+
+    - name: Reset unexisting database connection
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}-fake"
+        state: reset
+      check_mode: true
+      register: reset_unexisting_check_mode
+
+    - name: Ensure module did not reported change
+      ansible.builtin.assert:
+        that:
+          - reset_unexisting_check_mode is not changed
+
+    - name: Reset unexisting database connection
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}-fake"
+        state: reset
+      register: reset_unexisting
+
+    - name: Ensure module did not reported change
+      ansible.builtin.assert:
+        that:
+          - reset_unexisting is not changed
+
+    # Delete database connection
+    - name: Delete the database connection (check mode)
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        state: absent
+      check_mode: true
+      register: delete_check_mode
+
+    - name: Read the database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module reported change while the connection was not deleted
+      ansible.builtin.assert:
+        that:
+          - delete_check_mode is changed
+          - db_connection.database_connection != {}
+
+    - name: Delete the database connection
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        state: absent
+      register: delete_conn
+
+    - name: Read the database connection
+      hashicorp.vault.database_connection_info:
+        name: "{{ mysql_dbconnection_name }}"
+      register: db_connection
+
+    - name: Validate that module reported change and the connection was deleted
+      ansible.builtin.assert:
+        that:
+          - delete_conn is changed
+          - db_connection.database_connection == {}
+
+    - name: Delete the database connection once again
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        state: absent
+      register: delete_idempotent
+
+    - name: Validate module idemoptency for deletion
+      ansible.builtin.assert:
+        that:
+          - delete_idempotent is not changed
+
+  always:
+    - name: Delete the database connection once again
+      hashicorp.vault.database_connection:
+        name: "{{ mysql_dbconnection_name }}"
+        state: absent
+      ignore_errors: true

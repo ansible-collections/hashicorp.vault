@@ -1,0 +1,3 @@
+---
+vault_approle_path: "approle-integration-tests"
+vault_database_mount_path: "database-conn-config-integration-tests"
