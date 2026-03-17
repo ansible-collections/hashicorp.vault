@@ -64,9 +64,7 @@ def mock_read_connection_response():
 @pytest.fixture
 def authenticated_client(mocker, vault_config):
     """Authenticated Vault client for testing."""
-    client = VaultClient(
-        vault_address=vault_config["addr"], vault_namespace=vault_config["namespace"]
-    )
+    client = VaultClient(vault_address=vault_config["addr"], vault_namespace=vault_config["namespace"])
     client.set_token(vault_config["token"])
     client._make_request = MagicMock()
     return client
@@ -82,6 +80,7 @@ def sample_db_config():
         "username": "vaultuser",
         "password": "secretpassword",
     }
+
 
 class TestDatabaseListConnections:
     def test_list_connections_success(self, authenticated_client, mock_list_connections_response):
@@ -192,19 +191,13 @@ class TestCreateOrUpdateConnection:
         authenticated_client._make_request.return_value = mock_configure_response
 
         db_conn = VaultDatabaseConnection(authenticated_client)
-        result = db_conn.create_or_update_connection(
-            vault_config["database_name"], sample_db_config
-        )
+        result = db_conn.create_or_update_connection(vault_config["database_name"], sample_db_config)
         expected_path = f"v1/database/config/{vault_config['database_name']}"
-        authenticated_client._make_request.assert_called_once_with(
-            "POST", expected_path, json=sample_db_config
-        )
+        authenticated_client._make_request.assert_called_once_with("POST", expected_path, json=sample_db_config)
 
         assert result == mock_configure_response
 
-    def test_create_or_update_connection_error(
-        self, authenticated_client, vault_config, sample_db_config
-    ):
+    def test_create_or_update_connection_error(self, authenticated_client, vault_config, sample_db_config):
         """Test that create_or_update_connection raises VaultApiError if the API request fails."""
         authenticated_client._make_request.side_effect = VaultApiError("Test error")
 
@@ -220,9 +213,7 @@ class TestCreateOrUpdateConnection:
             db_conn.create_or_update_connection(vault_config["database_name"], "invalid_config")
         authenticated_client._make_request.assert_not_called()
 
-    def test_create_or_update_connection_missing_plugin_name(
-        self, authenticated_client, vault_config
-    ):
+    def test_create_or_update_connection_missing_plugin_name(self, authenticated_client, vault_config):
         """Test that create_or_update_connection raises TypeError if config lacks plugin_name."""
         db_conn = VaultDatabaseConnection(authenticated_client)
         config_without_plugin = {
@@ -234,9 +225,7 @@ class TestCreateOrUpdateConnection:
             db_conn.create_or_update_connection(vault_config["database_name"], config_without_plugin)
         authenticated_client._make_request.assert_not_called()
 
-    def test_create_or_update_connection_plugin_name_not_string(
-        self, authenticated_client, vault_config
-    ):
+    def test_create_or_update_connection_plugin_name_not_string(self, authenticated_client, vault_config):
         """Test that create_or_update_connection raises TypeError if plugin_name is not a str."""
         db_conn = VaultDatabaseConnection(authenticated_client)
         config_plugin_name_not_str = {
@@ -245,9 +234,7 @@ class TestCreateOrUpdateConnection:
         }
 
         with pytest.raises(TypeError, match='config\\["plugin_name"\\] must be a str'):
-            db_conn.create_or_update_connection(
-                vault_config["database_name"], config_plugin_name_not_str
-            )
+            db_conn.create_or_update_connection(vault_config["database_name"], config_plugin_name_not_str)
         authenticated_client._make_request.assert_not_called()
 
     def test_create_or_update_connection_with_minimal_config(
@@ -265,18 +252,14 @@ class TestCreateOrUpdateConnection:
         result = db_conn.create_or_update_connection(vault_config["database_name"], minimal_config)
 
         expected_path = f"v1/database/config/{vault_config['database_name']}"
-        authenticated_client._make_request.assert_called_once_with(
-            "POST", expected_path, json=minimal_config
-        )
+        authenticated_client._make_request.assert_called_once_with("POST", expected_path, json=minimal_config)
         assert result == mock_configure_response
 
 
 class TestDeleteConnection:
     """Test suite for delete_connection."""
 
-    def test_delete_connection_success(
-        self, authenticated_client, vault_config, mock_configure_response
-    ):
+    def test_delete_connection_success(self, authenticated_client, vault_config, mock_configure_response):
         """Test that delete_connection deletes a connection if it exists."""
         authenticated_client._make_request.return_value = mock_configure_response
 
@@ -300,9 +283,7 @@ class TestDeleteConnection:
 class TestResetConnection:
     """Test suite for reset_connection."""
 
-    def test_reset_connection_success(
-        self, authenticated_client, vault_config, mock_configure_response
-    ):
+    def test_reset_connection_success(self, authenticated_client, vault_config, mock_configure_response):
         """Test that reset_connection resets a connection if it exists."""
         authenticated_client._make_request.return_value = mock_configure_response
 
