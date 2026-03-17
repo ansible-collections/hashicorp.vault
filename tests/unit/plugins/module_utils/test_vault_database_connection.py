@@ -93,9 +93,7 @@ class TestDatabaseListConnections:
     ):
         authenticated_client._make_request.return_value = mock_list_connections_response
 
-        db_conn = VaultDatabaseConnection(
-            client=authenticated_client, mount_path=vault_config["custom_mount_path"]
-        )
+        db_conn = VaultDatabaseConnection(client=authenticated_client, mount_path=vault_config["custom_mount_path"])
         db_names = db_conn.list_connections()
 
         expected_path = f"v1/{vault_config['custom_mount_path']}/config"
@@ -110,9 +108,7 @@ class TestDatabaseListConnections:
 
 
 class TestDatabaseReadConnection:
-    def test_read_connection_success(
-        self, authenticated_client, vault_config, mock_read_connection_response
-    ):
+    def test_read_connection_success(self, authenticated_client, vault_config, mock_read_connection_response):
         authenticated_client._make_request.return_value = mock_read_connection_response
 
         db_conn = VaultDatabaseConnection(client=authenticated_client)
@@ -127,21 +123,15 @@ class TestDatabaseReadConnection:
     ):
         authenticated_client._make_request.return_value = mock_read_connection_response
 
-        db_conn = VaultDatabaseConnection(
-            client=authenticated_client, mount_path=vault_config["custom_mount_path"]
-        )
+        db_conn = VaultDatabaseConnection(client=authenticated_client, mount_path=vault_config["custom_mount_path"])
         db_config = db_conn.read_connection(name=vault_config["database_name"])
 
-        expected_path = (
-            f"v1/{vault_config['custom_mount_path']}/config/{vault_config['database_name']}"
-        )
+        expected_path = f"v1/{vault_config['custom_mount_path']}/config/{vault_config['database_name']}"
         authenticated_client._make_request.assert_called_once_with("GET", expected_path)
         assert db_config == mock_read_connection_response["data"]
 
     def test_read_connection_error(self, authenticated_client, vault_config):
-        authenticated_client._make_request.side_effect = VaultSecretNotFoundError(
-            "connection not found"
-        )
+        authenticated_client._make_request.side_effect = VaultSecretNotFoundError("connection not found")
         db_conn = VaultDatabaseConnection(client=authenticated_client)
         with pytest.raises(VaultSecretNotFoundError):
             db_conn.read_connection(vault_config["database_name"])
