@@ -49,9 +49,7 @@ _raw:
     foo: "bar"
 """
 
-from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
-    Secrets as VaultSecret,
-)
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import Secrets as VaultSecret
 from ansible_collections.hashicorp.vault.plugins.plugin_utils.base import VaultLookupBase
 
 

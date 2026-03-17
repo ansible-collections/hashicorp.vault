@@ -240,9 +240,7 @@ class TestKv2SecretGetLookup:
             assert result == [sample_secret_data], f"Failed for case: {test_case['description']}"
             mock_kv2.read_secret.assert_called_with(**test_case["expected_call"])
 
-    def test_vault_secret_manager_initialization(
-        self, lookup_plugin, mock_vault_client, mock_vault_secrets
-    ):
+    def test_vault_secret_manager_initialization(self, lookup_plugin, mock_vault_client, mock_vault_secrets):
         """Test that VaultSecret is properly initialized with the client."""
         mock_secrets, mock_kv2 = mock_vault_secrets
         mock_kv2.read_secret.return_value = {}
@@ -265,9 +263,7 @@ class TestKv2SecretGetLookup:
             mock_vault_secret_class.assert_called_once_with(mock_vault_client)
 
     @pytest.mark.parametrize("missing_option", ["secret", "engine_mount_point"])
-    def test_missing_required_options(
-        self, lookup_plugin, mock_vault_client, mock_vault_secrets, missing_option
-    ):
+    def test_missing_required_options(self, lookup_plugin, mock_vault_client, mock_vault_secrets, missing_option):
         """Test behavior when required options are missing."""
         mock_secrets, mock_kv2 = mock_vault_secrets
 
@@ -298,9 +294,7 @@ class TestKv2SecretGetLookup:
             # The actual validation happens in the vault client layer
             lookup_plugin.run([], {})
 
-    def test_return_format(
-        self, lookup_plugin, mock_vault_client, mock_vault_secrets, sample_secret_data
-    ):
+    def test_return_format(self, lookup_plugin, mock_vault_client, mock_vault_secrets, sample_secret_data):
         """Test that the return format is correctly structured."""
         mock_secrets, mock_kv2 = mock_vault_secrets
         mock_kv2.read_secret.return_value = sample_secret_data

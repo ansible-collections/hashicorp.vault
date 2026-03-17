@@ -5,7 +5,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-
 __metaclass__ = type
 
 from unittest.mock import Mock, patch
@@ -89,9 +88,7 @@ class TestAppRoleAuthenticator:
         }
 
     @patch("requests.post")
-    def test_authenticate_success(
-        self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
-    ):
+    def test_authenticate_success(self, mock_post, mock_client, authenticator, successful_mock_response, auth_params):
         """Test successful AppRole authentication."""
         successful_mock_response.json.return_value = {"auth": {"client_token": "hvs.123abc"}}
         mock_post.return_value = successful_mock_response
@@ -118,9 +115,7 @@ class TestAppRoleAuthenticator:
         mock_client.set_token.assert_called_once_with("hvs.custom")
 
     @patch("requests.post")
-    def test_authenticate_no_namespace(
-        self, mock_post, mock_client, authenticator, successful_mock_response
-    ):
+    def test_authenticate_no_namespace(self, mock_post, mock_client, authenticator, successful_mock_response):
         """Test AppRole authentication without namespace."""
         successful_mock_response.json.return_value = {"auth": {"client_token": "hvs.nonamespace"}}
         mock_post.return_value = successful_mock_response
@@ -156,9 +151,7 @@ class TestAppRoleAuthenticator:
             VaultCredentialsError,
             match="role_id and secret_id are required for AppRole authentication.",
         ):
-            authenticator.authenticate(
-                mock_client, **{**auth_params, "role_id": None, "secret_id": None}
-            )
+            authenticator.authenticate(mock_client, **{**auth_params, "role_id": None, "secret_id": None})
 
     @patch("requests.post")
     def test_authenticate_login_failure(self, mock_post, mock_client, authenticator, auth_params):
@@ -174,9 +167,7 @@ class TestAppRoleAuthenticator:
 
         mock_post.return_value = mock_response
 
-        with pytest.raises(
-            VaultAppRoleLoginError, match="AppRole login failed: HTTP 401 - permission denied"
-        ):
+        with pytest.raises(VaultAppRoleLoginError, match="AppRole login failed: HTTP 401 - permission denied"):
             authenticator.authenticate(mock_client, **auth_params)
 
     @patch("requests.post")
@@ -184,9 +175,7 @@ class TestAppRoleAuthenticator:
         """Test AppRole authentication handles network errors."""
         mock_post.side_effect = requests.ConnectionError("Connection timeout")
 
-        with pytest.raises(
-            VaultConnectionError, match="Network error during AppRole login: Connection timeout"
-        ):
+        with pytest.raises(VaultConnectionError, match="Network error during AppRole login: Connection timeout"):
             authenticator.authenticate(mock_client, **auth_params)
 
     @patch("requests.post")

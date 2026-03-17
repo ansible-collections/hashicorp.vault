@@ -5,14 +5,11 @@
 
 from __future__ import absolute_import, division, print_function
 
-
 __metaclass__ = type
 
 import json  # noqa: F401
 import logging
-
 from typing import Any, Dict, List, Optional
-
 
 try:
     import requests
@@ -28,7 +25,6 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions i
     VaultPermissionError,
     VaultSecretNotFoundError,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -87,9 +83,7 @@ class VaultClient:
             VaultConfigurationError: If vault_address or vault_namespace are empty/None
         """
         if REQUESTS_IMPORT_ERROR:
-            raise ImportError(
-                "The 'requests' library is required for VaultClient"
-            ) from REQUESTS_IMPORT_ERROR
+            raise ImportError("The 'requests' library is required for VaultClient") from REQUESTS_IMPORT_ERROR
 
         if not vault_address:
             raise VaultConfigurationError("vault_address is required")
@@ -148,9 +142,7 @@ class VaultClient:
             else:
                 raise VaultApiError(msg, status_code, errors) from e
         except requests.exceptions.RequestException as e:
-            raise VaultConnectionError(
-                f"Failed to connect to Vault at {self.vault_address}. Error: {e}"
-            ) from e
+            raise VaultConnectionError(f"Failed to connect to Vault at {self.vault_address}. Error: {e}") from e
 
 
 class VaultDatabaseConnection:
@@ -158,32 +150,45 @@ class VaultDatabaseConnection:
     Handles interactions with the Vault Database Secrets Engine.
     """
 
-    def __init__(self, client):
+    def __init__(self, client, mount_path="database"):
         """
         Initializes the Database connection client.
 
         Args:
             client (VaultClient): An authenticated instance of the main VaultClient.
+            mount_path (str): The mount path of the database secrets engine. Defaults to "database".
         """
         self._client = client
-        self._mount_path = "database"
+        self._mount_path = mount_path
 
-    def list_connections(self):
+    def list_connections(self) -> list:
         """
         List all available connections.
+
+        Returns:
+            List[str]: A list of connection names.
         """
         path = f"v1/{self._mount_path}/config"
-        pass
+        response_data = self._client._make_request("LIST", path)
 
-    def read_connection(self, name: str):
+        connections = response_data.get("data", {}).get("keys", [])
+
+        return connections
+
+    def read_connection(self, name: str) -> dict:
         """
         Read the configuration settings of a database connection.
 
         Args:
             name (str): The name of the connection to read.
+
+        Returns:
+            dict: The connection configuration data.
         """
         path = f"v1/{self._mount_path}/config/{name}"
-        pass
+        response_data = self._client._make_request("GET", path)
+
+        return response_data.get("data", {})
 
     def create_or_update_connection(self, name: str, config: dict) -> dict:
         """
@@ -337,9 +342,7 @@ class VaultKv2Secrets:
         logger.debug("POST secret at %s with CAS: %s", secret_path, cas)
         return self._client._make_request("POST", path, json=body)
 
-    def delete_secret(
-        self, mount_path: str, secret_path: str, versions: Optional[List[int]] = None
-    ) -> None:
+    def delete_secret(self, mount_path: str, secret_path: str, versions: Optional[List[int]] = None) -> None:
         """
         Deletes a secret from the KV2 secrets engine.
         If secret version is not provided, it will soft delete the latest version of the secret.
