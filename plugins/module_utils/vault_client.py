@@ -159,7 +159,7 @@ class VaultDatabaseConnection:
             mount_path (str): The mount path of the database secrets engine. Defaults to "database".
         """
         self._client = client
-        self._mount_path = mount_path
+        self._mount_path = (mount_path or "database").strip().strip("/")
 
     def list_connections(self) -> list:
         """
@@ -190,36 +190,79 @@ class VaultDatabaseConnection:
 
         return response_data.get("data", {})
 
-    def create_or_update_connection(self, name: str):
+    def create_or_update_connection(self, name: str, config: dict) -> dict:
         """
-        Create a new database connection or update an existing one.
+        Configure a database connection.
 
         Args:
-            name (str): The name of the connection to create or update.
-        """
-        path = f"v1/{self._mount_path}/config/{name}"
-        pass
+            name (str): The name of the database connection
+            config (dict): Connection configuration containing:
+                - plugin_name (str, required): Database plugin type (e.g., 'postgresql-database-plugin')
+                - plugin_version (str, optional): Semantic version of the plugin
+                - allowed_roles (list, optional): Roles allowed to use this connection
+                - verify_connection (bool, optional): Verify during setup (default: true)
+                - root_rotation_statements (list, optional): Statements to execute during root rotation
+                - password_policy (str, optional): Password policy to use for the connection
+                - Other common fields (reference the individual plugin documentation to determine support)
+                  - connection_url (str, optional): Database connection string
+                  - username (str, optional): Database username
+                  - password (str, optional): Database password
+                  - disable_escaping (bool, optional): Disable escaping of special characters in the connection URL (default: false)
 
-    def delete_connection(self, name: str):
+        Returns:
+            dict: Response from Vault
+
+        Raises:
+            TypeError: If config is not a dict, or if config does not contain
+                "plugin_name" with a string value.
+
+        Example:
+            db.create_or_update_connection(
+              name="my-postgres-db",
+              config={
+                  "plugin_name": "postgresql-database-plugin",
+                  "connection_url": "postgresql://{{username}}:{{password}}@localhost:5432/mydb",
+                  "username": "vault",
+                  "password": "secret",
+                  "allowed_roles": ["readonly", "readwrite"]}
+              )
+        """
+        if not isinstance(config, dict):
+            raise TypeError("config must be a dict")
+        if "plugin_name" not in config:
+            raise TypeError('config must contain "plugin_name"')
+        if not isinstance(config["plugin_name"], str):
+            raise TypeError('config["plugin_name"] must be a str')
+
+        path = f"v1/{self._mount_path}/config/{name}"
+        return self._client._make_request("POST", path, json=config)
+
+    def delete_connection(self, name: str) -> None:
         """
         Delete a database connection.
 
         Args:
             name (str): The name of the connection to delete.
+
+        Returns:
+            None
         """
         path = f"v1/{self._mount_path}/config/{name}"
-        pass
+        self._client._make_request("DELETE", path)
 
-    def reset_connection(self, name: str):
+    def reset_connection(self, name: str) -> None:
         """
         Reset a database connection by closing the connection and its underlying plugin,
         then restarting it.
 
         Args:
             name (str): The name of the connection to reset.
+
+        Returns:
+            None
         """
         path = f"v1/{self._mount_path}/reset/{name}"
-        pass
+        self._client._make_request("POST", path, json={})
 
 
 class VaultKv2Secrets:
