@@ -57,7 +57,7 @@ jobs:
         working-directory: /home/runner/.ansible/collections/ansible_collections/hashicorp/vault
         env:
           VAULT_ADDR: "${{ secrets.VAULT_ADDR }}"
-          VAULT_NAMESPACE: "${{ secrets.VAULT_NAMESPACE }}"
+          VAULT_NAMESPACE: "admin/hashicorp-vault-integration-tests"
           VAULT_APPROLE_ROLE_ID: "${{ secrets.VAULT_APPROLE_ROLE_ID }}"
           VAULT_APPROLE_SECRET_ID: "${{ secrets.VAULT_APPROLE_SECRET_ID }}"
 
