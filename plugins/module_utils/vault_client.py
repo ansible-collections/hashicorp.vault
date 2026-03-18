@@ -440,6 +440,47 @@ class VaultKv1Secrets:
         self._client._make_request("DELETE", path)
 
 
+def _normalize_acl_policy_read(policy_name: str, response: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Build {name, rules} from GET /sys/policy/:name or GET /sys/policies/acl/:name.
+
+    Some servers (e.g. HCP Vault) return an empty top-level ``rules`` on the
+    legacy endpoint but expose the document on ``/sys/policies/acl`` as ``policy``.
+    """
+    data = response.get("data") or {}
+    rules = (
+        (response.get("rules") or "").strip()
+        or (response.get("policy") or "").strip()
+        or (data.get("rules") or "").strip()
+        or (data.get("policy") or "").strip()
+    )
+    name = response.get("name") or data.get("name") or policy_name
+    return {"name": name, "rules": rules}
+
+
+def _acl_policy_names_from_list_response(body: Optional[Dict[str, Any]]) -> List[str]:
+    """
+    Policy names from GET /sys/policy or LIST/GET (list) on /sys/policies/acl.
+
+    Open-source Vault often returns top-level C(keys); HCP and other deployments
+    may wrap list results under C(data.keys).
+    """
+    if not body or not isinstance(body, dict):
+        return []
+    pol = body.get("policies")
+    if isinstance(pol, list) and pol:
+        return list(pol)
+    keys = body.get("keys")
+    if isinstance(keys, list) and keys:
+        return list(keys)
+    nested = body.get("data")
+    if isinstance(nested, dict):
+        keys = nested.get("keys")
+        if isinstance(keys, list) and keys:
+            return list(keys)
+    return []
+
+
 class VaultAclPolicies:
     """
     Handles interactions with the Vault ACL policy HTTP API (/sys/policy).
@@ -463,12 +504,31 @@ class VaultAclPolicies:
         """
         List all Vault ACL policy names.
 
+        Uses GET /sys/policy; if that returns no names (e.g. some HCP setups),
+        falls back to LIST /sys/policies/acl, then GET /sys/policies/acl?list=true
+        (some clients or proxies handle GET better than the LIST method).
+
         Returns:
             list: ACL policy names (e.g. ["root", "deploy"]).
         """
-        path = "v1/sys/policy"
-        response = self._client._make_request("GET", path)
-        return response.get("policies", [])
+        response = self._client._make_request("GET", "v1/sys/policy")
+        policies = _acl_policy_names_from_list_response(response)
+        if policies:
+            return policies
+        for method, req_kwargs in (
+            ("LIST", {}),
+            ("GET", {"params": {"list": "true"}}),
+        ):
+            try:
+                acl = self._client._make_request(
+                    method, "v1/sys/policies/acl", **req_kwargs
+                )
+                policies = _acl_policy_names_from_list_response(acl)
+                if policies:
+                    return policies
+            except (VaultApiError, VaultSecretNotFoundError, VaultPermissionError):
+                continue
+        return []
 
     def read_acl_policy(self, name: str) -> dict:
         """
@@ -481,7 +541,19 @@ class VaultAclPolicies:
             dict: ACL policy data with "name" and "rules" keys.
         """
         path = f"v1/sys/policy/{name}"
-        return self._client._make_request("GET", path)
+        raw = self._client._make_request("GET", path)
+        normalized = _normalize_acl_policy_read(name, raw)
+        if not normalized["rules"]:
+            try:
+                acl_raw = self._client._make_request("GET", f"v1/sys/policies/acl/{name}")
+                acl_norm = _normalize_acl_policy_read(name, acl_raw)
+                if acl_norm["rules"]:
+                    return acl_norm
+            except VaultSecretNotFoundError:
+                pass
+            except VaultPermissionError:
+                raise
+        return normalized
 
     def create_or_update_acl_policy(self, name: str, acl_policy_rules: str) -> dict:
         """

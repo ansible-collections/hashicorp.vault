@@ -34,6 +34,8 @@ Name | Description
 --- | ---
 [hashicorp.vault.kv2_secret](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
 [hashicorp.vault.kv2_secret_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret_info.py)|Read HashiCorp Vault KV version 2 secrets
+[hashicorp.vault.acl_policy](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/acl_policy.py)|Manage HashiCorp Vault ACL policies
+[hashicorp.vault.acl_policy_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/acl_policy_info.py)|List and read HashiCorp Vault ACL policies
 
 ## Installation
 
