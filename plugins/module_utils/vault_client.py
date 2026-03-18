@@ -100,6 +100,7 @@ class VaultClient:
         logger.info("Initialized VaultClient for %s", vault_address)
         self.secrets = Secrets(self)
         self.acl_policies = VaultAclPolicies(self)
+        self.namespaces = VaultNamespaces(self)
 
     def set_token(self, token: str) -> None:
         """
@@ -517,6 +518,66 @@ class VaultAclPolicies:
         """
         path = f"v1/sys/policy/{name}"
         self._client._make_request("DELETE", path)
+
+
+class VaultNamespaces:
+    """
+    Handles interactions with the Vault Namespaces API (/sys/namespaces).
+
+    Provides read-only operations for listing and reading namespace information.
+    Used by the namespaces _info Ansible module.
+    """
+
+    def __init__(self, client):
+        """
+        Initializes the Vault Namespaces API client.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+        """
+        self._client = client
+
+    def list_namespaces(self) -> dict:
+        """
+        List all Vault namespaces.
+
+        Returns:
+            dict: Response data containing 'keys' (list of namespace paths) and
+                  'key_info' (dict mapping paths to metadata with id, path, custom_metadata).
+
+        Example response structure:
+            {
+                "keys": ["ns1/", "ns2/"],
+                "key_info": {
+                    "ns1/": {"id": "...", "path": "ns1/", "custom_metadata": {...}},
+                    "ns2/": {"id": "...", "path": "ns2/", "custom_metadata": {...}}
+                }
+            }
+        """
+        path = "v1/sys/namespaces"
+        response = self._client._make_request("LIST", path)
+        return response.get("data", {})
+
+    def read_namespace(self, namespace_path: str) -> dict:
+        """
+        Read a Vault namespace by path.
+
+        Args:
+            namespace_path (str): The path of the namespace to read.
+
+        Returns:
+            dict: Namespace data containing 'id', 'path', and 'custom_metadata'.
+
+        Example response:
+            {
+                "id": "gsudz",
+                "path": "ns1/",
+                "custom_metadata": {"foo": "bar"}
+            }
+        """
+        path = f"v1/sys/namespaces/{namespace_path}"
+        response = self._client._make_request("GET", path)
+        return response.get("data", {})
 
 
 class Secrets:

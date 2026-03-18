@@ -1,0 +1,130 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2025 Red Hat, Inc.
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
+
+from unittest.mock import MagicMock
+
+import pytest
+
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
+    VaultClient,
+    VaultNamespaces,
+)
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultPermissionError,
+    VaultSecretNotFoundError,
+)
+
+
+@pytest.fixture
+def vault_config():
+    return {
+        'addr': 'http://mock-vault:8200',
+        'token': 'mock-token',
+        'namespace': 'admin',
+    }
+
+
+@pytest.fixture
+def mock_list_namespaces_response():
+    return {
+        'data': {
+            'keys': ['ns1/', 'ns2/', 'ns3/'],
+            'key_info': {
+                'ns1/': {'id': 'id-ns1', 'path': 'ns1/', 'custom_metadata': {'team': 'platform'}},
+                'ns2/': {'id': 'id-ns2', 'path': 'ns2/', 'custom_metadata': {'team': 'security'}},
+                'ns3/': {'id': 'id-ns3', 'path': 'ns3/', 'custom_metadata': None},
+            },
+        }
+    }
+
+
+@pytest.fixture
+def mock_read_namespace_response():
+    return {
+        'data': {
+            'id': 'id-ns1',
+            'path': 'ns1/',
+            'custom_metadata': {'team': 'platform', 'environment': 'production'},
+        }
+    }
+
+
+@pytest.fixture
+def authenticated_client(mocker, vault_config):
+    client = VaultClient(vault_address=vault_config['addr'], vault_namespace=vault_config['namespace'])
+    client.set_token(vault_config['token'])
+    client._make_request = MagicMock()
+    return client
+
+
+def test_list_namespaces_success(authenticated_client, mock_list_namespaces_response):
+    authenticated_client._make_request.return_value = mock_list_namespaces_response
+    namespaces = VaultNamespaces(authenticated_client)
+    result = namespaces.list_namespaces()
+
+    expected_path = 'v1/sys/namespaces'
+    authenticated_client._make_request.assert_called_once_with('LIST', expected_path)
+    assert result == mock_list_namespaces_response['data']
+    assert 'keys' in result
+    assert 'key_info' in result
+    assert len(result['keys']) == 3
+
+
+def test_list_namespaces_empty(authenticated_client):
+    empty_response = {'data': {'keys': [], 'key_info': {}}}
+    authenticated_client._make_request.return_value = empty_response
+    namespaces = VaultNamespaces(authenticated_client)
+    result = namespaces.list_namespaces()
+
+    assert result == empty_response['data']
+    assert result['keys'] == []
+    assert result['key_info'] == {}
+
+
+def test_list_namespaces_error(authenticated_client):
+    authenticated_client._make_request.side_effect = VaultPermissionError('error while listing namespaces')
+    namespaces = VaultNamespaces(authenticated_client)
+    with pytest.raises(VaultPermissionError):
+        namespaces.list_namespaces()
+
+
+def test_read_namespace_success(authenticated_client, mock_read_namespace_response):
+    authenticated_client._make_request.return_value = mock_read_namespace_response
+    namespaces = VaultNamespaces(authenticated_client)
+    namespace_path = 'ns1/'
+    result = namespaces.read_namespace(namespace_path)
+
+    expected_path = f'v1/sys/namespaces/{namespace_path}'
+    authenticated_client._make_request.assert_called_once_with('GET', expected_path)
+    assert result == mock_read_namespace_response['data']
+    assert result['id'] == 'id-ns1'
+    assert result['path'] == 'ns1/'
+    assert result['custom_metadata']['team'] == 'platform'
+
+
+def test_read_namespace_not_found(authenticated_client):
+    authenticated_client._make_request.side_effect = VaultSecretNotFoundError('namespace not found')
+    namespaces = VaultNamespaces(authenticated_client)
+    with pytest.raises(VaultSecretNotFoundError):
+        namespaces.read_namespace('nonexistent/')
+
+
+def test_read_namespace_permission_error(authenticated_client):
+    authenticated_client._make_request.side_effect = VaultPermissionError('error while reading namespace')
+    namespaces = VaultNamespaces(authenticated_client)
+    with pytest.raises(VaultPermissionError):
+        namespaces.read_namespace('ns1/')
+
+
+def test_read_namespace_no_custom_metadata(authenticated_client):
+    response = {'data': {'id': 'id-ns-minimal', 'path': 'minimal/', 'custom_metadata': None}}
+    authenticated_client._make_request.return_value = response
+    namespaces = VaultNamespaces(authenticated_client)
+    result = namespaces.read_namespace('minimal/')
+
+    assert result['custom_metadata'] is None
