@@ -121,6 +121,12 @@ class VaultClient:
 
         Returns:
             dict: The JSON response data, or empty dict for successful operations with no content.
+
+        Raises:
+            VaultPermissionError: If Vault returns HTTP 403.
+            VaultSecretNotFoundError: If Vault returns HTTP 404.
+            VaultApiError: For other HTTP error responses from Vault.
+            VaultConnectionError: If the HTTP request fails (network, timeout, etc.).
         """
 
         url = f"{self.vault_address}/{path}"
@@ -319,9 +325,6 @@ class VaultKv2Secrets:
             dict: The response data containing metadata about the created/updated secret.
 
         Raises:
-            VaultApiError: If the CAS check fails or other API errors occur.
-            VaultPermissionError: If insufficient permissions.
-            VaultConnectionError: If unable to connect to Vault.
             TypeError: If secret_data is not a dictionary.
 
         Examples:
@@ -412,9 +415,6 @@ class VaultKv1Secrets:
             dict: The response data containing metadata about the created/updated secret.
 
         Raises:
-            VaultApiError: If API errors occur.
-            VaultPermissionError: If insufficient permissions.
-            VaultConnectionError: If unable to connect to Vault.
             TypeError: If secret_data is not a dictionary.
         """
         if not isinstance(secret_data, dict):
@@ -465,11 +465,6 @@ class VaultAclPolicies:
 
         Returns:
             list: ACL policy names (e.g. ["root", "deploy"]).
-
-        Raises:
-            VaultApiError: If the API request fails.
-            VaultPermissionError: If insufficient permissions.
-            VaultConnectionError: If unable to connect to Vault.
         """
         path = "v1/sys/policy"
         response = self._client._make_request("GET", path)
@@ -484,12 +479,6 @@ class VaultAclPolicies:
 
         Returns:
             dict: ACL policy data with "name" and "rules" keys.
-
-        Raises:
-            VaultSecretNotFoundError: If the ACL policy does not exist (404).
-            VaultApiError: If the API request fails.
-            VaultPermissionError: If insufficient permissions.
-            VaultConnectionError: If unable to connect to Vault.
         """
         path = f"v1/sys/policy/{name}"
         return self._client._make_request("GET", path)
@@ -506,9 +495,6 @@ class VaultAclPolicies:
             dict: The JSON response from Vault (often empty for success).
 
         Raises:
-            VaultApiError: If the API request fails.
-            VaultPermissionError: If insufficient permissions.
-            VaultConnectionError: If unable to connect to Vault.
             TypeError: If the ACL policy rules are not a string.
         """
         if not isinstance(acl_policy_rules, str):
@@ -528,11 +514,6 @@ class VaultAclPolicies:
 
         Returns:
             None
-
-        Raises:
-            VaultApiError: If the API request fails.
-            VaultPermissionError: If insufficient permissions.
-            VaultConnectionError: If unable to connect to Vault.
         """
         path = f"v1/sys/policy/{name}"
         self._client._make_request("DELETE", path)
