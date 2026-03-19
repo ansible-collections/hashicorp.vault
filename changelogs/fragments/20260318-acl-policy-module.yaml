@@ -1,3 +1,6 @@
 ---
 minor_changes:
-  - plugins/modules/acl_policy.py - New module to create, update, and delete Vault ACL policies via /sys/policy.
+  - plugins/modules/acl_policy.py - New module to create, update, and delete Vault ACL policies
+    via C(/sys/policy) (https://github.com/ansible-collections/hashicorp.vault/pull/45).
+  - plugins/modules/acl_policy_info.py - New module to list ACL policy names and read a single policy's
+    name and rules via C(/sys/policy) (https://github.com/ansible-collections/hashicorp.vault/pull/52).

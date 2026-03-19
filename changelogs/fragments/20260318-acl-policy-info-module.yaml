@@ -1,4 +1,0 @@
----
-minor_changes:
-  - acl_policy_info - new module to list ACL policy names and read a single policy's
-    name and rules via C(/sys/policy) (https://github.com/ansible-collections/hashicorp.vault).
