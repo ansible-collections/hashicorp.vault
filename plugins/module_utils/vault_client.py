@@ -442,10 +442,7 @@ class VaultKv1Secrets:
 
 def _normalize_acl_policy_read(policy_name: str, response: Dict[str, Any]) -> Dict[str, str]:
     """
-    Build {name, rules} from GET /sys/policy/:name or GET /sys/policies/acl/:name.
-
-    Some servers (e.g. HCP Vault) return an empty top-level ``rules`` on the
-    legacy endpoint but expose the document on ``/sys/policies/acl`` as ``policy``.
+    Build {name, rules} from GET /sys/policy/:name.
 
     The returned ``name`` is always the requested policy name (URL path segment). Some
     deployments echo a different ``name`` field in JSON than the API identifier,
@@ -463,9 +460,9 @@ def _normalize_acl_policy_read(policy_name: str, response: Dict[str, Any]) -> Di
 
 def _acl_policy_names_from_list_response(body: Optional[Dict[str, Any]]) -> List[str]:
     """
-    Policy names from GET /sys/policy or LIST/GET (list) on /sys/policies/acl.
+    Policy names from GET /sys/policy.
 
-    Open-source Vault often returns top-level C(keys); HCP and other deployments
+    Open-source Vault often returns top-level C(keys); some deployments
     may wrap list results under C(data.keys). A single response may include both
     C(policies) (sometimes incomplete) and C(data.keys); merge and dedupe.
     """
@@ -518,35 +515,18 @@ class VaultAclPolicies:
 
     def list_acl_policies(self) -> List[str]:
         """
-        List all Vault ACL policy names.
-
-        Merges GET /sys/policy with LIST /sys/policies/acl and
-        GET /sys/policies/acl?list=true when those succeed. HCP and some
-        deployments return only a subset on the legacy endpoint or vary by
-        call; combining endpoints yields a stable, complete list.
+        List all Vault ACL policy names via GET /sys/policy.
 
         Returns:
             list: ACL policy names sorted lexicographically.
         """
-        merged: Set[str] = set()
         response = self._client._make_request("GET", "v1/sys/policy")
-        merged.update(_acl_policy_names_from_list_response(response))
-        for method, req_kwargs in (
-            ("LIST", {}),
-            ("GET", {"params": {"list": "true"}}),
-        ):
-            try:
-                acl = self._client._make_request(
-                    method, "v1/sys/policies/acl", **req_kwargs
-                )
-                merged.update(_acl_policy_names_from_list_response(acl))
-            except (VaultApiError, VaultSecretNotFoundError, VaultPermissionError):
-                continue
-        return sorted(merged)
+        names = _acl_policy_names_from_list_response(response)
+        return sorted(names)
 
     def read_acl_policy(self, name: str) -> dict:
         """
-        Read a Vault ACL policy by name.
+        Read a Vault ACL policy by name via GET /sys/policy/:name.
 
         Args:
             name (str): The name of the ACL policy to read.
@@ -556,18 +536,7 @@ class VaultAclPolicies:
         """
         path = f"v1/sys/policy/{name}"
         raw = self._client._make_request("GET", path)
-        normalized = _normalize_acl_policy_read(name, raw)
-        if not normalized["rules"]:
-            try:
-                acl_raw = self._client._make_request("GET", f"v1/sys/policies/acl/{name}")
-                acl_norm = _normalize_acl_policy_read(name, acl_raw)
-                if acl_norm["rules"]:
-                    return acl_norm
-            except VaultSecretNotFoundError:
-                pass
-            except VaultPermissionError:
-                raise
-        return normalized
+        return _normalize_acl_policy_read(name, raw)
 
     def create_or_update_acl_policy(self, name: str, acl_policy_rules: str) -> dict:
         """
