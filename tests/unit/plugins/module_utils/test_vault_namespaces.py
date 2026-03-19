@@ -73,10 +73,8 @@ class TestVaultListNamespaces:
 
         expected_path = 'v1/sys/namespaces'
         authenticated_client._make_request.assert_called_once_with('LIST', expected_path)
-        assert result == mock_list_namespaces_response['data']
-        assert 'keys' in result
-        assert 'key_info' in result
-        assert len(result['keys']) == 3
+        assert result == ['ns1/', 'ns2/', 'ns3/']
+        assert len(result) == 3
 
     def test_list_namespaces_empty(self, authenticated_client):
         """Test the list_namespaces method with an empty response."""
@@ -85,9 +83,7 @@ class TestVaultListNamespaces:
         namespaces = VaultNamespaces(authenticated_client)
         result = namespaces.list_namespaces()
 
-        assert result == empty_response['data']
-        assert result['keys'] == []
-        assert result['key_info'] == {}
+        assert result == []
 
     def test_list_namespaces_error(self, authenticated_client):
         """Test the list_namespaces method with an error response."""

@@ -537,26 +537,16 @@ class VaultNamespaces:
         """
         self._client = client
 
-    def list_namespaces(self) -> dict:
+    def list_namespaces(self) -> List[str]:
         """
         List all Vault namespaces.
 
         Returns:
-            dict: Response data containing 'keys' (list of namespace paths) and
-                  'key_info' (dict mapping paths to metadata with id, path, custom_metadata).
-
-        Example response structure:
-            {
-                "keys": ["ns1/", "ns2/"],
-                "key_info": {
-                    "ns1/": {"id": "...", "path": "ns1/", "custom_metadata": {...}},
-                    "ns2/": {"id": "...", "path": "ns2/", "custom_metadata": {...}}
-                }
-            }
+            List[str]: A list of namespace paths (e.g., ["ns1/", "ns2/"]).
         """
         path = "v1/sys/namespaces"
         response = self._client._make_request("LIST", path)
-        return response.get("data", {})
+        return response.get("data", {}).get("keys", [])
 
     def read_namespace(self, namespace_path: str) -> dict:
         """
