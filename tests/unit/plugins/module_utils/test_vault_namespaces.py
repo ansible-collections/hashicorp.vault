@@ -62,69 +62,77 @@ def authenticated_client(mocker, vault_config):
     return client
 
 
-def test_list_namespaces_success(authenticated_client, mock_list_namespaces_response):
-    authenticated_client._make_request.return_value = mock_list_namespaces_response
-    namespaces = VaultNamespaces(authenticated_client)
-    result = namespaces.list_namespaces()
+class TestVaultListNamespaces:
+    """Test the list_namespaces method of the VaultNamespaces class."""
 
-    expected_path = 'v1/sys/namespaces'
-    authenticated_client._make_request.assert_called_once_with('LIST', expected_path)
-    assert result == mock_list_namespaces_response['data']
-    assert 'keys' in result
-    assert 'key_info' in result
-    assert len(result['keys']) == 3
+    def test_list_namespaces_success(self, authenticated_client, mock_list_namespaces_response):
+        """Test the list_namespaces method with a successful response."""
+        authenticated_client._make_request.return_value = mock_list_namespaces_response
+        namespaces = VaultNamespaces(authenticated_client)
+        result = namespaces.list_namespaces()
 
+        expected_path = 'v1/sys/namespaces'
+        authenticated_client._make_request.assert_called_once_with('LIST', expected_path)
+        assert result == mock_list_namespaces_response['data']
+        assert 'keys' in result
+        assert 'key_info' in result
+        assert len(result['keys']) == 3
 
-def test_list_namespaces_empty(authenticated_client):
-    empty_response = {'data': {'keys': [], 'key_info': {}}}
-    authenticated_client._make_request.return_value = empty_response
-    namespaces = VaultNamespaces(authenticated_client)
-    result = namespaces.list_namespaces()
+    def test_list_namespaces_empty(self, authenticated_client):
+        """Test the list_namespaces method with an empty response."""
+        empty_response = {'data': {'keys': [], 'key_info': {}}}
+        authenticated_client._make_request.return_value = empty_response
+        namespaces = VaultNamespaces(authenticated_client)
+        result = namespaces.list_namespaces()
 
-    assert result == empty_response['data']
-    assert result['keys'] == []
-    assert result['key_info'] == {}
+        assert result == empty_response['data']
+        assert result['keys'] == []
+        assert result['key_info'] == {}
 
-
-def test_list_namespaces_error(authenticated_client):
-    authenticated_client._make_request.side_effect = VaultPermissionError('error while listing namespaces')
-    namespaces = VaultNamespaces(authenticated_client)
-    with pytest.raises(VaultPermissionError):
-        namespaces.list_namespaces()
-
-
-def test_read_namespace_success(authenticated_client, mock_read_namespace_response):
-    authenticated_client._make_request.return_value = mock_read_namespace_response
-    namespaces = VaultNamespaces(authenticated_client)
-    namespace_path = 'ns1/'
-    result = namespaces.read_namespace(namespace_path)
-
-    expected_path = f'v1/sys/namespaces/{namespace_path}'
-    authenticated_client._make_request.assert_called_once_with('GET', expected_path)
-    assert result == mock_read_namespace_response['data']
-    assert result['id'] == 'id-ns1'
-    assert result['path'] == 'ns1/'
-    assert result['custom_metadata']['team'] == 'platform'
+    def test_list_namespaces_error(self, authenticated_client):
+        """Test the list_namespaces method with an error response."""
+        authenticated_client._make_request.side_effect = VaultPermissionError('error while listing namespaces')
+        namespaces = VaultNamespaces(authenticated_client)
+        with pytest.raises(VaultPermissionError):
+            namespaces.list_namespaces()
 
 
-def test_read_namespace_not_found(authenticated_client):
-    authenticated_client._make_request.side_effect = VaultSecretNotFoundError('namespace not found')
-    namespaces = VaultNamespaces(authenticated_client)
-    with pytest.raises(VaultSecretNotFoundError):
-        namespaces.read_namespace('nonexistent/')
+class TestVaultReadNamespace:
+    """Test the read_namespace method of the VaultNamespaces class."""
 
+    def test_read_namespace_success(self, authenticated_client, mock_read_namespace_response):
+        """Test the read_namespace method with a successful response."""
+        authenticated_client._make_request.return_value = mock_read_namespace_response
+        namespaces = VaultNamespaces(authenticated_client)
+        namespace_path = 'ns1/'
+        result = namespaces.read_namespace(namespace_path)
 
-def test_read_namespace_permission_error(authenticated_client):
-    authenticated_client._make_request.side_effect = VaultPermissionError('error while reading namespace')
-    namespaces = VaultNamespaces(authenticated_client)
-    with pytest.raises(VaultPermissionError):
-        namespaces.read_namespace('ns1/')
+        expected_path = f'v1/sys/namespaces/{namespace_path}'
+        authenticated_client._make_request.assert_called_once_with('GET', expected_path)
+        assert result == mock_read_namespace_response['data']
+        assert result['id'] == 'id-ns1'
+        assert result['path'] == 'ns1/'
+        assert result['custom_metadata']['team'] == 'platform'
 
+    def test_read_namespace_not_found(self, authenticated_client):
+        """Test the read_namespace method with a not found response."""
+        authenticated_client._make_request.side_effect = VaultSecretNotFoundError('namespace not found')
+        namespaces = VaultNamespaces(authenticated_client)
+        with pytest.raises(VaultSecretNotFoundError):
+            namespaces.read_namespace('nonexistent/')
 
-def test_read_namespace_no_custom_metadata(authenticated_client):
-    response = {'data': {'id': 'id-ns-minimal', 'path': 'minimal/', 'custom_metadata': None}}
-    authenticated_client._make_request.return_value = response
-    namespaces = VaultNamespaces(authenticated_client)
-    result = namespaces.read_namespace('minimal/')
+    def test_read_namespace_permission_error(self, authenticated_client):
+        """Test the read_namespace method with a permission error response."""
+        authenticated_client._make_request.side_effect = VaultPermissionError('error while reading namespace')
+        namespaces = VaultNamespaces(authenticated_client)
+        with pytest.raises(VaultPermissionError):
+            namespaces.read_namespace('ns1/')
 
-    assert result['custom_metadata'] is None
+    def test_read_namespace_no_custom_metadata(self, authenticated_client):
+        """Test the read_namespace method with a no custom metadata response."""
+        response = {'data': {'id': 'id-ns-minimal', 'path': 'minimal/', 'custom_metadata': None}}
+        authenticated_client._make_request.return_value = response
+        namespaces = VaultNamespaces(authenticated_client)
+        result = namespaces.read_namespace('minimal/')
+
+        assert result['custom_metadata'] is None
