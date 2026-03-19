@@ -117,7 +117,7 @@ def main():
             module.exit_json(
                 changed=False,
                 policy={
-                    "name": data.get("name", name),
+                    "name": name,
                     "rules": data.get("rules", ""),
                 },
             )

@@ -446,6 +446,10 @@ def _normalize_acl_policy_read(policy_name: str, response: Dict[str, Any]) -> Di
 
     Some servers (e.g. HCP Vault) return an empty top-level ``rules`` on the
     legacy endpoint but expose the document on ``/sys/policies/acl`` as ``policy``.
+
+    The returned ``name`` is always the requested policy name (URL path segment). Some
+    deployments echo a different ``name`` field in JSON than the API identifier,
+    which would break callers that compare to the name they requested.
     """
     data = response.get("data") or {}
     rules = (
@@ -454,8 +458,7 @@ def _normalize_acl_policy_read(policy_name: str, response: Dict[str, Any]) -> Di
         or (data.get("rules") or "").strip()
         or (data.get("policy") or "").strip()
     )
-    name = response.get("name") or data.get("name") or policy_name
-    return {"name": name, "rules": rules}
+    return {"name": policy_name, "rules": rules}
 
 
 def _acl_policy_names_from_list_response(body: Optional[Dict[str, Any]]) -> List[str]:
