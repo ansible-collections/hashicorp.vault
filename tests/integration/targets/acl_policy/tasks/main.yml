@@ -108,8 +108,7 @@
     - name: List ACL policies after create
       hashicorp.vault.acl_policy_info:
       register: policies_after_create
-    - debug: var=acl_policy_test_name
-    - debug: var=policies_after_create
+
     - name: Assert policy name in list
       ansible.builtin.assert:
         that:

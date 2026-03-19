@@ -9,7 +9,7 @@ __metaclass__ = type
 
 import json  # noqa: F401
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 try:
     import requests
@@ -440,60 +440,6 @@ class VaultKv1Secrets:
         self._client._make_request("DELETE", path)
 
 
-def _normalize_acl_policy_read(policy_name: str, response: Dict[str, Any]) -> Dict[str, str]:
-    """
-    Build {name, rules} from GET /sys/policy/:name.
-
-    The returned ``name`` is always the requested policy name (URL path segment). Some
-    deployments echo a different ``name`` field in JSON than the API identifier,
-    which would break callers that compare to the name they requested.
-    """
-    data = response.get("data") or {}
-    rules = (
-        (response.get("rules") or "").strip()
-        or (response.get("policy") or "").strip()
-        or (data.get("rules") or "").strip()
-        or (data.get("policy") or "").strip()
-    )
-    return {"name": policy_name, "rules": rules}
-
-
-def _acl_policy_names_from_list_response(body: Optional[Dict[str, Any]]) -> List[str]:
-    """
-    Policy names from GET /sys/policy.
-
-    Open-source Vault often returns top-level C(keys); some deployments
-    may wrap list results under C(data.keys). A single response may include both
-    C(policies) (sometimes incomplete) and C(data.keys); merge and dedupe.
-    """
-    if not body or not isinstance(body, dict):
-        return []
-    raw: List[str] = []
-    pol = body.get("policies")
-    if isinstance(pol, list):
-        raw.extend(p for p in pol if isinstance(p, str))
-    keys = body.get("keys")
-    if isinstance(keys, list):
-        raw.extend(k for k in keys if isinstance(k, str))
-    nested = body.get("data")
-    if isinstance(nested, dict):
-        dp = nested.get("policies")
-        if isinstance(dp, list):
-            raw.extend(p for p in dp if isinstance(p, str))
-        dk = nested.get("keys")
-        if isinstance(dk, list):
-            raw.extend(k for k in dk if isinstance(k, str))
-    if not raw:
-        return []
-    seen: Set[str] = set()
-    out: List[str] = []
-    for name in raw:
-        if name not in seen:
-            seen.add(name)
-            out.append(name)
-    return out
-
-
 class VaultAclPolicies:
     """
     Handles interactions with the Vault ACL policy HTTP API (/sys/policy).
@@ -521,7 +467,9 @@ class VaultAclPolicies:
             list: ACL policy names sorted lexicographically.
         """
         response = self._client._make_request("GET", "v1/sys/policy")
-        names = _acl_policy_names_from_list_response(response)
+        # HCP commonly returns top-level "policies"; keeping a small fallback for data.policies.
+        names = response.get("policies") or response.get("data", {}).get("policies") or []
+        names = [name for name in names if isinstance(name, str)]
         return sorted(names)
 
     def read_acl_policy(self, name: str) -> dict:
@@ -536,7 +484,15 @@ class VaultAclPolicies:
         """
         path = f"v1/sys/policy/{name}"
         raw = self._client._make_request("GET", path)
-        return _normalize_acl_policy_read(name, raw)
+        data = raw.get("data") or {}
+        rules = (
+            raw.get("rules")
+            or raw.get("policy")
+            or data.get("rules")
+            or data.get("policy")
+            or ""
+        )
+        return {"name": name, "rules": rules.strip()}
 
     def create_or_update_acl_policy(self, name: str, acl_policy_rules: str) -> dict:
         """
