@@ -480,6 +480,9 @@ def _acl_policy_names_from_list_response(body: Optional[Dict[str, Any]]) -> List
         raw.extend(k for k in keys if isinstance(k, str))
     nested = body.get("data")
     if isinstance(nested, dict):
+        dp = nested.get("policies")
+        if isinstance(dp, list):
+            raw.extend(p for p in dp if isinstance(p, str))
         dk = nested.get("keys")
         if isinstance(dk, list):
             raw.extend(k for k in dk if isinstance(k, str))
