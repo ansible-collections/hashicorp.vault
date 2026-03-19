@@ -9,7 +9,7 @@ __metaclass__ = type
 
 import json  # noqa: F401
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 try:
     import requests
@@ -466,22 +466,32 @@ def _acl_policy_names_from_list_response(body: Optional[Dict[str, Any]]) -> List
     Policy names from GET /sys/policy or LIST/GET (list) on /sys/policies/acl.
 
     Open-source Vault often returns top-level C(keys); HCP and other deployments
-    may wrap list results under C(data.keys).
+    may wrap list results under C(data.keys). A single response may include both
+    C(policies) (sometimes incomplete) and C(data.keys); merge and dedupe.
     """
     if not body or not isinstance(body, dict):
         return []
+    raw: List[str] = []
     pol = body.get("policies")
-    if isinstance(pol, list) and pol:
-        return list(pol)
+    if isinstance(pol, list):
+        raw.extend(p for p in pol if isinstance(p, str))
     keys = body.get("keys")
-    if isinstance(keys, list) and keys:
-        return list(keys)
+    if isinstance(keys, list):
+        raw.extend(k for k in keys if isinstance(k, str))
     nested = body.get("data")
     if isinstance(nested, dict):
-        keys = nested.get("keys")
-        if isinstance(keys, list) and keys:
-            return list(keys)
-    return []
+        dk = nested.get("keys")
+        if isinstance(dk, list):
+            raw.extend(k for k in dk if isinstance(k, str))
+    if not raw:
+        return []
+    seen: Set[str] = set()
+    out: List[str] = []
+    for name in raw:
+        if name not in seen:
+            seen.add(name)
+            out.append(name)
+    return out
 
 
 class VaultAclPolicies:
@@ -507,17 +517,17 @@ class VaultAclPolicies:
         """
         List all Vault ACL policy names.
 
-        Uses GET /sys/policy; if that returns no names (e.g. some HCP setups),
-        falls back to LIST /sys/policies/acl, then GET /sys/policies/acl?list=true
-        (some clients or proxies handle GET better than the LIST method).
+        Merges GET /sys/policy with LIST /sys/policies/acl and
+        GET /sys/policies/acl?list=true when those succeed. HCP and some
+        deployments return only a subset on the legacy endpoint or vary by
+        call; combining endpoints yields a stable, complete list.
 
         Returns:
-            list: ACL policy names (e.g. ["root", "deploy"]).
+            list: ACL policy names sorted lexicographically.
         """
+        merged: Set[str] = set()
         response = self._client._make_request("GET", "v1/sys/policy")
-        policies = _acl_policy_names_from_list_response(response)
-        if policies:
-            return policies
+        merged.update(_acl_policy_names_from_list_response(response))
         for method, req_kwargs in (
             ("LIST", {}),
             ("GET", {"params": {"list": "true"}}),
@@ -526,12 +536,10 @@ class VaultAclPolicies:
                 acl = self._client._make_request(
                     method, "v1/sys/policies/acl", **req_kwargs
                 )
-                policies = _acl_policy_names_from_list_response(acl)
-                if policies:
-                    return policies
+                merged.update(_acl_policy_names_from_list_response(acl))
             except (VaultApiError, VaultSecretNotFoundError, VaultPermissionError):
                 continue
-        return []
+        return sorted(merged)
 
     def read_acl_policy(self, name: str) -> dict:
         """
