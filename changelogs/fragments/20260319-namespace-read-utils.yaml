@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - module_utils/vault_client.py - implemented ``VaultNamespaces`` with ``list_namespaces()`` and
+    ``read_namespace()`` for listing and reading namespace configuration
+    (https://github.com/ansible-collections/hashicorp.vault/pull/51).
