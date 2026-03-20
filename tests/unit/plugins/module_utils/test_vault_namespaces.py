@@ -55,7 +55,7 @@ def mock_read_namespace_response():
 
 
 @pytest.fixture
-def authenticated_client(mocker, vault_config):
+def authenticated_client(vault_config):
     client = VaultClient(vault_address=vault_config['addr'], vault_namespace=vault_config['namespace'])
     client.set_token(vault_config['token'])
     client._make_request = MagicMock()
@@ -73,8 +73,10 @@ class TestVaultListNamespaces:
 
         expected_path = 'v1/sys/namespaces'
         authenticated_client._make_request.assert_called_once_with('LIST', expected_path)
-        assert result == ['ns1/', 'ns2/', 'ns3/']
-        assert len(result) == 3
+        assert len(result) == 1
+        assert result == [mock_list_namespaces_response['data']]
+        assert result[0]['keys'] == ['ns1/', 'ns2/', 'ns3/']
+        assert result[0]['key_info']['ns1/']['id'] == 'id-ns1'
 
     def test_list_namespaces_empty(self, authenticated_client):
         """Test the list_namespaces method with an empty response."""
@@ -83,7 +85,23 @@ class TestVaultListNamespaces:
         namespaces = VaultNamespaces(authenticated_client)
         result = namespaces.list_namespaces()
 
-        assert result == []
+        assert result == [{'keys': [], 'key_info': {}}]
+
+    def test_list_namespaces_keys_without_key_info(self, authenticated_client):
+        """Vault may omit key_info; the data object is wrapped as a single list element."""
+        authenticated_client._make_request.return_value = {'data': {'keys': ['a/', 'b/']}}
+        namespaces = VaultNamespaces(authenticated_client)
+        result = namespaces.list_namespaces()
+
+        assert result == [{'keys': ['a/', 'b/']}]
+
+    def test_list_namespaces_no_data_key(self, authenticated_client):
+        """Missing data yields one empty dict in the list."""
+        authenticated_client._make_request.return_value = {}
+        namespaces = VaultNamespaces(authenticated_client)
+        result = namespaces.list_namespaces()
+
+        assert result == [{}]
 
     def test_list_namespaces_error(self, authenticated_client):
         """Test the list_namespaces method with an error response."""

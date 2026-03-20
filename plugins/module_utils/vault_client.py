@@ -537,16 +537,18 @@ class VaultNamespaces:
         """
         self._client = client
 
-    def list_namespaces(self) -> List[str]:
+    def list_namespaces(self) -> List[Dict[str, Any]]:
         """
         List all Vault namespaces.
 
         Returns:
-            List[str]: A list of namespace paths (e.g., ["ns1/", "ns2/"]).
+            List[Dict[str, Any]]: A single-element list containing the JSON ``data``
+            object from the LIST response (typically ``keys`` and ``key_info``), so
+            callers get Vault's structure unchanged.
         """
         path = "v1/sys/namespaces"
         response = self._client._make_request("LIST", path)
-        return response.get("data", {}).get("keys", [])
+        return [response.get("data", {}) or {}]
 
     def read_namespace(self, namespace_path: str) -> dict:
         """
