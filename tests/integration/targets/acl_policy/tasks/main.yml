@@ -42,8 +42,13 @@
         that:
           - policies_before.policies is defined
           - policies_before.policies is iterable
+          - (policies_before.policies | select('mapping') | list | length) == (policies_before.policies | length)
+          - (policies_before.policies | selectattr('name', 'defined') | list | length) == (policies_before.policies | length)
+          - policies_list_check.policies is defined
+          - policies_list_check.policies is iterable
+          - (policies_list_check.policies | select('mapping') | list | length) == (policies_list_check.policies | length)
+          - (policies_list_check.policies | selectattr('name', 'defined') | list | length) == (policies_list_check.policies | length)
           - policies_list_check is not changed
-          - policies_list_check.policies | sort == policies_before.policies | sort
 
     # -------------------------------------------------------------------------
     # CREATE — check mode then real
@@ -97,10 +102,10 @@
       ansible.builtin.assert:
         that:
           - create_result is changed
-          - policy_read.policy.name == acl_policy_test_name
-          - policy_read.policy.rules == acl_policy_initial_rules
+          - policy_read.policies[0].name == acl_policy_test_name
+          - policy_read.policies[0].rules == acl_policy_initial_rules
           - policy_read_check is not changed
-          - policy_read_check.policy.rules == acl_policy_initial_rules
+          - policy_read_check.policies[0].rules == acl_policy_initial_rules
 
     # -------------------------------------------------------------------------
     # LIST — policy name appears after create
@@ -112,7 +117,7 @@
     - name: Assert policy name in list
       ansible.builtin.assert:
         that:
-          - acl_policy_test_name in policies_after_create.policies
+          - acl_policy_test_name in (policies_after_create.policies | map(attribute='name') | list)
 
     # -------------------------------------------------------------------------
     # IDEMPOTENCY — present, same rules (policy + check mode)
@@ -161,7 +166,7 @@
     - name: Assert no update applied in check mode
       ansible.builtin.assert:
         that:
-          - policy_still_initial.policy.rules == acl_policy_initial_rules
+          - policy_still_initial.policies[0].rules == acl_policy_initial_rules
 
     - name: Update ACL policy
       hashicorp.vault.acl_policy:
@@ -178,7 +183,7 @@
       ansible.builtin.assert:
         that:
           - update_result is changed
-          - policy_updated_read.policy.rules == acl_policy_updated_rules
+          - policy_updated_read.policies[0].rules == acl_policy_updated_rules
 
     - name: Update with same rules (idempotent)
       hashicorp.vault.acl_policy:
@@ -215,7 +220,7 @@
     - name: Assert policy still present after delete check mode
       ansible.builtin.assert:
         that:
-          - policy_after_delete_check.policy.name == acl_policy_test_name
+          - policy_after_delete_check.policies[0].name == acl_policy_test_name
 
     - name: Delete ACL policy
       hashicorp.vault.acl_policy:
@@ -246,7 +251,7 @@
     - name: Assert deleted policy not in list
       ansible.builtin.assert:
         that:
-          - acl_policy_test_name not in policies_after_delete.policies
+          - acl_policy_test_name not in (policies_after_delete.policies | map(attribute='name') | list)
 
     - name: Delete absent policy (idempotent)
       hashicorp.vault.acl_policy:
@@ -287,7 +292,7 @@
       ansible.builtin.assert:
         that:
           - alias_create is changed
-          - alias_read.policy.rules == acl_policy_initial_rules
+          - alias_read.policies[0].rules == acl_policy_initial_rules
 
     - name: Update using rules alias
       hashicorp.vault.acl_policy:
@@ -304,7 +309,7 @@
       ansible.builtin.assert:
         that:
           - alias_update is changed
-          - alias_read_updated.policy.rules == acl_policy_updated_rules
+          - alias_read_updated.policies[0].rules == acl_policy_updated_rules
 
     - name: Remove alias test policy
       hashicorp.vault.acl_policy:

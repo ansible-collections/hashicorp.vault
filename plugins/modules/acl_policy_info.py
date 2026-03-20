@@ -11,7 +11,7 @@ DOCUMENTATION = """
 ---
 module: acl_policy_info
 short_description: List and read HashiCorp Vault ACL policies
-version_added: 2.0.0
+version_added: 1.2.0
 author: Mandar Kulkarni (@mandar242)
 description:
   - Query Vault ACL policies via the C(/sys/policy) API (list names or read one policy).
@@ -36,7 +36,7 @@ EXAMPLES = """
 
 - name: Show policy names from registered result
   ansible.builtin.debug:
-    msg: "{{ vault_acl_policies.policies }}"
+    msg: "{{ vault_acl_policies.policies | map(attribute='name') | list }}"
 
 - name: Read a single ACL policy (name and HCL rules)
   hashicorp.vault.acl_policy_info:
@@ -47,35 +47,24 @@ EXAMPLES = """
 
 - name: Use policy rules in a demo or template
   ansible.builtin.debug:
-    msg: "{{ vault_policy_doc.policy.rules }}"
+    msg: "{{ vault_policy_doc.policies[0].rules }}"
 """
 
 RETURN = """
 policies:
-  description: List of ACL policy names returned by C(GET /sys/policy).
-  returned: when I(name) is not set
-  type: list
-  elements: str
-  sample: ["default", "root", "my-policy"]
-policy:
   description:
-    - Policy document with C(name) and C(rules) when reading a single policy.
-    - The C(rules) value is the policy HCL/string body from Vault.
-  returned: when I(name) is set and the policy exists
-  type: dict
-  contains:
-    name:
-      description: Policy name.
-      type: str
-    rules:
-      description: ACL policy rules (HCL).
-      type: str
+    - List of policy objects returned by C(acl_policy_info).
+    - Without I(name), each entry includes C(name).
+    - With I(name), the single entry includes C(name) and C(rules).
+  returned: always
+  type: list
+  elements: dict
   sample:
-    name: "my-policy"
-    rules: |
-      path "secret/data/myapp/*" {
-        capabilities = ["read", "list"]
-      }
+    - name: "my-policy"
+      rules: |
+        path "secret/data/myapp/*" {
+          capabilities = ["read", "list"]
+        }
 """
 
 import copy
@@ -116,13 +105,11 @@ def main():
             data = client.acl_policies.read_acl_policy(name)
             module.exit_json(
                 changed=False,
-                policy={
-                    "name": name,
-                    "rules": data.get("rules", ""),
-                },
+                policies=[{"name": name, "rules": data.get("rules", "")}],
             )
         else:
-            policies = client.acl_policies.list_acl_policies()
+            policy_names = client.acl_policies.list_acl_policies()
+            policies = [{"name": policy_name} for policy_name in policy_names]
             module.exit_json(changed=False, policies=policies)
 
     except VaultSecretNotFoundError:

@@ -11,7 +11,7 @@ DOCUMENTATION = """
 ---
 module: acl_policy
 short_description: Manage HashiCorp Vault ACL policies
-version_added: 2.0.0
+version_added: 1.2.0
 author: Mandar Kulkarni (@mandar242)
 description:
   - Create, update, or delete ACL policies via C(/sys/policy).
