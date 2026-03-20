@@ -100,6 +100,7 @@ class VaultClient:
         logger.info("Initialized VaultClient for %s", vault_address)
         self.secrets = Secrets(self)
         self.acl_policies = VaultAclPolicies(self)
+        self.namespaces = VaultNamespaces(self)
 
     def set_token(self, token: str) -> None:
         """
@@ -517,6 +518,58 @@ class VaultAclPolicies:
         """
         path = f"v1/sys/policy/{name}"
         self._client._make_request("DELETE", path)
+
+
+class VaultNamespaces:
+    """
+    Handles interactions with the Vault Namespaces API (/sys/namespaces).
+
+    Provides read-only operations for listing and reading namespace information.
+    Used by the namespaces _info Ansible module.
+    """
+
+    def __init__(self, client):
+        """
+        Initializes the Vault Namespaces API client.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+        """
+        self._client = client
+
+    def list_namespaces(self) -> List[Dict[str, Any]]:
+        """
+        List all Vault namespaces.
+
+        Returns:
+            List[Dict[str, Any]]: A single-element list containing the JSON ``data``
+            object from the LIST response (typically ``keys`` and ``key_info``), so
+            callers get Vault's structure unchanged.
+        """
+        path = "v1/sys/namespaces"
+        response = self._client._make_request("LIST", path)
+        return [response.get("data", {}) or {}]
+
+    def read_namespace(self, namespace_path: str) -> dict:
+        """
+        Read a Vault namespace by path.
+
+        Args:
+            namespace_path (str): The path of the namespace to read.
+
+        Returns:
+            dict: Namespace data containing 'id', 'path', and 'custom_metadata'.
+
+        Example response:
+            {
+                "id": "gsudz",
+                "path": "ns1/",
+                "custom_metadata": {"foo": "bar"}
+            }
+        """
+        path = f"v1/sys/namespaces/{namespace_path}"
+        response = self._client._make_request("GET", path)
+        return response.get("data", {})
 
 
 class Secrets:
