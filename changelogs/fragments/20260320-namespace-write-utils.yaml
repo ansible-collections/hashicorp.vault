@@ -3,4 +3,4 @@ minor_changes:
   - module_utils/vault_client.py - extended ``VaultNamespaces`` with ``create_namespace()``,
     ``patch_namespace()``, ``delete_namespace()``, ``lock_namespace()``, and ``unlock_namespace()``
     for managing namespace lifecycle and API locks
-    (https://github.com/ansible-collections/hashicorp.vault/pull/56).
+    (https://github.com/ansible-collections/hashicorp.vault/pull/55).
