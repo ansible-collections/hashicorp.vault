@@ -136,7 +136,7 @@ EXAMPLES = """
 RETURN = """
 msg:
   description: A message describing the result of the operation.
-  returned: When I(state=present) or I(state=reset)
+  returned: always
   type: str
 database_connection:
   description: the configuration settings for the database connection created/updated.
@@ -248,6 +248,11 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
 
         # check idempotency to ensure change
         changed = not (result['database_connection'] == existing)
+        if not changed:
+            result['msg'] = "The database connection with these settings is already configured."
+        else:
+            action = "updated" if existing else "created"
+            result['msg'] = f"The database connection has been successfully {action}."
 
     elif state == "reset":
         # state == 'reset' reset the connection if it exists
