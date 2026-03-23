@@ -229,7 +229,7 @@
       check_mode: true
       register: reset_unexisting_check_mode
 
-    - name: Ensure module did not reported change
+    - name: Ensure module did not report change
       ansible.builtin.assert:
         that:
           - reset_unexisting_check_mode is not changed
