@@ -33,7 +33,7 @@ extends_documentation_fragment:
 
 EXAMPLES = """
 - name: Read database connection mysql
-  hashicorp.vault.database_connection:
+  hashicorp.vault.database_connection_info:
     name: mysql
 
 - name: List available database connections
