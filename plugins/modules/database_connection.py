@@ -270,7 +270,7 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
             result["msg"] = f"Would have deleted the database connection '{name}' if not in check mode."
             if not module.check_mode:
                 db_conn.delete_connection(name)
-                result["msg"] = f"database connection '{name}' successfully deleted."
+                result["msg"] = f"Database connection '{name}' successfully deleted."
 
     return changed, result
 
