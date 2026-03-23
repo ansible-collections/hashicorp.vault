@@ -236,7 +236,7 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
             config.update(plugin_options)
         if module.check_mode:
             changed = True
-            operation = "update" if existing else "create"
+            operation = "updated" if existing else "created"
             result['msg'] = f"Would have {operation} database connection '{name}' if not in check mode"
             return changed, result
 
