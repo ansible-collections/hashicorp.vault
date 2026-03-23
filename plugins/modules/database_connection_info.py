@@ -44,7 +44,7 @@ RETURN = """
 connections:
   description: The list of database connections.
   returned: always
-  type: dict
+  type: list
   sample:
     {
         "name": "my-sample-connection",
