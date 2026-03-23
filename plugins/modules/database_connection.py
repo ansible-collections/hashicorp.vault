@@ -184,7 +184,7 @@ def read_connection(db_conn: VaultDatabaseConnection, name: str) -> dict:
         name (str): The name of the connection to read.
 
     Returns:
-        dict: A dict containing the connection details, empty when the dict does not exist.
+        dict: A dict containing the connection details, empty when the connection does not exist.
     """
     try:
         return db_conn.read_connection(name=name)
