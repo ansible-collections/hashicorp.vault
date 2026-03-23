@@ -37,7 +37,7 @@ EXAMPLES = """
     name: mysql
 
 - name: List available database connections
-  hashicorp.vault.database_connection:
+  hashicorp.vault.database_connection_info:
 """
 
 RETURN = """
