@@ -73,11 +73,16 @@
         name: "{{ mysql_dbconnection_name }}"
       register: db_connection
 
+    - name: List database connection
+      hashicorp.vault.database_connection_info:
+      register: db_connection_list
+
     - name: Validate that module reported change and the connection was created
       ansible.builtin.assert:
         that:
           - create_conn is changed
           - db_connection.database_connection == create_conn.database_connection
+          - "mysql_dbconnection_name in db_connection_list.database_connections"
 
     - name: Create database connection (idempotency)
       hashicorp.vault.database_connection:

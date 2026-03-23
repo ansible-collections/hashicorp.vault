@@ -260,10 +260,11 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
             changed = True
             result["msg"] = f"Would have reset the database connection '{name}' if not in check mode."
             if not module.check_mode:
+                db_conn.reset_connection(name)
                 result["msg"] = f"Database connection '{name}' successfully reset."
             # read connection
             result["database_connection"] = read_connection(db_conn, name)
-    else:
+    elif state == "absent":
         # state == 'absent' delete the connection if it exists
         if existing:
             changed = True
@@ -286,7 +287,7 @@ def main():
             username=dict(aliases=["connection_username"]),
             password=dict(aliases=["connection_password"], no_log=True),
             disable_escaping=dict(type="bool", default=False),
-            connection_url=dict(),
+            connection_url=dict(no_log=True),  # since it can contains password information
             plugin_name=dict(required=False),
             plugin_version=dict(),
             plugin_options=dict(type="dict"),
