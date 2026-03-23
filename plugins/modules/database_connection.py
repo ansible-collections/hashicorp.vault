@@ -267,7 +267,7 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
         # state == 'absent' delete the connection if it exists
         if existing:
             changed = True
-            result["msg"] = f"Would have delete the database connection '{name}' if not in check mode."
+            result["msg"] = f"Would have deleted the database connection '{name}' if not in check mode."
             if not module.check_mode:
                 db_conn.delete_connection(name)
                 result["msg"] = f"database connection '{name}' successfully deleted."
