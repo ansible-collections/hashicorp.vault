@@ -113,7 +113,7 @@ def main():
             module.exit_json(changed=False, policies=policies)
 
     except VaultSecretNotFoundError:
-        module.fail_json(msg=f"ACL policy not found: {name}")
+        module.exit_json(changed=False, policies=[])
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
     except VaultApiError as e:

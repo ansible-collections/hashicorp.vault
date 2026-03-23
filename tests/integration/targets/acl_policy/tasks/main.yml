@@ -66,17 +66,16 @@
           - create_check is changed
           - "'Would have created' in create_check.msg"
 
-    - name: Read missing policy after create check mode (module fails)
+    - name: Read missing policy after create check mode
       hashicorp.vault.acl_policy_info:
         name: "{{ acl_policy_test_name }}"
       register: read_missing
-      failed_when: false
 
     - name: Assert policy still absent after create check mode
       ansible.builtin.assert:
         that:
-          - read_missing.msg is defined
-          - "'not found' in read_missing.msg"
+          - read_missing.policies is defined
+          - read_missing.policies | length == 0
 
     - name: Create ACL policy
       hashicorp.vault.acl_policy:
@@ -237,12 +236,12 @@
       hashicorp.vault.acl_policy_info:
         name: "{{ acl_policy_test_name }}"
       register: read_after_delete
-      failed_when: false
 
-    - name: Assert read after delete reports not found
+    - name: Assert read after delete returns no policies
       ansible.builtin.assert:
         that:
-          - "'not found' in read_after_delete.msg"
+          - read_after_delete.policies is defined
+          - read_after_delete.policies | length == 0
 
     - name: List ACL policies after delete
       hashicorp.vault.acl_policy_info:
