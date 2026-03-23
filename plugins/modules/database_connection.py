@@ -139,7 +139,7 @@ msg:
   returned: always
   type: str
 database_connection:
-  description: the configuration settings for the database connection created/updated.
+  description: The configuration settings for the database connection created/updated.
   returned: When I(state=present) or I(state=reset)
   type: dict
   sample:
