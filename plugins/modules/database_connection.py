@@ -260,7 +260,7 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
             changed = True
             result["msg"] = f"Would have reset the database connection '{name}' if not in check mode."
             if not module.check_mode:
-                result["msg"] = f"database connection '{name}' successfully reset."
+                result["msg"] = f"Database connection '{name}' successfully reset."
             # read connection
             result["database_connection"] = read_connection(db_conn, name)
     else:
