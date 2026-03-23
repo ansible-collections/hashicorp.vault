@@ -138,7 +138,7 @@ msg:
   description: A message describing the result of the operation.
   returned: always
   type: str
-database_connection:
+raw:
   description: The configuration settings for the database connection created/updated.
   returned: When I(state=present) or I(state=reset)
   type: dict
@@ -244,10 +244,10 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
         result = db_conn.create_or_update_connection(name, config)
 
         # read connection
-        result["database_connection"] = read_connection(db_conn, name)
+        result["raw"] = read_connection(db_conn, name)
 
         # check idempotency to ensure change
-        changed = not (result['database_connection'] == existing)
+        changed = not (result['raw'] == existing)
         if not changed:
             result['msg'] = "The database connection with these settings is already configured."
         else:
@@ -263,7 +263,7 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
                 db_conn.reset_connection(name)
                 result["msg"] = f"Database connection '{name}' successfully reset."
             # read connection
-            result["database_connection"] = read_connection(db_conn, name)
+            result["raw"] = read_connection(db_conn, name)
     elif state == "absent":
         # state == 'absent' delete the connection if it exists
         if existing:

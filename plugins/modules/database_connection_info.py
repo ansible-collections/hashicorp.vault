@@ -41,20 +41,13 @@ EXAMPLES = """
 """
 
 RETURN = """
-database_connections:
-  description: The list of available database connections.
-  returned: when the O(name) is not provided.
-  type: list
-  elements: str
-  sample:
-    - db-one
-    - db-two
-database_connection:
-  description: The configuration settings for the database connection.
-  returned: when the option O(name) is provided.
+connections:
+  description: The list of database connections.
+  returned: always
   type: dict
   sample:
     {
+        "name": "my-sample-connection",
         "allowed_roles": ["readonly"],
         "connection_details": {
             "connection_url": "dbuser:dbpassword123@tcp(127.0.0.1:3306)/",
@@ -110,14 +103,14 @@ def main():
         db_conn = VaultDatabaseConnection(client, mount_path=mount_path)
         if name:
             data = db_conn.read_connection(name=name)
-            result = {"database_connection": data}
+            data.update({"name": name})
+            connections = [data]
         else:
-            connections = db_conn.list_connections() or []
-            result = {"database_connections": connections}
-        module.exit_json(**result)
+            connections = [{"name": name} for name in db_conn.list_connections() or []]
+        module.exit_json(connections=connections)
 
     except VaultSecretNotFoundError as e:
-        module.exit_json(database_connection={}, database_connections=[])
+        module.exit_json(connections=[])
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
     except VaultApiError as e:
