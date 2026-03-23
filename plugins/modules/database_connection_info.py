@@ -50,7 +50,7 @@ database_connections:
     - db-one
     - db-two
 database_connection:
-  description: the configuration settings for the database connection.
+  description: The configuration settings for the database connection.
   returned: when the option O(name) is provided.
   type: dict
   sample:
