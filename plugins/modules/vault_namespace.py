@@ -65,7 +65,7 @@ options:
   unlock_key:
     description:
       - Unlock key from a prior lock response (see RV(unlock_key)). Root-equivalent tokens may omit this per Vault Enterprise behavior.
-      - Treated as a sensitive value and not logged by the module (no_log: True).
+      - Treated as a sensitive value and not logged by the module (no_log = True).
     type: str
     required: false
 """
