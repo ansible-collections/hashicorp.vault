@@ -8,23 +8,32 @@
       auth_method: token
       token: "{{ vault_token_from_setup_auth_token }}"
   block:
-    - name: Check whether namespaces API is available
-      hashicorp.vault.vault_namespace:
-        path: "{{ vault_namespace_test_path }}"
-        state: absent
-      register: vault_namespace_api_check
+    # Read-only heartbeat: does not depend on a test namespace path or mutate state.
+    # A failed state=absent probe could be conflated with delete/read errors on that path.
+    - name: Check namespaces API availability (LIST /v1/sys/namespaces)
+      ansible.builtin.uri:
+        url: "{{ vault_url | regex_replace('/+$', '') }}/v1/sys/namespaces"
+        method: LIST
+        headers:
+          X-Vault-Token: "{{ vault_token_from_setup_auth_token }}"
+          X-Vault-Namespace: "{{ vault_namespace }}"
+        status_code: [200]
+        return_content: true
+      register: vault_namespaces_api_heartbeat
       ignore_errors: true
+      no_log: true
 
     - name: Report skipped tests when namespaces API is unavailable
       ansible.builtin.debug:
         msg: >-
           Skipping vault_namespace integration tests: namespaces API not usable
           on this Vault instance (expected for Open Source Vault or insufficient permissions).
-          Last result: {{ vault_namespace_api_check.msg | default(vault_namespace_api_check) }}
-      when: vault_namespace_api_check.failed | default(false)
+          Heartbeat LIST /v1/sys/namespaces did not return HTTP 200.
+          {{ vault_namespaces_api_heartbeat.msg | default('unknown error') }}
+      when: vault_namespaces_api_heartbeat is failed
 
     - name: Exercise vault_namespace module
-      when: not (vault_namespace_api_check.failed | default(false))
+      when: not (vault_namespaces_api_heartbeat is failed)
       block:
         - name: Normalized path for assertions (matches module strip of leading/trailing /)
           ansible.builtin.set_fact:
