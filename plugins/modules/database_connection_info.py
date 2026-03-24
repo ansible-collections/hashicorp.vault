@@ -46,19 +46,21 @@ connections:
   returned: always
   type: list
   sample:
-    {
-        "name": "my-sample-connection",
-        "allowed_roles": ["readonly"],
-        "connection_details": {
-            "connection_url": "dbuser:dbpassword123@tcp(127.0.0.1:3306)/",
-            "username": "vaultuser"
-        },
-        "password_policy": "",
-        "plugin_name": "mysql-database-plugin",
-        "plugin_version": "",
-        "root_credentials_rotate_statements": [],
-        "skip_static_role_import_rotation": false
-    }
+    [
+        {
+            "name": "my-sample-connection",
+            "allowed_roles": ["readonly"],
+            "connection_details": {
+                "connection_url": "dbuser:dbpassword123@tcp(127.0.0.1:3306)/",
+                "username": "vaultuser"
+            },
+            "password_policy": "",
+            "plugin_name": "mysql-database-plugin",
+            "plugin_version": "",
+            "root_credentials_rotate_statements": [],
+            "skip_static_role_import_rotation": false
+        }
+    ]
 """
 
 import copy
