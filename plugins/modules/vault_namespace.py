@@ -33,9 +33,12 @@ options:
       - Goal state for the namespace or namespace API lock.
       - Multiple C(state) values are available.
       - V(present) ensures the namespace exists (C(POST) if missing).
-      - With V(present), O(custom_metadata) is optional; if you set it, Vault only receives it when the namespace is created. If the namespace already exists, the module does not read or update custom metadata (use V(metadata) to change it).
+      - With V(present), O(custom_metadata) is optional; if you set it, Vault only receives it when the namespace is created.
+      - If the namespace already exists, the module does not read or update custom metadata (use V(metadata) to change it).
       - V(metadata) is only for custom metadata on a namespace that already exists at O(path); the module fails if that namespace is missing.
-      - With V(metadata), O(custom_metadata) is required and is the full desired key/value map (use C({}) for no metadata). The module reads the current custom metadata from Vault, compares it to that map, and if they differ, sends C(PATCH) with C(application/merge-patch+json) once so the stored metadata matches (idempotent).
+      - With V(metadata), O(custom_metadata) is required and is the full desired key/value map (use C({}) for no metadata).
+      - The module reads the current custom metadata from Vault and compares it to that map.
+      - If they differ, it sends C(PATCH) with C(application/merge-patch+json) once so the stored metadata matches (idempotent).
       - V(locked) calls C(POST /sys/namespaces/api-lock/lock) for the connection namespace, or C(.../lock/:subpath) when O(lock_subpath) is set.
       - V(unlocked) calls C(POST .../unlock) with optional O(unlock_key) (root-equivalent tokens may omit the key per Vault behavior).
       - V(absent) deletes the namespace at O(path); idempotent when already gone.
@@ -45,8 +48,11 @@ options:
   custom_metadata:
     description:
       - Key/value pairs (all values must be strings) stored as Vault namespace custom metadata.
-      - With O(state=present), optional; when set, used only on C(POST) when creating the namespace. Omit or ignore this option when the namespace already exists and you do not want to change metadata (see V(metadata)).
-      - With O(state=metadata), required; declare the complete desired metadata (not a partial update). Use C({}) if you want no custom metadata keys. The module reconciles that map with Vault using V(metadata) state semantics above.
+      - With O(state=present), optional; when set, used only on C(POST) when creating the namespace.
+      - Omit or ignore this option when the namespace already exists and you do not want to change metadata (see V(metadata)).
+      - With O(state=metadata), required; declare the complete desired metadata (not a partial update).
+      - Use C({}) if you want no custom metadata keys.
+      - The module reconciles that map with Vault using V(metadata) state semantics above.
     type: dict
     required: false
   lock_subpath:
@@ -59,7 +65,7 @@ options:
   unlock_key:
     description:
       - Unlock key from a prior lock response (see RV(unlock_key)). Root-equivalent tokens may omit this per Vault Enterprise behavior.
-      - Treated as a sensitive value and not logged by the module.
+      - Treated as a sensitive value and not logged by the module (no_log: True).
     type: str
     required: false
 """

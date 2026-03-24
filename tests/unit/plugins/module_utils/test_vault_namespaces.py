@@ -118,7 +118,7 @@ class TestVaultReadNamespace:
         """Test the read_namespace method with a successful response."""
         authenticated_client._make_request.return_value = mock_read_namespace_response
         namespaces = VaultNamespaces(authenticated_client)
-        namespace_path = 'ns1/'
+        namespace_path = 'ns1'
         result = namespaces.read_namespace(namespace_path)
 
         expected_path = f'v1/sys/namespaces/{namespace_path}'
@@ -133,21 +133,21 @@ class TestVaultReadNamespace:
         authenticated_client._make_request.side_effect = VaultSecretNotFoundError('namespace not found')
         namespaces = VaultNamespaces(authenticated_client)
         with pytest.raises(VaultSecretNotFoundError):
-            namespaces.read_namespace('nonexistent/')
+            namespaces.read_namespace('nonexistent')
 
     def test_read_namespace_permission_error(self, authenticated_client):
         """Test the read_namespace method with a permission error response."""
         authenticated_client._make_request.side_effect = VaultPermissionError('error while reading namespace')
         namespaces = VaultNamespaces(authenticated_client)
         with pytest.raises(VaultPermissionError):
-            namespaces.read_namespace('ns1/')
+            namespaces.read_namespace('ns1')
 
     def test_read_namespace_no_custom_metadata(self, authenticated_client):
         """Test the read_namespace method with a no custom metadata response."""
         response = {'data': {'id': 'id-ns-minimal', 'path': 'minimal/', 'custom_metadata': None}}
         authenticated_client._make_request.return_value = response
         namespaces = VaultNamespaces(authenticated_client)
-        result = namespaces.read_namespace('minimal/')
+        result = namespaces.read_namespace('minimal')
 
         assert result['custom_metadata'] is None
 
@@ -162,9 +162,9 @@ class TestVaultCreateNamespace:
         namespaces = VaultNamespaces(authenticated_client)
         custom_metadata = {'team': 'platform', 'environment': 'prod'}
 
-        result = namespaces.create_namespace('engineering/', custom_metadata=custom_metadata)
+        result = namespaces.create_namespace('engineering', custom_metadata=custom_metadata)
 
-        expected_path = 'v1/sys/namespaces/engineering/'
+        expected_path = 'v1/sys/namespaces/engineering'
         authenticated_client._make_request.assert_called_once_with(
             'POST', expected_path, json={'custom_metadata': custom_metadata}
         )
@@ -176,9 +176,9 @@ class TestVaultCreateNamespace:
         authenticated_client._make_request.return_value = response
         namespaces = VaultNamespaces(authenticated_client)
 
-        result = namespaces.create_namespace('qa/')
+        result = namespaces.create_namespace('qa')
 
-        expected_path = 'v1/sys/namespaces/qa/'
+        expected_path = 'v1/sys/namespaces/qa'
         authenticated_client._make_request.assert_called_once_with('POST', expected_path, json={})
         assert result == response
 
@@ -188,9 +188,9 @@ class TestVaultCreateNamespace:
         authenticated_client._make_request.return_value = response
         namespaces = VaultNamespaces(authenticated_client)
 
-        result = namespaces.create_namespace('dev/', custom_metadata=None)
+        result = namespaces.create_namespace('dev', custom_metadata=None)
 
-        expected_path = 'v1/sys/namespaces/dev/'
+        expected_path = 'v1/sys/namespaces/dev'
         authenticated_client._make_request.assert_called_once_with('POST', expected_path, json={})
         assert result == response
 
@@ -199,7 +199,7 @@ class TestVaultCreateNamespace:
         namespaces = VaultNamespaces(authenticated_client)
 
         with pytest.raises(TypeError, match='custom_metadata must be a dict'):
-            namespaces.create_namespace('test/', custom_metadata='invalid')
+            namespaces.create_namespace('test', custom_metadata='invalid')
 
     def test_create_namespace_error(self, authenticated_client):
         """Test creating a namespace with an error response."""
@@ -207,7 +207,7 @@ class TestVaultCreateNamespace:
         namespaces = VaultNamespaces(authenticated_client)
 
         with pytest.raises(VaultPermissionError):
-            namespaces.create_namespace('forbidden/')
+            namespaces.create_namespace('forbidden')
 
 
 class TestVaultPatchNamespace:
@@ -220,9 +220,9 @@ class TestVaultPatchNamespace:
         namespaces = VaultNamespaces(authenticated_client)
         custom_metadata = {'owner': 'alice', 'cost_center': '1234'}
 
-        result = namespaces.patch_namespace('engineering/', custom_metadata)
+        result = namespaces.patch_namespace('engineering', custom_metadata)
 
-        expected_path = 'v1/sys/namespaces/engineering/'
+        expected_path = 'v1/sys/namespaces/engineering'
         authenticated_client._make_request.assert_called_once_with(
             'PATCH',
             expected_path,
@@ -237,9 +237,9 @@ class TestVaultPatchNamespace:
         authenticated_client._make_request.return_value = response
         namespaces = VaultNamespaces(authenticated_client)
 
-        result = namespaces.patch_namespace('engineering/')
+        result = namespaces.patch_namespace('engineering')
 
-        expected_path = 'v1/sys/namespaces/engineering/'
+        expected_path = 'v1/sys/namespaces/engineering'
         authenticated_client._make_request.assert_called_once_with(
             'PATCH', expected_path, json={}, headers={'Content-Type': 'application/merge-patch+json'}
         )
@@ -251,9 +251,9 @@ class TestVaultPatchNamespace:
         authenticated_client._make_request.return_value = response
         namespaces = VaultNamespaces(authenticated_client)
 
-        result = namespaces.patch_namespace('engineering/', custom_metadata=None)
+        result = namespaces.patch_namespace('engineering', custom_metadata=None)
 
-        expected_path = 'v1/sys/namespaces/engineering/'
+        expected_path = 'v1/sys/namespaces/engineering'
         authenticated_client._make_request.assert_called_once_with(
             'PATCH', expected_path, json={}, headers={'Content-Type': 'application/merge-patch+json'}
         )
@@ -264,7 +264,7 @@ class TestVaultPatchNamespace:
         namespaces = VaultNamespaces(authenticated_client)
 
         with pytest.raises(TypeError, match='custom_metadata must be a dict'):
-            namespaces.patch_namespace('test/', custom_metadata='invalid')
+            namespaces.patch_namespace('test', custom_metadata='invalid')
 
     def test_patch_namespace_not_found(self, authenticated_client):
         """Test patching a non-existent namespace."""
@@ -272,7 +272,7 @@ class TestVaultPatchNamespace:
         namespaces = VaultNamespaces(authenticated_client)
 
         with pytest.raises(VaultSecretNotFoundError):
-            namespaces.patch_namespace('nonexistent/', {'key': 'value'})
+            namespaces.patch_namespace('nonexistent', {'key': 'value'})
 
 
 class TestVaultDeleteNamespace:
@@ -283,9 +283,9 @@ class TestVaultDeleteNamespace:
         authenticated_client._make_request.return_value = {}
         namespaces = VaultNamespaces(authenticated_client)
 
-        result = namespaces.delete_namespace('old-namespace/')
+        result = namespaces.delete_namespace('old-namespace')
 
-        expected_path = 'v1/sys/namespaces/old-namespace/'
+        expected_path = 'v1/sys/namespaces/old-namespace'
         authenticated_client._make_request.assert_called_once_with('DELETE', expected_path)
         assert result is None
 
@@ -295,7 +295,7 @@ class TestVaultDeleteNamespace:
         namespaces = VaultNamespaces(authenticated_client)
 
         with pytest.raises(VaultSecretNotFoundError):
-            namespaces.delete_namespace('nonexistent/')
+            namespaces.delete_namespace('nonexistent')
 
     def test_delete_namespace_permission_error(self, authenticated_client):
         """Test deleting a namespace with insufficient permissions."""
@@ -303,7 +303,7 @@ class TestVaultDeleteNamespace:
         namespaces = VaultNamespaces(authenticated_client)
 
         with pytest.raises(VaultPermissionError):
-            namespaces.delete_namespace('protected/')
+            namespaces.delete_namespace('protected')
 
 
 class TestVaultLockNamespace:
@@ -328,9 +328,9 @@ class TestVaultLockNamespace:
         authenticated_client._make_request.return_value = response
         namespaces = VaultNamespaces(authenticated_client)
 
-        result = namespaces.lock_namespace(subpath='child/')
+        result = namespaces.lock_namespace(subpath='child')
 
-        expected_path = 'v1/sys/namespaces/api-lock/lock/child/'
+        expected_path = 'v1/sys/namespaces/api-lock/lock/child'
         authenticated_client._make_request.assert_called_once_with('POST', expected_path, json={})
         assert result == response
 
@@ -380,9 +380,9 @@ class TestVaultUnlockNamespace:
         namespaces = VaultNamespaces(authenticated_client)
         unlock_key = 'subpath-unlock-key'
 
-        result = namespaces.unlock_namespace(subpath='child/', unlock_key=unlock_key)
+        result = namespaces.unlock_namespace(subpath='child', unlock_key=unlock_key)
 
-        expected_path = 'v1/sys/namespaces/api-lock/unlock/child/'
+        expected_path = 'v1/sys/namespaces/api-lock/unlock/child'
         authenticated_client._make_request.assert_called_once_with(
             'POST', expected_path, json={'unlock_key': unlock_key}
         )
@@ -394,9 +394,9 @@ class TestVaultUnlockNamespace:
         authenticated_client._make_request.return_value = response
         namespaces = VaultNamespaces(authenticated_client)
 
-        result = namespaces.unlock_namespace(subpath='child/')
+        result = namespaces.unlock_namespace(subpath='child')
 
-        expected_path = 'v1/sys/namespaces/api-lock/unlock/child/'
+        expected_path = 'v1/sys/namespaces/api-lock/unlock/child'
         authenticated_client._make_request.assert_called_once_with('POST', expected_path, json={})
         assert result == response
 
