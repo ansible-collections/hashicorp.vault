@@ -1,0 +1,12 @@
+---
+vault_namespace_test_path: "ansible-test-ns-{{ vault_resource_suffix }}"
+
+vault_namespace_initial_metadata:
+  team: ansible-integration
+  resource_suffix: "{{ vault_resource_suffix }}"
+
+vault_namespace_updated_metadata:
+  team: ansible-integration
+  resource_suffix: "{{ vault_resource_suffix }}"
+  owner: integration-ci
+  updatedKey: updatedValue
