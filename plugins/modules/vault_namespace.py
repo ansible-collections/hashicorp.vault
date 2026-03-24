@@ -196,9 +196,7 @@ def _validate_custom_metadata(module, meta, label):
         module.fail_json(msg=f"{label} must be a dictionary")
     for key, val in meta.items():
         if not isinstance(val, str):
-            module.fail_json(
-                msg=f"{label} values must be strings; key {key!r} has type {type(val).__name__}"
-            )
+            module.fail_json(msg=f"{label} values must be strings; key {key!r} has type {type(val).__name__}")
     return meta
 
 
