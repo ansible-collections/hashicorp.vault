@@ -2,6 +2,8 @@
 requires_ansible: ">=2.16.0"
 action_groups:
   vault:
+    - acl_policy
+    - acl_policy_info
     - kv1_secret_info
     - kv1_secret
     - kv2_secret_info

@@ -1,0 +1,332 @@
+---
+# Integration tests: acl_policy (create/update/delete) + acl_policy_info (list/read)
+# Covers: list, create, read, update, delete, idempotency, check mode, rules alias
+- name: Run acl_policy / acl_policy_info tests
+  collections:
+    - hashicorp.vault
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: token
+      token: "{{ vault_token_from_setup_auth_token }}"
+  vars:
+    acl_policy_rules_alias_name: "{{ acl_policy_test_name }}-rules-alias"
+  block:
+    # -------------------------------------------------------------------------
+    # Cleanup
+    # -------------------------------------------------------------------------
+    - name: Remove test policies if left from prior run
+      hashicorp.vault.acl_policy:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ acl_policy_test_name }}"
+        - "{{ acl_policy_rules_alias_name }}"
+      failed_when: false
+
+    # -------------------------------------------------------------------------
+    # LIST (acl_policy_info, no name) — before any create
+    # -------------------------------------------------------------------------
+    - name: List ACL policies before create
+      hashicorp.vault.acl_policy_info:
+      register: policies_before
+
+    - name: List in check mode (no changes expected)
+      hashicorp.vault.acl_policy_info:
+      register: policies_list_check
+      check_mode: true
+
+    - name: Assert list shape and check mode unchanged
+      ansible.builtin.assert:
+        that:
+          - policies_before.policies is defined
+          - policies_before.policies is iterable
+          - (policies_before.policies | select('mapping') | list | length) == (policies_before.policies | length)
+          - (policies_before.policies | selectattr('name', 'defined') | list | length) == (policies_before.policies | length)
+          - policies_list_check.policies is defined
+          - policies_list_check.policies is iterable
+          - (policies_list_check.policies | select('mapping') | list | length) == (policies_list_check.policies | length)
+          - (policies_list_check.policies | selectattr('name', 'defined') | list | length) == (policies_list_check.policies | length)
+          - policies_list_check is not changed
+
+    # -------------------------------------------------------------------------
+    # CREATE — check mode then real
+    # -------------------------------------------------------------------------
+    - name: Create ACL policy (check mode)
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        policy: "{{ acl_policy_initial_rules }}"
+      register: create_check
+      check_mode: true
+
+    - name: Assert create check mode
+      ansible.builtin.assert:
+        that:
+          - create_check is changed
+          - "'Would have created' in create_check.msg"
+
+    - name: Read missing policy after create check mode
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_test_name }}"
+      register: read_missing
+
+    - name: Assert policy still absent after create check mode
+      ansible.builtin.assert:
+        that:
+          - read_missing.policies is defined
+          - read_missing.policies | length == 0
+
+    - name: Create ACL policy
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        policy: "{{ acl_policy_initial_rules }}"
+      register: create_result
+
+    # -------------------------------------------------------------------------
+    # READ (acl_policy_info with name)
+    # -------------------------------------------------------------------------
+    - name: Read policy via acl_policy_info
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_test_name }}"
+      register: policy_read
+
+    - name: Read policy in check mode
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_test_name }}"
+      register: policy_read_check
+      check_mode: true
+
+    - name: Assert create and read
+      ansible.builtin.assert:
+        that:
+          - create_result is changed
+          - policy_read.policies[0].name == acl_policy_test_name
+          - policy_read.policies[0].rules == acl_policy_initial_rules
+          - policy_read_check is not changed
+          - policy_read_check.policies[0].rules == acl_policy_initial_rules
+
+    # -------------------------------------------------------------------------
+    # LIST — policy name appears after create
+    # -------------------------------------------------------------------------
+    - name: List ACL policies after create
+      hashicorp.vault.acl_policy_info:
+      register: policies_after_create
+
+    - name: Assert policy name in list
+      ansible.builtin.assert:
+        that:
+          - acl_policy_test_name in (policies_after_create.policies | map(attribute='name') | list)
+
+    # -------------------------------------------------------------------------
+    # IDEMPOTENCY — present, same rules (policy + check mode)
+    # -------------------------------------------------------------------------
+    - name: Present same ACL policy again (idempotent)
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        policy: "{{ acl_policy_initial_rules }}"
+      register: create_idem
+
+    - name: Present same rules in check mode (idempotent)
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        policy: "{{ acl_policy_initial_rules }}"
+      register: present_check_idem
+      check_mode: true
+
+    - name: Assert present idempotency
+      ansible.builtin.assert:
+        that:
+          - create_idem is not changed
+          - "'same rules' in create_idem.msg or 'already exists' in create_idem.msg"
+          - present_check_idem is not changed
+
+    # -------------------------------------------------------------------------
+    # UPDATE — check mode then real
+    # -------------------------------------------------------------------------
+    - name: Update ACL policy (check mode)
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        policy: "{{ acl_policy_updated_rules }}"
+      register: update_check
+      check_mode: true
+
+    - name: Assert update check mode
+      ansible.builtin.assert:
+        that:
+          - update_check is changed
+          - "'Would have updated' in update_check.msg"
+
+    - name: Rules still initial after update check mode
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_test_name }}"
+      register: policy_still_initial
+
+    - name: Assert no update applied in check mode
+      ansible.builtin.assert:
+        that:
+          - policy_still_initial.policies[0].rules == acl_policy_initial_rules
+
+    - name: Update ACL policy
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        policy: "{{ acl_policy_updated_rules }}"
+      register: update_result
+
+    - name: Read updated policy
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_test_name }}"
+      register: policy_updated_read
+
+    - name: Assert update succeeded
+      ansible.builtin.assert:
+        that:
+          - update_result is changed
+          - policy_updated_read.policies[0].rules == acl_policy_updated_rules
+
+    - name: Update with same rules (idempotent)
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        policy: "{{ acl_policy_updated_rules }}"
+      register: update_idem
+
+    - name: Assert update idempotency
+      ansible.builtin.assert:
+        that:
+          - update_idem is not changed
+
+    # -------------------------------------------------------------------------
+    # DELETE — check mode, then real, list/read verify absent
+    # -------------------------------------------------------------------------
+    - name: Delete ACL policy (check mode)
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        state: absent
+      register: delete_check
+      check_mode: true
+
+    - name: Assert delete check mode
+      ansible.builtin.assert:
+        that:
+          - delete_check is changed
+          - "'Would have deleted' in delete_check.msg"
+
+    - name: Policy still exists after delete check mode
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_test_name }}"
+      register: policy_after_delete_check
+
+    - name: Assert policy still present after delete check mode
+      ansible.builtin.assert:
+        that:
+          - policy_after_delete_check.policies[0].name == acl_policy_test_name
+
+    - name: Delete ACL policy
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        state: absent
+      register: delete_result
+
+    - name: Assert delete changed
+      ansible.builtin.assert:
+        that:
+          - delete_result is changed
+
+    - name: Read deleted policy (should not exist)
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_test_name }}"
+      register: read_after_delete
+
+    - name: Assert read after delete returns no policies
+      ansible.builtin.assert:
+        that:
+          - read_after_delete.policies is defined
+          - read_after_delete.policies | length == 0
+
+    - name: List ACL policies after delete
+      hashicorp.vault.acl_policy_info:
+      register: policies_after_delete
+
+    - name: Assert deleted policy not in list
+      ansible.builtin.assert:
+        that:
+          - acl_policy_test_name not in (policies_after_delete.policies | map(attribute='name') | list)
+
+    - name: Delete absent policy (idempotent)
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        state: absent
+      register: delete_idem
+
+    - name: Delete absent in check mode (idempotent)
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_test_name }}"
+        state: absent
+      register: delete_absent_check
+      check_mode: true
+
+    - name: Assert delete idempotency and absent check mode
+      ansible.builtin.assert:
+        that:
+          - delete_idem is not changed
+          - "'already absent' in delete_idem.msg"
+          - delete_absent_check is not changed
+          - "'already absent' in delete_absent_check.msg"
+
+    # -------------------------------------------------------------------------
+    # RULES alias (O(policy) alias) — full mini cycle
+    # -------------------------------------------------------------------------
+    - name: Create policy using rules alias
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_rules_alias_name }}"
+        rules: "{{ acl_policy_initial_rules }}"
+      register: alias_create
+
+    - name: Read alias policy
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_rules_alias_name }}"
+      register: alias_read
+
+    - name: Assert rules alias create and read
+      ansible.builtin.assert:
+        that:
+          - alias_create is changed
+          - alias_read.policies[0].rules == acl_policy_initial_rules
+
+    - name: Update using rules alias
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_rules_alias_name }}"
+        rules: "{{ acl_policy_updated_rules }}"
+      register: alias_update
+
+    - name: Read after alias update
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_rules_alias_name }}"
+      register: alias_read_updated
+
+    - name: Assert alias update
+      ansible.builtin.assert:
+        that:
+          - alias_update is changed
+          - alias_read_updated.policies[0].rules == acl_policy_updated_rules
+
+    - name: Remove alias test policy
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_rules_alias_name }}"
+        state: absent
+      register: alias_delete
+
+    - name: Assert alias delete
+      ansible.builtin.assert:
+        that:
+          - alias_delete is changed
+
+  always:
+    - name: Ensure test policies removed
+      hashicorp.vault.acl_policy:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ acl_policy_test_name }}"
+        - "{{ acl_policy_rules_alias_name }}"
+      failed_when: false
