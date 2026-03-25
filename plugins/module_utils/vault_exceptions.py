@@ -79,6 +79,12 @@ class VaultAppRoleLoginError(VaultApiError):
     pass
 
 
+class VaultLoginError(VaultApiError):
+    """Raised when login fails."""
+
+    pass
+
+
 class VaultPermissionError(VaultApiError):
     """Raised for HTTP 403 permission denied errors."""
 
