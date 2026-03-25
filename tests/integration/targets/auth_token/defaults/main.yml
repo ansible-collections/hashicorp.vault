@@ -1,0 +1,2 @@
+---
+ansible_test_vault_mount_path: "approle-integration-tests"

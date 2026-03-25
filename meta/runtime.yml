@@ -4,6 +4,8 @@ action_groups:
   vault:
     - acl_policy
     - acl_policy_info
+    - auth_token
+    - auth_token_info
     - database_connection_info
     - database_connection
     - kv1_secret_info
