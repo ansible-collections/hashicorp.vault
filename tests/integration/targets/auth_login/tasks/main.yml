@@ -1,0 +1,49 @@
+---
+- module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      mount_path: "approle-integration-tests"
+  block:
+    - name: Trying to login with kubernetes without all required parameters
+      hashicorp.vault.auth_login:
+        auth_method: kubernetes
+        auth_params:
+          role: "kubernetes-role"
+      ignore_errors: true
+      register: kubernetes_login
+
+    - name: Validate that kubernetes login failed with proper message
+      ansible.builtin.assert:
+        that:
+          - kubernetes_login is failed
+          - '"Missing required parameter" in kubernetes_login.msg'
+
+    - name: Login with approle (check mode)
+      hashicorp.vault.auth_login:
+        auth_params: 
+          role_id: "{{ vault_approle_role_id }}"
+          secret_id: "{{ vault_approle_secret_id }}"
+      check_mode: true
+      register: approle_login_check_mode
+
+    - name: Validate that module reported change while running in check mode
+      ansible.builtin.assert:
+        that:
+          - approle_login_check_mode is changed
+          - '"token_id" not in approle_login_check_mode'
+          - '"authentication" not in approle_login_check_mode'
+
+    - name: Login with approle
+      hashicorp.vault.auth_login:
+        auth_params: 
+          role_id: "{{ vault_approle_role_id }}"
+          secret_id: "{{ vault_approle_secret_id }}"
+      register: approle_login
+
+    - name: Validate that module reported change
+      ansible.builtin.assert:
+        that:
+          - approle_login is changed
+          - '"token_id" in approle_login'
+          - '"authentication" in approle_login'
