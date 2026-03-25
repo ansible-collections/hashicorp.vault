@@ -90,17 +90,70 @@ Currently the collection supports:
 
 ## Testing
 
-GitHub Actions workflows are used to run tests for the hashicorp.vault collection. These workflows include jobs to run the unit tests, integration tests, sanity tests, linters, changelog check and doc related checks.
+GitHub Actions workflows run tests for this collection. The CI uses a two-tier approach:
 
-To run linter tests locally, run `tox -e linters`. For more information, refer [tox-ansible documentation](https://github.com/ansible/tox-ansible?tab=readme-ov-file#tox-ansible).
+- **Tier 1 (All PRs)**: Linters, sanity tests, and unit tests run automatically
+- **Tier 2 (Integration)**: Vault integration tests run automatically for internal PRs; external PRs require maintainer approval
 
-To run integration tests locally, copy tests/integration/integration_config.yml.template to tests/integration/integration_config.yml, fill in your Vault details and run the tests using `ansible-test integration <target>`
+### Running Tests Locally
+
+**Linters:**
+```bash
+pip install -r requirements-linters.txt
+tox -e linters
 ```
----
+
+**Unit Tests:**
+```bash
+pip install -r test-requirements.txt
+pytest tests/unit/
+```
+
+**Integration Tests:**
+
+Integration tests require a Vault instance.
+
+Copy the integration config template and fill in your Vault details:
+```bash
+cp tests/integration/integration_config.yml.template tests/integration/integration_config.yml
+```
+
+Add you Vault details:
+```yaml
 vault_url_from_int_config: "<VAULT_URL_HERE>"
 vault_namespace_from_int_config: "<VAULT_NAMESPACE_HERE>" # example: admin/hashicorp-vault-integration-tests
 vault_approle_role_id_from_int_config: "<VAULT_APPROLE_ROLE_ID_HERE>"
 vault_approle_secret_id_from_int_config: "<VAULT_APPROLE_SECRET_ID_HERE>"
+```
+
+Run the tests:
+```bash
+ansible-test integration <target>
+```
+
+**Using a Local Vault Instance:**
+
+You can test changes using a local instance of HashiCorp Vault.
+
+Follow this guide to start a local development server:
+https://developer.hashicorp.com/vault/tutorials/get-started/setup
+
+Prerequisites:
+
+For running the integration tests locally, you need to:
+
+1. Start a Vault **dev server**
+2. Configure **AppRole authentication**
+3. Retrieve the **`role_id`** and **`secret_id`**
+4. Update `defaults/main.yml` in your integration tests with the required values:
+
+```yaml
+# Example values only — replace with real credentials
+vault_url: "http://localhost:8200"
+vault_namespace: "admin"
+vault_approle_role_id: "xxxxxxxx-60da-6224-d270-xxxxxxxx"
+vault_approle_secret_id: "xxxxxxxx-2458-14b9-b643-xxxxxxxx"
+vault_resource_suffix: ansible-test
 ```
 
 ## Support

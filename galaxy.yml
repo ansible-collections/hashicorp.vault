@@ -23,7 +23,6 @@ repository: https://github.com/ansible-collections/hashicorp.vault
 homepage: http://ansible.com/
 issues: https://access.redhat.com/support/
 
-
 # A list of file glob-like patterns used to filter any files or directories that should not be included in the build
 # artifact. A pattern is matched from the relative path of the file or directory of the collection directory. This
 # uses 'fnmatch' to match the files or directories. Some directories and files like 'galaxy.yml', '*.pyc', '*.retry',

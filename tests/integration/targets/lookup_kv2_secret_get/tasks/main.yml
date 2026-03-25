@@ -27,12 +27,12 @@
     - name: Read the latest version of the secret
       ansible.builtin.set_fact:
         secret_response: "{{ lookup('hashicorp.vault.kv2_secret_get',
-                                  auth_method='token',
-                                  token=vault_token_from_setup_auth_token,
-                                  secret=test_secret_path,
-                                  secret_mount_path=secret_mount_path,
-                                  namespace=vault_namespace,
-                                  url=vault_url) }}"
+          auth_method='token',
+          token=vault_token_from_setup_auth_token,
+          secret=test_secret_path,
+          secret_mount_path=secret_mount_path,
+          namespace=vault_namespace,
+          url=vault_url) }}"
 
     - name: Ensure the secret data matches as expected
       ansible.builtin.assert:
@@ -42,13 +42,13 @@
     - name: Read a specific version (first) of the secret
       ansible.builtin.set_fact:
         secret_first_version: "{{ lookup('hashicorp.vault.kv2_secret_get',
-                                        auth_method='token',
-                                        token=vault_token_from_setup_auth_token,
-                                        secret=test_secret_path,
-                                        secret_mount_path=secret_mount_path,
-                                        namespace=vault_namespace,
-                                        version=1,
-                                        url=vault_url) }}"
+          auth_method='token',
+          token=vault_token_from_setup_auth_token,
+          secret=test_secret_path,
+          secret_mount_path=secret_mount_path,
+          namespace=vault_namespace,
+          version=1,
+          url=vault_url) }}"
 
     - name: Ensure the secret data matches as expected for version 1
       ansible.builtin.assert:
@@ -59,15 +59,16 @@
       block:
         - name: Read the secret via lookup using AppRole role_id and secret_id
           ansible.builtin.set_fact:
-            secret_response_approle: "{{ lookup('hashicorp.vault.kv2_secret_get',
-                                                auth_method='approle',
-                                                role_id=vault_approle_role_id,
-                                                secret_id=vault_approle_secret_id,
-                                                secret=test_secret_path,
-                                                secret_mount_path=secret_mount_path,
-                                                namespace=vault_namespace,
-                                                url=vault_url,
-                                                vault_approle_path=vault_approle_auth_path) }}"
+            secret_response_approle:
+              "{{ lookup('hashicorp.vault.kv2_secret_get',
+              auth_method='approle',
+              role_id=vault_approle_role_id,
+              secret_id=vault_approle_secret_id,
+              secret=test_secret_path,
+              secret_mount_path=secret_mount_path,
+              namespace=vault_namespace,
+              url=vault_url,
+              vault_approle_path=vault_approle_auth_path) }}"
 
         - name: Ensure the secret data matches when using AppRole lookup
           ansible.builtin.assert:

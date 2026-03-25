@@ -8,38 +8,39 @@ releases:
     modules:
       - description: Manage HashiCorp Vault KV version 2 secrets
         name: kv2_secret
-        namespace: ''
+        namespace: ""
       - description: Read HashiCorp Vault KV version 2 secrets
         name: kv2_secret_info
-        namespace: ''
+        namespace: ""
     plugins:
       lookup:
         - description: Look up KV2 secrets stored in HashiCorp Vault.
           name: kv2_secret_get
           namespace: null
-    release_date: '2025-09-19'
+    release_date: "2025-09-19"
   1.1.0:
     changes:
       minor_changes:
-      - Add an action group for the collection modules ``kv1_secret``, ``kv1_secret_info``,
-        ``kv2_secret``, ``kv2_secret_info`` (https://github.com/ansible-collections/hashicorp.vault/pull/23).
-      - kv2_secret_info - module will not fail when the requested secret does not
-        exist instead returns an empty response (https://github.com/ansible-collections/hashicorp.vault/pull/23).
-      release_summary: This release includes new modules and lookup plugin for KV1
+        - Add an action group for the collection modules ``kv1_secret``, ``kv1_secret_info``,
+          ``kv2_secret``, ``kv2_secret_info`` (https://github.com/ansible-collections/hashicorp.vault/pull/23).
+        - kv2_secret_info - module will not fail when the requested secret does not
+          exist instead returns an empty response (https://github.com/ansible-collections/hashicorp.vault/pull/23).
+      release_summary:
+        This release includes new modules and lookup plugin for KV1
         secret management.
     fragments:
-    - 1.1.0.yml
-    - 20251007-add-action-group.yaml
+      - 1.1.0.yml
+      - 20251007-add-action-group.yaml
     modules:
-    - description: Manage HashiCorp Vault KV version 1 secrets
-      name: kv1_secret
-      namespace: ''
-    - description: Read HashiCorp Vault KV version 1 secrets
-      name: kv1_secret_info
-      namespace: ''
+      - description: Manage HashiCorp Vault KV version 1 secrets
+        name: kv1_secret
+        namespace: ""
+      - description: Read HashiCorp Vault KV version 1 secrets
+        name: kv1_secret_info
+        namespace: ""
     plugins:
       lookup:
-      - description: Look up KV1 secrets stored in HashiCorp Vault.
-        name: kv1_secret_get
-        namespace: null
-    release_date: '2025-11-13'
+        - description: Look up KV1 secrets stored in HashiCorp Vault.
+          name: kv1_secret_get
+          namespace: null
+    release_date: "2025-11-13"

@@ -1,4 +1,15 @@
 ---
+# SECURITY: Real Vault Integration Tests
+#
+# - Internal PRs: Run automatically using repository secrets
+# - External PRs (forks): Require approval via 'vault-integration' environment
+#
+# SETUP:
+# 1. Create 'vault-integration' environment in Settings > Environments
+# 2. Add required reviewers (at least 1 trusted maintainer)
+# 3. Add secrets to environment: VAULT_ADDR, VAULT_APPROLE_ROLE_ID, VAULT_APPROLE_SECRET_ID
+# 4. Keep same secrets at repository level for internal PR access
+
 name: Integration
 
 on: # yamllint disable-line rule:truthy
@@ -6,10 +17,15 @@ on: # yamllint disable-line rule:truthy
     branches: [main]
   workflow_dispatch:
 
+# Minimal permissions required for this workflow
+permissions:
+  contents: read
+
 jobs:
   run-integration-tests:
     name: Run Integration Tests
     runs-on: ubuntu-latest
+    environment: ${{ github.event.pull_request.head.repo.fork && 'vault-integration' || '' }}
     strategy:
       fail-fast: false
       matrix:
