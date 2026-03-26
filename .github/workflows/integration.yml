@@ -6,10 +6,6 @@ on: # yamllint disable-line rule:truthy
     branches: [main]
   workflow_dispatch:
 
-# Minimal permissions required for this workflow
-permissions:
-  contents: read
-
 jobs:
   run-integration-tests:
     name: Run Integration Tests
