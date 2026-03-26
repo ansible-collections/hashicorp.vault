@@ -96,7 +96,6 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions i
 def ensure_policy_present(module: AnsibleModule, client) -> None:
     name = module.params["name"]
     desired_rules = module.params["policy"]
-
     action = "created"
     try:
         existing = client.acl_policies.read_acl_policy(name)
@@ -157,7 +156,7 @@ def main():
             name=dict(type="str", required=True),
             policy=dict(type="str", aliases=["rules"]),
             state=dict(type="str", choices=["present", "absent"], default="present"),
-        )
+        ),
     )
 
     module = AnsibleModule(
