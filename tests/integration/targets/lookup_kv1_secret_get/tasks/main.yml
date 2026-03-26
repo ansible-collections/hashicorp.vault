@@ -23,12 +23,12 @@
     - name: Read the secret data
       ansible.builtin.set_fact:
         secret_response: "{{ lookup('hashicorp.vault.kv1_secret_get',
-                              auth_method='token',
-                              token=vault_token_from_setup_auth_token,
-                              secret=test_secret_path,
-                              secret_mount_path=secret_mount_path,
-                              namespace=vault_namespace,
-                              url=vault_url) }}"
+          auth_method='token',
+          token=vault_token_from_setup_auth_token,
+          secret=test_secret_path,
+          secret_mount_path=secret_mount_path,
+          namespace=vault_namespace,
+          url=vault_url) }}"
 
     - name: Validate lookup response
       ansible.builtin.assert:
