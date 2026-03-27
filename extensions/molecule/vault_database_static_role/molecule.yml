@@ -1,0 +1,7 @@
+---
+scenario:
+  name: vault_database_static_role
+  test_sequence:
+    - converge
+    - verify
+    - cleanup

@@ -1,0 +1,3 @@
+---
+# Revoke is fire-and-forget; Vault returns no meaningful data.
+# Vars exist so the example uses the same pattern as all other modules.

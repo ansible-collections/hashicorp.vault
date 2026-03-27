@@ -1,0 +1,12 @@
+---
+# token/ auth method is always present in any Vault server
+expected_auth_path: "token/"
+
+expected_entry_keys:
+  - type
+  - description
+  - accessor
+  - config
+  - local
+  - seal_wrap
+  - uuid

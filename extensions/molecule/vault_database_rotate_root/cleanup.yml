@@ -1,0 +1,15 @@
+---
+# @hand-crafted
+- name: Cleanup - vault_database_rotate_root
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Delete isolated test connection
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/database/config/rotate-test-conn"
+        method: DELETE
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        status_code: [200, 204]
+      failed_when: false

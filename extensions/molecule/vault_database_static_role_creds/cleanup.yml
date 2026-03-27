@@ -1,0 +1,15 @@
+---
+# @hand-crafted
+- name: Cleanup - vault_database_static_role_creds
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Delete test static role
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/database/static-roles/test-static-role"
+        method: DELETE
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        status_code: [200, 204]
+      failed_when: false

@@ -1,0 +1,9 @@
+---
+# @hand-crafted
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      vault_addr: "{{ lookup('env', 'VAULT_ADDR') }}"
+      vault_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+      vault_namespace: "{{ lookup('env', 'VAULT_NAMESPACE') | default('admin') }}"

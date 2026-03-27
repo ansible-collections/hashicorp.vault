@@ -1,0 +1,15 @@
+---
+# vars_files: [vars.yml]
+#
+# Revoke is fire-and-forget; Vault returns no meaningful data.
+
+- name: Revoke a Vault token
+  hashicorp.vault.vault_token_revoke:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+  register: result
+
+- name: Verify result
+  ansible.builtin.assert:
+    that:
+      - result is changed

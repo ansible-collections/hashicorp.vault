@@ -1,0 +1,5 @@
+---
+mount_path: pki
+
+expected_response_keys:
+  - certificate

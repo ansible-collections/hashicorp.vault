@@ -1,0 +1,12 @@
+---
+# @hand-crafted
+- name: Cleanup - vault_auth_method
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_auth_method/vars.yml"
+  tasks:
+    - name: Include absent tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_auth_method/absent.yml"

@@ -1,0 +1,30 @@
+---
+# vars_files: [vars.yml]
+#
+# name: test-static-role
+# mount_path: database
+# config:
+#   db_name: my-postgres
+#   username: vault-user
+#   credential_type: password
+#   rotation_period: "24h"
+
+- name: Manage Vault database static roles (present)
+  hashicorp.vault.vault_database_static_role:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    state: present
+    mount_path: "{{ mount_path }}"
+    name: "{{ name }}"
+    db_name: "{{ config.db_name }}"
+    username: "{{ config.username }}"
+    credential_type: "{{ config.credential_type }}"
+    rotation_period: "{{ config.rotation_period }}"
+  register: result
+
+- name: Verify return matches contract
+  ansible.builtin.assert:
+    that:
+      - result is changed
+      - (config | hashicorp.vault.vault_config_match(result.data)).match
+    fail_msg: "Contract violation: {{ (config | hashicorp.vault.vault_config_match(result.data)).mismatches | to_json }}"

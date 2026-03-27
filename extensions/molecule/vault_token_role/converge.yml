@@ -1,0 +1,12 @@
+---
+# @hand-crafted
+- name: Converge - vault_token_role
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_token_role/vars.yml"
+  tasks:
+    - name: Include example tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_token_role/present.yml"

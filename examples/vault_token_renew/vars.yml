@@ -1,0 +1,11 @@
+---
+params:
+  increment: "1h"
+
+expected_response_keys:
+  - client_token
+  - accessor
+  - policies
+  - renewable
+  - token_type
+  - lease_duration

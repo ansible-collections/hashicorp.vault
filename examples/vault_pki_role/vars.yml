@@ -1,0 +1,9 @@
+---
+name: test-pki-role
+mount_path: pki
+
+config:
+  allowed_domains:
+    - example.com
+  allow_subdomains: true
+  max_ttl: "72h"

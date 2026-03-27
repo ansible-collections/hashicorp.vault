@@ -1,0 +1,33 @@
+---
+# @hand-crafted
+# Shared Molecule configuration for hashicorp.vault collection testing.
+#
+# With shared_state: true, the default scenario is the lifecycle manager:
+# - default runs create first and destroy last when using molecule test --all
+# - Component scenarios skip create/destroy and only run their test_sequence
+# The Vault dev container (podman) is started once (default create) and removed once (default destroy).
+
+ansible:
+  executor:
+    args:
+      ansible_playbook:
+        - --inventory=${MOLECULE_PROJECT_DIRECTORY}/extensions/molecule/inventory_mock.yml
+  env:
+    ANSIBLE_FORCE_COLOR: "true"
+    ANSIBLE_HOST_KEY_CHECKING: "false"
+    ANSIBLE_DEPRECATION_WARNINGS: "false"
+    ANSIBLE_SYSTEM_WARNINGS: "false"
+    ANSIBLE_COMMAND_WARNINGS: "false"
+    ANSIBLE_COLLECTIONS_PATH: "/dev/null"
+
+scenario:
+  test_sequence:
+    - converge
+    - verify
+    - cleanup
+
+shared_state: true
+prerun: false
+
+verifier:
+  name: ansible

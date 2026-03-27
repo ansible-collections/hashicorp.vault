@@ -21,4 +21,21 @@ check_flake8:
 check_isort:
 	tox -e isort -- --check $(CHECK_SYNTAX_FILES)
 
-.PHONY: help check_black check_flake8 check_isort
+# Example and Molecule pipeline
+examples:
+	python -m tools.generate_examples
+	python -m tools.inject_examples
+
+examples-check:
+	python -m tools.inject_examples --check
+
+molecule-scenarios:
+	python -m tools.generate_molecule_scenarios
+
+molecule-local:
+	molecule test --all
+
+molecule-real:
+	molecule test --all -i extensions/molecule/inventory_real.yml
+
+.PHONY: help check_black check_flake8 check_isort examples examples-check molecule-scenarios molecule-local molecule-real

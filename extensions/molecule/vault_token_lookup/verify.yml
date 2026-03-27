@@ -1,0 +1,29 @@
+---
+# @hand-crafted
+- name: "Verify - vault_token_lookup"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_token_lookup/vars.yml"
+  tasks:
+    - name: Re-invoke token lookup-self API
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/auth/token/lookup-self"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        body_format: json
+        body: {}
+        status_code: [200]
+      register: read_result
+
+    - name: Assert each expected response key is present
+      ansible.builtin.assert:
+        that:
+          - item in read_result.json.data
+        fail_msg: "Missing key {{ item }} in data"
+        success_msg: "{{ item }}: OK"
+      loop: "{{ expected_response_keys }}"
+      loop_control:
+        label: "{{ item }}"

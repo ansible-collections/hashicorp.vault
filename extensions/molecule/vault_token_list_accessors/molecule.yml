@@ -1,0 +1,6 @@
+---
+scenario:
+  name: vault_token_list_accessors
+  test_sequence:
+    - converge
+    - verify
