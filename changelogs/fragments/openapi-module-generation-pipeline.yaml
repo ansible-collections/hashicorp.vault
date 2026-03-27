@@ -1,0 +1,22 @@
+---
+major_changes:
+  - >-
+    Add OpenAPI-driven module generation pipeline with 23 new Vault modules
+    covering token, auth, database, PKI, and namespace engines. Each module
+    includes typed RETURN documentation, runtime contract validation via
+    ArgumentSpecValidator, example playbooks with inline assertions, and
+    Molecule integration scenarios backed by a real Vault dev server.
+minor_changes:
+  - >-
+    plugins/plugin_utils/vault_action_base.py - Add VaultActionBase with
+    runtime contract validation that verifies every API response against the
+    module argspec before returning.
+  - >-
+    plugins/filter/vault_config_match.py - Add vault_config_match filter
+    plugin for duration-aware subset comparison of Vault configuration
+    dictionaries.
+  - >-
+    tools/ - Add code generation pipeline (generate_modules.py,
+    generate_examples.py, inject_examples.py, generate_molecule_scenarios.py)
+    with @hand-crafted/@generated file markers to prevent overwriting manually
+    tuned files.

@@ -118,7 +118,7 @@
         body_format: json
         body:
           plugin_name: postgresql-database-plugin
-          connection_url: "postgresql://{{ '{{username}}' }}:{{ '{{password}}' }}@postgres-molecule:5432/testdb?sslmode=disable"
+          connection_url: "postgresql://{{ '{{' }}username{{ '}}' }}:{{ '{{' }}password{{ '}}' }}@postgres-molecule:5432/testdb?sslmode=disable"
           allowed_roles: "*"
           username: postgres
           password: postgres

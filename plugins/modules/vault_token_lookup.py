@@ -21,7 +21,7 @@ version_added: "2.0.0"
 author:
   - HashiCorp Vault Collection Contributors
 extends_documentation_fragment:
-  - hashicorp.vault.vault_auth
+  - hashicorp.vault.vault_auth.modules
 options:
     token:
       description: Token to lookup

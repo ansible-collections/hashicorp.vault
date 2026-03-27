@@ -17,7 +17,7 @@
         body:
           db_name: my-postgres
           creation_statements:
-            - !unsafe "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';"
+            - !unsafe "CREATE ROLE \"{{ name }}\" WITH LOGIN PASSWORD '{{ password }}' VALID UNTIL '{{ expiration }}';"
           default_ttl: "1h"
           max_ttl: "24h"
         status_code: [200, 204]
