@@ -276,6 +276,25 @@ class VaultDatabaseConnection:
         path = f"v1/{self._mount_path}/reset/{name}"
         self._client._make_request("POST", path, json={})
 
+    def rotate_credentials(self, name: str, type: str) -> None:
+        """
+        Reset a database connection by closing the connection and its underlying plugin,
+        then restarting it.
+
+        Args:
+            name (str): The identifier for the database connection (for root user rotation) or the static role to trigger
+                        a password rotation for.
+            type (str): Whether to rotate root or static-role credentials. choices are 'root' or 'role'
+
+        Returns:
+            None
+        """
+        values_types = ('root', 'role')
+        if type not in values_types:
+            raise VaultConfigurationError(f"Unexpected used to rotate credential {type!r}, should be one of {values_types}")
+        path = f"v1/{self._mount_path}/rotate-{type}/{name}"
+        self._client._make_request("POST", path, json={})
+
 
 class VaultKv2Secrets:
     """
