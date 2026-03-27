@@ -19,18 +19,17 @@ description:
   - Renew a Vault token using the Vault HTTP API.
 version_added: "2.0.0"
 author:
-  - HashiCorp Vault Collection Contributors
+  - Bradley Thornton (@cidrblock)
 extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
 options:
     increment:
       description: The desired increment in seconds to the token expiration
       type: str
-      default: 0
+      default: "0"
     token:
       description: Token to renew (request body)
       type: str
-      no_log: true
 """
 
 EXAMPLES = """

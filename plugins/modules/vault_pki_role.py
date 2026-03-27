@@ -20,7 +20,7 @@ description:
   - Manage Vault PKI roles using the Vault HTTP API.
 version_added: "2.0.0"
 author:
-  - HashiCorp Vault Collection Contributors
+  - Bradley Thornton (@cidrblock)
 extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
 options:
@@ -281,7 +281,7 @@ options:
         - The duration before now which the certificate needs to be
         - backdated by.
       type: str
-      default: 30
+      default: "30s"
     organization:
       description:
         - If set, O (Organization) will be set to this value in

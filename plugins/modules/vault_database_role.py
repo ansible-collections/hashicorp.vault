@@ -20,7 +20,7 @@ description:
   - Manage Vault database dynamic roles using the Vault HTTP API.
 version_added: "2.0.0"
 author:
-  - HashiCorp Vault Collection Contributors
+  - Bradley Thornton (@cidrblock)
 extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
 options:

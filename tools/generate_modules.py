@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2025 Red Hat, Inc.
@@ -785,8 +784,6 @@ def generate_module_doc(
         if fd.has_default and fd.default is not None:
             default_val = str(fd.default).lower() if isinstance(fd.default, bool) else fd.default
             opt.append(f"      default: {default_val}")
-        if fd.no_log:
-            opt.append("      no_log: true")
         option_lines.append("\n".join(opt))
 
     options_yaml = "\n".join(option_lines)
@@ -851,7 +848,7 @@ description:
   - {module.short_description} using the Vault HTTP API.
 version_added: "2.0.0"
 author:
-  - HashiCorp Vault Collection Contributors
+  - Bradley Thornton (@cidrblock)
 extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
 {options_block}
