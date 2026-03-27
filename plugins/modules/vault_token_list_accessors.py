@@ -55,16 +55,12 @@ EXAMPLES = """
 RETURN = """
 data:
   description: >-
-    Extracted payload from the Vault C(data) response envelope.
-    Validated against the module argspec at runtime.
+    Extracted payload from the Vault response. Contains a C(keys)
+    field (list of str) with all token accessor strings. Use bracket
+    notation C(result.data['keys']) since dot notation conflicts with
+    the Python dict method.
   returned: success
   type: dict
-  contains:
-    keys:
-      description: List of token accessors
-      type: list
-      returned: success
-      elements: str
 raw:
   description: The full JSON response from Vault including the envelope.
   returned: success
