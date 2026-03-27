@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - Add functionality for Vault ACL policy management (list, read, create/update, delete) on
+    the Vault client (https://github.com/ansible-collections/hashicorp.vault/pull/45).
