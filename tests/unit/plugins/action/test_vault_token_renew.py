@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-MOCK_VAULT_CLIENT = "ansible_collections.hashicorp.vault.plugins.plugin_utils" ".vault_action_base.VaultClient"
+MOCK_VAULT_CLIENT = "ansible_collections.hashicorp.vault.plugins.plugin_utils.vault_action_base.VaultClient"
 
 
 @pytest.fixture

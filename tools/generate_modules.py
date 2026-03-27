@@ -208,8 +208,16 @@ MODULES: List[ModuleConfig] = [
             "mount_path": {"type": "string", "description": "Mount path of the database secrets engine", "default": "database"},
             "db_name": {"type": "string", "description": "Name of the database connection to use"},
             "username": {"type": "string", "description": "Database username that this role corresponds to"},
-            "rotation_period": {"type": "string", "description": "Period for automatic credential rotation (e.g. '24h'). Mutually exclusive with rotation_schedule."},
-            "rotation_schedule": {"type": "string", "description": "Cron-style schedule for credential rotation. Mutually exclusive with rotation_period."},
+            "rotation_period": {
+                "type": "string",
+                "description": "Period for automatic credential rotation (e.g. '24h'). "
+                "Mutually exclusive with rotation_schedule.",
+            },
+            "rotation_schedule": {
+                "type": "string",
+                "description": "Cron-style schedule for credential rotation. "
+                "Mutually exclusive with rotation_period.",
+            },
             "rotation_window": {"type": "integer", "description": "Window in seconds for scheduled rotation"},
             "rotation_statements": {"type": "array", "items": {"type": "string"}, "description": "SQL statements to rotate the password"},
             "credential_type": {"type": "string", "description": "Type of credential to manage (e.g. 'password')"},
@@ -793,6 +801,7 @@ def generate_module_doc(
       default: present"""
 
     all_options = "\n".join(filter(None, [state_option, options_yaml]))
+    options_block = f"options:\n{all_options}" if all_options.strip() else ""
 
     # Build EXAMPLES
     example_args = []
@@ -845,8 +854,7 @@ author:
   - HashiCorp Vault Collection Contributors
 extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
-options:
-{all_options}
+{options_block}
 """
 
 EXAMPLES = """
@@ -1006,10 +1014,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
-MOCK_VAULT_CLIENT = (
-    "ansible_collections.hashicorp.vault.plugins.plugin_utils"
-    ".vault_action_base.VaultClient"
-)
+MOCK_VAULT_CLIENT = "ansible_collections.hashicorp.vault.plugins.plugin_utils.vault_action_base.VaultClient"
 
 
 @pytest.fixture

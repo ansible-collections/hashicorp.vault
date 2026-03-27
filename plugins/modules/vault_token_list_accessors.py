@@ -22,8 +22,6 @@ author:
   - HashiCorp Vault Collection Contributors
 extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
-options:
-
 """
 
 EXAMPLES = """
