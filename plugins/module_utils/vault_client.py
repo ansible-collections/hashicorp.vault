@@ -174,14 +174,16 @@ class VaultDatabaseConnection:
         List all available connections.
 
         Returns:
-            List[str]: A list of connection names.
+            List[str]: A list of connection names. Returns empty list if no connections exist.
         """
         path = f"v1/{self._mount_path}/config"
-        response_data = self._client._make_request("LIST", path)
-
-        connections = response_data.get("data", {}).get("keys", [])
-
-        return connections
+        try:
+            response_data = self._client._make_request("LIST", path)
+            connections = response_data.get("data", {}).get("keys", [])
+            return connections
+        except VaultSecretNotFoundError:
+            # Vault returns 404 when no connections exist
+            return []
 
     def read_connection(self, name: str) -> dict:
         """
@@ -191,12 +193,15 @@ class VaultDatabaseConnection:
             name (str): The name of the connection to read.
 
         Returns:
-            dict: The connection configuration data.
+            dict: The connection configuration data, or empty dict if the connection doesn't exist.
         """
         path = f"v1/{self._mount_path}/config/{name}"
-        response_data = self._client._make_request("GET", path)
-
-        return response_data.get("data", {})
+        try:
+            response_data = self._client._make_request("GET", path)
+            return response_data.get("data", {})
+        except VaultSecretNotFoundError:
+            # Vault returns 404 when the connection doesn't exist
+            return {}
 
     def create_or_update_connection(self, name: str, config: dict) -> dict:
         """
