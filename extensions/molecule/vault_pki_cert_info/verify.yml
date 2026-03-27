@@ -1,0 +1,10 @@
+---
+# @hand-crafted
+- name: "Verify - vault_pki_cert_info"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Verify converge completed successfully
+      ansible.builtin.debug:
+        msg: "vault_pki_cert_info verified (contract enforced in converge)"

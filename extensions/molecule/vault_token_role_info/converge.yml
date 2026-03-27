@@ -1,0 +1,26 @@
+---
+# @hand-crafted
+- name: Converge - vault_token_role_info
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_token_role_info/vars.yml"
+  tasks:
+    - name: Create prerequisite token role
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/auth/token/roles/{{ role_name }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        body_format: json
+        body:
+          allowed_policies: "{{ config.allowed_policies }}"
+          orphan: "{{ config.orphan }}"
+          renewable: "{{ config.renewable }}"
+          token_type: "{{ config.token_type }}"
+        status_code: [200, 204]
+
+    - name: Include example tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_token_role_info/info.yml"

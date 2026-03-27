@@ -1,0 +1,43 @@
+---
+# @hand-crafted
+- name: Converge - vault_pki_cert_info
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_pki_cert_info/vars.yml"
+  tasks:
+    - name: Create prerequisite PKI role
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ mount_path }}/roles/test-pki-role"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        body_format: json
+        body:
+          allowed_domains:
+            - example.com
+          allow_subdomains: true
+          max_ttl: "72h"
+        status_code: [200, 204]
+
+    - name: Issue a certificate to get serial number
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ mount_path }}/issue/test-pki-role"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        body_format: json
+        body:
+          common_name: molecule-cert-info-test.example.com
+          ttl: "1h"
+        status_code: [200]
+      register: issued_cert
+
+    - name: Set test_cert_serial fact
+      ansible.builtin.set_fact:
+        test_cert_serial: "{{ issued_cert.json.data.serial_number }}"
+
+    - name: Include example tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_pki_cert_info/info.yml"

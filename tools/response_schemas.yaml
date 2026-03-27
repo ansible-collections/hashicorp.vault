@@ -1,0 +1,267 @@
+# Learned API response schemas for modules where the response shape
+# differs from the request schema (action modules, some info modules).
+#
+# For CRUD modules the response mirrors the input argspec, so they are
+# NOT listed here -- the generator derives their RETURN block from
+# the DOCUMENTATION options automatically.
+#
+# For info modules that return a simple list (e.g. vault_token_list_accessors)
+# or an opaque config blob (e.g. vault_auth_method_info), use `_opaque: true`
+# to emit a generic dict/list return type.
+#
+# Source: captured from Vault v1.21 dev-server responses during molecule runs.
+# To refresh, run a scenario and inspect result.data / result.raw.
+
+vault_token_create:
+  _envelope: auth
+  fields:
+    client_token:
+      type: str
+      description: The generated client token value
+    accessor:
+      type: str
+      description: The token accessor for management without the secret
+    policies:
+      type: list
+      elements: str
+      description: Policies attached to the token
+    token_policies:
+      type: list
+      elements: str
+      description: Policies directly assigned to the token
+    metadata:
+      type: dict
+      description: Metadata associated with the token
+    lease_duration:
+      type: int
+      description: Token TTL in seconds
+    renewable:
+      type: bool
+      description: Whether the token is renewable
+    entity_id:
+      type: str
+      description: Entity ID associated with the token
+    token_type:
+      type: str
+      description: The type of token (service, batch)
+    orphan:
+      type: bool
+      description: Whether the token is an orphan
+    num_uses:
+      type: int
+      description: Number of uses remaining (0 means unlimited)
+
+vault_token_lookup:
+  _envelope: data
+  fields:
+    accessor:
+      type: str
+      description: The token accessor
+    creation_time:
+      type: int
+      description: Unix timestamp when the token was created
+    creation_ttl:
+      type: int
+      description: Original TTL at creation in seconds
+    display_name:
+      type: str
+      description: Display name of the token
+    entity_id:
+      type: str
+      description: Entity ID associated with the token
+    expire_time:
+      type: str
+      description: RFC3339 timestamp when the token expires
+    explicit_max_ttl:
+      type: int
+      description: Explicit max TTL in seconds (0 means none)
+    id:
+      type: str
+      description: The token ID
+    meta:
+      type: dict
+      description: Metadata associated with the token
+    num_uses:
+      type: int
+      description: Number of uses remaining
+    orphan:
+      type: bool
+      description: Whether the token is an orphan
+    path:
+      type: str
+      description: The auth path that created the token
+    policies:
+      type: list
+      elements: str
+      description: Policies attached to the token
+    renewable:
+      type: bool
+      description: Whether the token is renewable
+    ttl:
+      type: int
+      description: Remaining TTL in seconds
+    type:
+      type: str
+      description: The type of token (service, batch)
+
+vault_token_renew:
+  _envelope: auth
+  fields:
+    client_token:
+      type: str
+      description: The renewed client token value
+    accessor:
+      type: str
+      description: The token accessor
+    policies:
+      type: list
+      elements: str
+      description: Policies attached to the token
+    token_policies:
+      type: list
+      elements: str
+      description: Policies directly assigned to the token
+    metadata:
+      type: dict
+      description: Metadata associated with the token
+    lease_duration:
+      type: int
+      description: New TTL in seconds after renewal
+    renewable:
+      type: bool
+      description: Whether the token is still renewable
+    entity_id:
+      type: str
+      description: Entity ID associated with the token
+    token_type:
+      type: str
+      description: The type of token (service, batch)
+
+vault_token_revoke:
+  _opaque: true
+
+vault_token_list_accessors:
+  _envelope: data
+  fields:
+    keys:
+      type: list
+      elements: str
+      description: List of token accessors
+
+vault_database_rotate_root:
+  _opaque: true
+
+vault_database_static_role_rotate:
+  _opaque: true
+
+vault_database_creds:
+  _envelope: data
+  fields:
+    username:
+      type: str
+      description: The dynamically generated database username
+    password:
+      type: str
+      description: The dynamically generated database password
+
+vault_database_static_role_creds:
+  _envelope: data
+  fields:
+    username:
+      type: str
+      description: The static database username
+    password:
+      type: str
+      description: The static database password
+    last_vault_rotation:
+      type: str
+      description: RFC3339 timestamp of the last credential rotation
+    rotation_period:
+      type: int
+      description: Rotation period in seconds
+    ttl:
+      type: int
+      description: Seconds until the next rotation
+
+vault_auth_method_info:
+  _envelope: data
+  _description: >-
+    Dictionary mapping auth method mount paths (e.g. C(token/), C(userpass/))
+    to their configuration. Keys are dynamic mount paths.
+  fields:
+    type:
+      type: str
+      description: Type of auth method (e.g. token, userpass, approle)
+    description:
+      type: str
+      description: Description of the auth method
+    accessor:
+      type: str
+      description: Unique accessor identifier for this auth method
+    config:
+      type: dict
+      description: Auth method configuration including TTL settings
+    local:
+      type: bool
+      description: Whether the auth method is local only (not replicated)
+    seal_wrap:
+      type: bool
+      description: Whether seal wrapping is enabled for this auth method
+    uuid:
+      type: str
+      description: UUID of the auth method mount
+    plugin_version:
+      type: str
+      description: Configured plugin version (empty for builtin)
+    running_plugin_version:
+      type: str
+      description: Currently running plugin version
+    options:
+      type: dict
+      description: Auth method mount options
+
+vault_pki_issue:
+  _envelope: data
+  fields:
+    certificate:
+      type: str
+      description: The PEM-encoded issued certificate
+    serial_number:
+      type: str
+      description: The serial number of the certificate
+    private_key:
+      type: str
+      description: The PEM-encoded private key
+    private_key_type:
+      type: str
+      description: The type of private key (rsa, ec, ed25519)
+    issuing_ca:
+      type: str
+      description: The PEM-encoded issuing CA certificate
+    ca_chain:
+      type: list
+      elements: str
+      description: The full CA chain including the issuing CA
+    expiration:
+      type: int
+      description: Unix timestamp when the certificate expires
+
+vault_pki_sign:
+  _envelope: data
+  fields:
+    certificate:
+      type: str
+      description: The PEM-encoded signed certificate
+    serial_number:
+      type: str
+      description: The serial number of the certificate
+    issuing_ca:
+      type: str
+      description: The PEM-encoded issuing CA certificate
+    ca_chain:
+      type: list
+      elements: str
+      description: The full CA chain including the issuing CA
+    expiration:
+      type: int
+      description: Unix timestamp when the certificate expires

@@ -1,0 +1,125 @@
+---
+# @hand-crafted
+- name: Start test infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Create podman network
+      ansible.builtin.command:
+        cmd: podman network create molecule-net
+      register: net_result
+      changed_when: net_result.rc == 0
+      failed_when: net_result.rc != 0 and 'already exists' not in net_result.stderr
+
+    - name: Start PostgreSQL container
+      containers.podman.podman_container:
+        name: postgres-molecule
+        image: docker.io/library/postgres:16
+        state: started
+        network: molecule-net
+        ports: "15432:5432"
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: testdb
+
+    - name: Start Vault container
+      containers.podman.podman_container:
+        name: vault-molecule
+        image: docker.io/hashicorp/vault:latest
+        state: started
+        network: molecule-net
+        ports: "18200:8200"
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: test-root-token
+          VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+        command: server -dev
+
+    - name: Wait for PostgreSQL
+      ansible.builtin.command:
+        cmd: podman exec postgres-molecule pg_isready -U postgres
+      retries: 15
+      delay: 2
+      register: pg_ready
+      until: pg_ready.rc == 0
+      changed_when: false
+
+    - name: Wait for Vault health
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:18200/v1/sys/health"
+      retries: 15
+      delay: 2
+      register: health
+      until: health.status == 200
+
+    - name: Create database user for static role testing
+      ansible.builtin.command:
+        cmd: >-
+          podman exec postgres-molecule
+          psql -U postgres -d testdb -c
+          "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='vault-user')
+          THEN CREATE ROLE \"vault-user\" WITH LOGIN PASSWORD 'vault-password';
+          END IF; END $$;"
+      changed_when: true
+
+    - name: Create database user for rotate-root testing
+      ansible.builtin.command:
+        cmd: >-
+          podman exec postgres-molecule
+          psql -U postgres -d testdb -c
+          "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='rotate-root-user')
+          THEN CREATE ROLE \"rotate-root-user\" WITH LOGIN PASSWORD 'rotate-password' CREATEROLE;
+          END IF; END $$;"
+      changed_when: true
+
+    - name: Enable database engine
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:18200/v1/sys/mounts/database"
+        method: POST
+        headers:
+          X-Vault-Token: test-root-token
+        body_format: json
+        body:
+          type: database
+        status_code: [200, 204, 400]
+
+    - name: Enable PKI engine
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:18200/v1/sys/mounts/pki"
+        method: POST
+        headers:
+          X-Vault-Token: test-root-token
+        body_format: json
+        body:
+          type: pki
+        status_code: [200, 204, 400]
+
+    - name: Generate PKI root CA
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:18200/v1/pki/root/generate/internal"
+        method: POST
+        headers:
+          X-Vault-Token: test-root-token
+        body_format: json
+        body:
+          common_name: "Molecule Test CA"
+          ttl: "87600h"
+        status_code: [200, 204]
+      register: pki_root
+      failed_when: pki_root.status not in [200, 204] and 'already' not in (pki_root.json.errors | default([]) | join(' '))
+
+    - name: Configure database connection
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:18200/v1/database/config/my-postgres"
+        method: POST
+        headers:
+          X-Vault-Token: test-root-token
+        body_format: json
+        body:
+          plugin_name: postgresql-database-plugin
+          connection_url: "postgresql://{{ '{{username}}' }}:{{ '{{password}}' }}@postgres-molecule:5432/testdb?sslmode=disable"
+          allowed_roles: "*"
+          username: postgres
+          password: postgres
+        status_code: [200, 204]

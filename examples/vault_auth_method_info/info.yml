@@ -1,0 +1,34 @@
+---
+# vars_files: [vars.yml]
+#
+# expected_auth_path: "token/"
+#
+# expected_entry_keys:
+#   - type
+#   - description
+#   - accessor
+#   - config
+#   - local
+#   - seal_wrap
+#   - uuid
+
+- name: List enabled Vault auth methods
+  hashicorp.vault.vault_auth_method_info:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+  register: result
+
+- name: Verify data contains expected auth path
+  ansible.builtin.assert:
+    that:
+      - result is not changed
+      - result.data is defined
+      - expected_auth_path in result.data
+    fail_msg: "Expected auth path '{{ expected_auth_path }}' not found in result.data"
+
+- name: Verify auth method entry has expected keys
+  ansible.builtin.assert:
+    that:
+      - item in result.data[expected_auth_path]
+    fail_msg: "Missing key {{ item }} in result.data['{{ expected_auth_path }}']"
+  loop: "{{ expected_entry_keys }}"

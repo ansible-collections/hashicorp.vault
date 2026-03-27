@@ -1,0 +1,5 @@
+---
+mount_path: database
+name: test-static-role
+
+# Rotate is fire-and-forget; Vault returns no meaningful data.

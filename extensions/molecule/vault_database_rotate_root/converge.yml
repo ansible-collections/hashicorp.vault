@@ -1,0 +1,27 @@
+---
+# @hand-crafted
+- name: Converge - vault_database_rotate_root
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_database_rotate_root/vars.yml"
+  tasks:
+    - name: Create isolated database connection for rotate-root test
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ mount_path }}/config/{{ name }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        body_format: json
+        body:
+          plugin_name: postgresql-database-plugin
+          connection_url: "postgresql://{{'{{'}}username{{'}}'}}:{{'{{'}}password{{'}}'}}@postgres-molecule:5432/testdb?sslmode=disable"
+          allowed_roles: "*"
+          username: rotate-root-user
+          password: rotate-password
+        status_code: [200, 204]
+
+    - name: Include example tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_database_rotate_root/action.yml"

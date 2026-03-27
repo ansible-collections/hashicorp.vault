@@ -1,0 +1,29 @@
+---
+# vars_files: [vars.yml]
+#
+# params:
+#   increment: "1h"
+#
+# expected_response_keys:
+#   - client_token
+#   - accessor
+#   - policies
+#   - renewable
+#   - token_type
+#   - lease_duration
+
+- name: Renew a Vault token
+  hashicorp.vault.vault_token_renew:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    increment: "{{ params.increment }}"
+  register: result
+
+- name: Verify expected keys in response
+  ansible.builtin.assert:
+    that:
+      - result is changed
+      - result.data is defined
+      - item in result.data
+    fail_msg: "Missing key {{ item }} in result.data"
+  loop: "{{ expected_response_keys }}"

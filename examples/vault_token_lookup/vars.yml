@@ -1,0 +1,10 @@
+---
+expected_response_keys:
+  - accessor
+  - creation_time
+  - display_name
+  - id
+  - policies
+  - renewable
+  - ttl
+  - type

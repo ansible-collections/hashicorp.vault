@@ -3,6 +3,7 @@ pytest-mock
 pytest-ansible
 pytest-xdist
 requests
+molecule
 # Linting and code formatting tools
 tox
 -r requirements-linters.txt

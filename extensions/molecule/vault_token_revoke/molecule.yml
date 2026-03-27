@@ -1,0 +1,6 @@
+---
+scenario:
+  name: vault_token_revoke
+  test_sequence:
+    - converge
+    - verify

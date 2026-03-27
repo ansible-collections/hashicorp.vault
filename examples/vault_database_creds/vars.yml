@@ -1,0 +1,7 @@
+---
+mount_path: database
+role_name: test-role
+
+expected_response_keys:
+  - username
+  - password

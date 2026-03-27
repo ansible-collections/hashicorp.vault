@@ -1,0 +1,28 @@
+---
+# @hand-crafted
+- name: Converge - vault_token_renew
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_token_renew/vars.yml"
+  tasks:
+    - name: Create a renewable child token for testing
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/auth/token/create"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        body_format: json
+        body:
+          renewable: true
+          ttl: "1h"
+      register: child_token
+
+    - name: Set vault_token to child token for renew-self
+      ansible.builtin.set_fact:
+        vault_token: "{{ child_token.json.auth.client_token }}"
+
+    - name: Include example tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_token_renew/action.yml"

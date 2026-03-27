@@ -1,0 +1,30 @@
+---
+# vars_files: [vars.yml]
+#
+# role_name: test-role
+# config:
+#   allowed_entity_aliases: ["entity-*"]
+#   allowed_policies: ["default"]
+#   orphan: true
+#   renewable: true
+#   token_type: default-service
+
+- name: Manage Vault token roles (present)
+  hashicorp.vault.vault_token_role:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    state: present
+    role_name: "{{ role_name }}"
+    allowed_entity_aliases: "{{ config.allowed_entity_aliases }}"
+    allowed_policies: "{{ config.allowed_policies }}"
+    orphan: "{{ config.orphan }}"
+    renewable: "{{ config.renewable }}"
+    token_type: "{{ config.token_type }}"
+  register: result
+
+- name: Verify return matches contract
+  ansible.builtin.assert:
+    that:
+      - result is changed
+      - (config | hashicorp.vault.vault_config_match(result.data)).match
+    fail_msg: "Contract violation: {{ (config | hashicorp.vault.vault_config_match(result.data)).mismatches | to_json }}"

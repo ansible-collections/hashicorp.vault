@@ -1,0 +1,20 @@
+---
+params:
+  display_name: my-service-token
+  explicit_max_ttl: "24h"
+  no_default_policy: false
+  no_parent: false
+  num_uses: 10
+  period: "1h"
+  policies:
+    - default
+  renewable: true
+
+expected_response_keys:
+  - client_token
+  - accessor
+  - policies
+  - renewable
+  - token_type
+  - lease_duration
+  - num_uses

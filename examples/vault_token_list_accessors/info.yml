@@ -1,0 +1,26 @@
+---
+# vars_files: [vars.yml]
+#
+# expected_response_keys:
+#   - keys
+
+- name: List all token accessors
+  hashicorp.vault.vault_token_list_accessors:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+  register: result
+
+- name: Verify expected keys in response
+  ansible.builtin.assert:
+    that:
+      - result is not changed
+      - result.data is defined
+      - item in result.data
+    fail_msg: "Missing key {{ item }} in result.data"
+  loop: "{{ expected_response_keys }}"
+
+- name: Verify keys is a list
+  ansible.builtin.assert:
+    that:
+      - result.data['keys'] | type_debug == 'list'
+    fail_msg: "result.data['keys'] should be a list, got {{ result.data['keys'] | type_debug }}"

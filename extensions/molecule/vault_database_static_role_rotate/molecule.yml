@@ -1,0 +1,6 @@
+---
+scenario:
+  name: vault_database_static_role_rotate
+  test_sequence:
+    - converge
+    - verify

@@ -1,0 +1,26 @@
+---
+# @hand-crafted
+- name: Converge - vault_pki_issue
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_pki_issue/vars.yml"
+  tasks:
+    - name: Create prerequisite PKI role
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ mount_path }}/roles/{{ role }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        body_format: json
+        body:
+          allowed_domains:
+            - example.com
+          allow_subdomains: true
+          max_ttl: "72h"
+        status_code: [200, 204]
+
+    - name: Include example tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_pki_issue/action.yml"

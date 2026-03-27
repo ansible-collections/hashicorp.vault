@@ -1,0 +1,5 @@
+---
+mount_path: database
+name: rotate-test-conn
+
+# Rotate is fire-and-forget; Vault returns no meaningful data.
