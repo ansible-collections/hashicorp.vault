@@ -128,6 +128,12 @@ class TestDatabaseListConnections:
         authenticated_client._make_request.assert_called_once_with("LIST", expected_path)
         assert db_names == mock_list_connections_response["data"]["keys"]
 
+    def test_list_connections_not_found(self, authenticated_client):
+        authenticated_client._make_request.side_effect = VaultSecretNotFoundError("not found")
+        db_conn = VaultDatabaseConnection(client=authenticated_client)
+        result = db_conn.list_connections()
+        assert result == []
+
     def test_list_connections_error(self, authenticated_client):
         authenticated_client._make_request.side_effect = VaultPermissionError("permission denied")
         db_conn = VaultDatabaseConnection(client=authenticated_client)
