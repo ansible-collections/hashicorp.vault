@@ -18,6 +18,7 @@ __metaclass__ = type
 from typing import Any, Dict, List, Optional
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultConfigurationError,
     VaultSecretNotFoundError,
 )
 
@@ -162,6 +163,27 @@ class VaultDatabaseConnection(VaultDatabaseParent):
             None
         """
         path = f"v1/{self._mount_path}/reset/{name}"
+        self._client._make_request("POST", path, json={})
+
+    def rotate_credentials(self, name: str, credential_type: str) -> None:
+        """
+        Reset a database connection by closing the connection and its underlying plugin,
+        then restarting it.
+
+        Args:
+            name (str): The identifier for the database connection (for root user rotation) or the static role to trigger
+                        a password rotation for.
+            type (str): Whether to rotate root or static-role credentials. choices are 'root' or 'role'
+
+        Returns:
+            None
+        """
+        credential_type_options = ('root', 'role')
+        if credential_type not in credential_type_options:
+            raise VaultConfigurationError(
+                f"Unexpected used to rotate credential {credential_type!r}, should be one of {credential_type_options}"
+            )
+        path = f"v1/{self._mount_path}/rotate-{type}/{name}"
         self._client._make_request("POST", path, json={})
 
 
