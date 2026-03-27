@@ -193,15 +193,14 @@ class VaultDatabaseConnection:
             name (str): The name of the connection to read.
 
         Returns:
-            dict: The connection configuration data, or empty dict if the connection doesn't exist.
+            dict: The connection configuration data.
+
+        Raises:
+            VaultSecretNotFoundError: If the connection doesn't exist.
         """
         path = f"v1/{self._mount_path}/config/{name}"
-        try:
-            response_data = self._client._make_request("GET", path)
-            return response_data.get("data", {})
-        except VaultSecretNotFoundError:
-            # Vault returns 404 when the connection doesn't exist
-            return {}
+        response_data = self._client._make_request("GET", path)
+        return response_data.get("data", {})
 
     def create_or_update_connection(self, name: str, config: dict) -> dict:
         """
