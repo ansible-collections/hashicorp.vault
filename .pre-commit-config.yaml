@@ -1,9 +1,11 @@
 ---
 repos:
-  - repo: https://github.com/ansible-network/collection_prep
-    rev: 1.1.1
-    hooks:
-      - id: update-docs
+  # TODO: Re-enable when collection_prep supports pathlib.Path with newer Ansible
+  # See: https://github.com/ansible-network/collection_prep/issues
+  # - repo: https://github.com/ansible-network/collection_prep
+  #   rev: 1.1.1
+  #   hooks:
+  #     - id: update-docs
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0

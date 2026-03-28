@@ -6,10 +6,25 @@ Thank you for your interest in contributing to the HashiCorp Vault Ansible Colle
 
 1. Fork the repository
 2. Clone your fork locally
+   ```bash
+   git clone git@github.com:YOUR_USERNAME/hashicorp.vault.git
+   cd hashicorp.vault
+   ```
 3. Create a feature branch
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
 4. Make your changes
-5. Run linters locally: `tox -e linters`
+5. Run linters locally
+   ```bash
+   tox -e linters
+   ```
 6. Submit a pull request
+   ```bash
+   git add .
+   git commit -s -m "Your commit message"
+   git push origin feature/your-feature-name
+   ```
 
 ## Code Style
 
