@@ -9,6 +9,7 @@ action_groups:
     - auth_token_info
     - database_connection_info
     - database_connection
+    - database_credential_rotation
     - kv1_secret_info
     - kv1_secret
     - kv2_secret_info

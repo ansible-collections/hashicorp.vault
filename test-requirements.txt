@@ -3,6 +3,7 @@ pytest-mock
 pytest-ansible
 pytest-xdist
 requests
+psycopg[binary]
 # Linting and code formatting tools
 tox
 -r requirements-linters.txt
