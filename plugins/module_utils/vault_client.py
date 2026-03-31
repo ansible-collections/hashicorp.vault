@@ -92,6 +92,7 @@ class VaultClient:
 
         self.vault_address = vault_address
         self.vault_namespace = vault_namespace
+        self.vault_token = None
 
         # Set up HTTP session with namespace header
         self.session = requests.Session()
@@ -108,8 +109,18 @@ class VaultClient:
         Args:
             token (str): The Vault client token (e.g., "hvs.abc123...")
         """
+        self.vault_token = token
         self.session.headers.update({"X-Vault-Token": token})
         logger.debug("Token set for VaultClient")
+
+    @property
+    def token(self) -> Optional[str]:
+        """
+        Retrieve the current token
+
+        Returns:
+            (str): A token currently used by the client or None if not set.
+        """
 
     def _make_request(self, method: str, path: str, **kwargs) -> dict:
         """

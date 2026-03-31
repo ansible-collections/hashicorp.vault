@@ -256,6 +256,10 @@ class VaultTokens:
         """
         path = "v1/auth/token/accessors"
 
+        # save the original token value
+        original_token = self._client.token
         self._client.set_token(token_id)  # Use the token provide as input to retrieve accessors
         response = self._client._make_request("LIST", path)
+        # set back the token value
+        self._client.set_token(original_token)
         return response.get("data", {}).get("keys", []) or []
