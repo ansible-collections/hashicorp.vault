@@ -2,8 +2,10 @@
 name: Integration
 
 on: # yamllint disable-line rule:truthy
-  pull_request:
-    branches: [main]
+  pull_request_target:
+    branches:
+      - main
+      - stable-*
   workflow_dispatch:
 
 jobs:
@@ -23,6 +25,8 @@ jobs:
           - "3.12"
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
