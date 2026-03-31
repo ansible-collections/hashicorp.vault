@@ -1,0 +1,16 @@
+---
+- name: Define PostGreSQL root password
+  ansible.builtin.set_fact:
+    ansible_postgresql_root_password: "{{ lookup('password', 'dev/null length=16') }}"
+    ansible_postgresql_container_name: "{{ postgresql_container_name }}"
+
+- name: Force remove old postgresql container
+  ansible.builtin.shell: "docker rm -f {{ ansible_postgresql_container_name }} || true"
+  changed_when: false
+
+- name: Run PostGreSQL container
+  ansible.builtin.shell: >-
+    docker run --name {{ ansible_postgresql_container_name }}
+    -p 5432:5432
+    -e POSTGRES_PASSWORD={{ ansible_postgresql_root_password }}
+    -d postgres

@@ -35,7 +35,6 @@ options:
     description:
       - Use V(root) to rotate the "root" user credentials stored for the database connection.
       - Use V(role) to rotate the Static Role credentials stored for a given role name.
-    required: true
     type: str
     choices: ['root', 'role']
     default: root

@@ -1,0 +1,177 @@
+---
+- name: Run database_credential_rotation tests
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ ansible_test_vault_url }}"
+      auth_method: "token"
+      token: "{{ ansible_test_vault_token }}"
+  vars:
+    static_app_user: ansible
+    static_app_user_initial_pass: "{{ lookup('password', 'dev/null length=16') }}"
+    database_connection_name: "ansible-test-{{ vault_resource_suffix }}"
+    database_static_role_name: "ansible-static-role-{{ vault_resource_suffix }}"
+    vault_network_name: "vault-net-{{ vault_resource_suffix }}"
+  block:
+    # Configure docker network for testing
+    - name: Create docker network
+      ansible.builtin.command: "docker network create {{ vault_network_name }}"
+
+    - name: Attach container to the vault network
+      ansible.builtin.command: "docker network connect {{ vault_network_name }} {{ item }}"
+      loop:
+        - "{{ ansible_postgresql_container_name }}"
+        - "{{ ansible_test_vault_server_container_name }}"
+
+    - name: Validate connection to the database and create additional user
+      postgres_execute:
+        user: postgres
+        password: "{{ ansible_postgresql_root_password }}"
+        connection_retries: 10
+        commands:
+          - "CREATE USER {{ static_app_user }} WITH PASSWORD '{{ static_app_user_initial_pass }}';"
+          - "GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{ static_app_user }};"
+
+    - name: Ensure we can connect to database we the new user
+      postgres_execute:
+        user: "{{ static_app_user }}"
+        password: "{{ static_app_user_initial_pass }}"
+
+    # Root credential rotation
+    - name: Create database connection
+      hashicorp.vault.database_connection:
+        name: "{{ database_connection_name }}"
+        plugin_name: "postgresql-database-plugin"
+        allowed_roles:
+          - "{{ database_static_role_name }}"
+        connection_url: "{% raw %}postgresql://{{username}}:{{password}}@{% endraw %}{{ ansible_postgresql_container_name }}:5432/postgres?sslmode=disable"
+        username: postgres
+        password: "{{ ansible_postgresql_root_password }}"
+
+    - name: Rotate root credentials
+      hashicorp.vault.database_credential_rotation:
+        name: "{{ database_connection_name }}"
+        type: root
+      register: rotate_root_creds
+
+    - name: Ensure the module reported change
+      ansible.builtin.assert:
+        that:
+          - rotate_root_creds is changed
+
+    - name: Ensure we cannot log anymore into database
+      postgres_execute:
+        user: postgres
+        password: "{{ ansible_postgresql_root_password }}"
+      register: root_login
+      ignore_errors: true
+
+    - name: Validate that root login failed after credentials rotation
+      ansible.builtin.assert:
+        that:
+          - root_login is failed
+          - '"password authentication failed for user \"postgres\"" in root_login.msg'
+
+    # Static role credential rotation
+    # TODO: update this once the corresponding module is created
+    - name: Create static role
+      vault_static_role:
+        vault_address: "{{ ansible_test_vault_url }}"
+        vault_token: "{{ ansible_test_vault_token }}"
+        name: "{{ database_static_role_name }}"
+        db_name: "{{ database_connection_name }}"
+        username: "{{ static_app_user }}"
+        rotation_period: 1h
+        operation: create
+
+    - name: Ensure we cannot connect to database anymore
+      postgres_execute:
+        user: "{{ static_app_user }}"
+        password: "{{ static_app_user_initial_pass }}"
+      register: login_static
+      ignore_errors: true
+
+    - name: Validate that login failed
+      ansible.builtin.assert:
+        that:
+          - login_static is failed
+          - '"password authentication failed for user \"ansible\"" in login_static.msg'
+
+    - name: Rotate static role credentials
+      hashicorp.vault.database_credential_rotation:
+        name: "{{ database_static_role_name }}"
+        type: role
+      register: rotate_role_creds
+
+    - name: Ensure the module reported change
+      ansible.builtin.assert:
+        that:
+          - rotate_role_creds is changed
+
+    - name: Read new credentials
+      vault_static_role:
+        vault_address: "{{ ansible_test_vault_url }}"
+        vault_token: "{{ ansible_test_vault_token }}"
+        name: "{{ database_static_role_name }}"
+        operation: read
+      register: role_credentials
+
+    - name: Ensure we can log with new credentials
+      postgres_execute:
+        user: "{{ role_credentials.auth.username }}"
+        password: "{{ role_credentials.auth.password }}"
+
+    - name: Rotate static role credentials once again
+      hashicorp.vault.database_credential_rotation:
+        name: "{{ database_static_role_name }}"
+        type: role
+      register: rotate_role_creds
+
+    - name: Ensure the module reported change again
+      ansible.builtin.assert:
+        that:
+          - rotate_role_creds is changed
+
+    - name: Read role credentials again
+      vault_static_role:
+        vault_address: "{{ ansible_test_vault_url }}"
+        vault_token: "{{ ansible_test_vault_token }}"
+        name: "{{ database_static_role_name }}"
+        operation: read
+      register: new_role_credentials
+
+    - name: Ensure the credentials have changed
+      ansible.builtin.assert:
+        that:
+          - new_role_credentials.auth.last_vault_rotation != role_credentials.auth.last_vault_rotation
+
+  always:
+    - name: Disconnet container from network
+      ansible.builtin.command: "docker network disconnect {{ vault_network_name }} {{ item }}"
+      loop:
+        - "{{ ansible_postgresql_container_name }}"
+        - "{{ ansible_test_vault_server_container_name }}"
+      ignore_errors: true
+
+    - name: Remove docker network
+      ansible.builtin.command: "docker network rm {{ vault_network_name }}"
+      ignore_errors: true
+
+    - name: Stop running containers
+      ansible.builtin.command: "docker container stop {{ item }}"
+      loop:
+        - "{{ ansible_postgresql_container_name }}"
+        - "{{ ansible_test_vault_server_container_name }}"
+      ignore_errors: true
+
+    - name: Remove containers
+      ansible.builtin.command: "docker rm {{ item }}"
+      loop:
+        - "{{ ansible_postgresql_container_name }}"
+        - "{{ ansible_test_vault_server_container_name }}"
+      ignore_errors: true
+
+    - name: Delete temporary directory for vault executable
+      ansible.builtin.file:
+        state: absent
+        path: "{{ ansible_test_vault_path | dirname }}"
+      ignore_errors: true
