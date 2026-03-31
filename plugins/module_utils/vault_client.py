@@ -291,7 +291,9 @@ class VaultDatabaseConnection:
         """
         values_types = ('root', 'role')
         if type not in values_types:
-            raise VaultConfigurationError(f"Unexpected used to rotate credential {type!r}, should be one of {values_types}")
+            raise VaultConfigurationError(
+                f"Unexpected used to rotate credential {type!r}, should be one of {values_types}"
+            )
         path = f"v1/{self._mount_path}/rotate-{type}/{name}"
         self._client._make_request("POST", path, json={})
 

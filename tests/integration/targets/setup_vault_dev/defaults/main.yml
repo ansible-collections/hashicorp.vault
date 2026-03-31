@@ -1,0 +1,4 @@
+---
+vault_version: "1.15.0"
+vault_archive_url: "https://releases.hashicorp.com/vault/{{ vault_version }}/vault_{{ vault_version }}_{{ ansible_system | lower }}_{{ ansible_architecture | lower }}.zip"
+vault_server_name: "ansible-vault-dev"
