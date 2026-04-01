@@ -1,0 +1,211 @@
+---
+# Integration tests for vault_namespace (Vault Enterprise /sys/namespaces).
+- name: Run vault_namespace integration tests
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: token
+      token: "{{ vault_token_from_setup_auth_token }}"
+  block:
+    # Read-only heartbeat: does not depend on a test namespace path or mutate state.
+    # A failed state=absent probe could be conflated with delete/read errors on that path.
+    - name: Check namespaces API availability (LIST /v1/sys/namespaces)
+      ansible.builtin.uri:
+        url: "{{ vault_url | regex_replace('/+$', '') }}/v1/sys/namespaces"
+        method: LIST
+        headers:
+          X-Vault-Token: "{{ vault_token_from_setup_auth_token }}"
+          X-Vault-Namespace: "{{ vault_namespace }}"
+        status_code: [200]
+        return_content: true
+      register: vault_namespaces_api_heartbeat
+      ignore_errors: true
+      no_log: true
+
+    - name: Report skipped tests when namespaces API is unavailable
+      ansible.builtin.debug:
+        msg: >-
+          Skipping vault_namespace integration tests: namespaces API not usable
+          on this Vault instance (expected for Open Source Vault or insufficient permissions).
+          Heartbeat LIST /v1/sys/namespaces did not return HTTP 200.
+          {{ vault_namespaces_api_heartbeat.msg | default('unknown error') }}
+      when: vault_namespaces_api_heartbeat is failed
+
+    - name: Exercise vault_namespace module
+      when: not (vault_namespaces_api_heartbeat is failed)
+      block:
+        - name: Normalized path for assertions (matches module strip of leading/trailing /)
+          ansible.builtin.set_fact:
+            vault_namespace_path_normalized: >-
+              {{ vault_namespace_test_path | regex_replace('^/+', '') | regex_replace('/+$', '') }}
+
+        - name: Create namespace (check mode)
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_test_path }}"
+            state: present
+            custom_metadata: "{{ vault_namespace_initial_metadata }}"
+          register: create_ns_check
+          check_mode: true
+
+        - name: Ensure create check mode message
+          ansible.builtin.assert:
+            that:
+              - create_ns_check is changed
+              - >-
+                create_ns_check.msg
+                == ("Would have created namespace '" ~ vault_namespace_path_normalized ~ "' if not in check mode.")
+
+        - name: Create namespace with custom_metadata
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_test_path }}"
+            state: present
+            custom_metadata: "{{ vault_namespace_initial_metadata }}"
+          register: create_ns
+
+        - name: Ensure namespace was created
+          ansible.builtin.assert:
+            that:
+              - create_ns is changed
+              - "'created successfully' in create_ns.msg"
+
+        - name: Create namespace again (idempotent)
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_test_path }}"
+            state: present
+            custom_metadata: "{{ vault_namespace_initial_metadata }}"
+          register: create_ns_idem
+
+        - name: Ensure present is idempotent
+          ansible.builtin.assert:
+            that:
+              - create_ns_idem is not changed
+              - "'already exists' in create_ns_idem.msg"
+
+        - name: Update custom metadata (check mode)
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_test_path }}"
+            state: metadata
+            custom_metadata: "{{ vault_namespace_updated_metadata }}"
+          register: meta_check
+          check_mode: true
+
+        - name: Ensure metadata check mode message
+          ansible.builtin.assert:
+            that:
+              - meta_check is changed
+              - >-
+                meta_check.msg
+                == ("Would have updated namespace '" ~ vault_namespace_path_normalized ~ "' custom_metadata if not in check mode.")
+
+        - name: Update custom metadata
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_test_path }}"
+            state: metadata
+            custom_metadata: "{{ vault_namespace_updated_metadata }}"
+          register: meta_update
+
+        - name: Ensure metadata was updated
+          ansible.builtin.assert:
+            that:
+              - meta_update is changed
+              - "'custom_metadata updated successfully' in meta_update.msg"
+
+        - name: Set metadata to same desired map (idempotent)
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_test_path }}"
+            state: metadata
+            custom_metadata: "{{ vault_namespace_updated_metadata }}"
+          register: meta_idem
+
+        - name: Ensure metadata state is idempotent
+          ansible.builtin.assert:
+            that:
+              - meta_idem is not changed
+              - "'already matches desired state' in meta_idem.msg"
+
+        - name: Lock namespace API for test path (check mode)
+          hashicorp.vault.vault_namespace:
+            state: locked
+            lock_subpath: "{{ vault_namespace_test_path }}"
+          register: lock_check
+          check_mode: true
+
+        - name: Ensure lock check mode reports change
+          ansible.builtin.assert:
+            that:
+              - lock_check is changed
+              - >-
+                lock_check.msg
+                == ("Would have locked namespace API (subpath='" ~ vault_namespace_path_normalized ~ "') if not in check mode.")
+
+        - name: Lock namespace API for test path
+          hashicorp.vault.vault_namespace:
+            state: locked
+            lock_subpath: "{{ vault_namespace_test_path }}"
+          register: lock_ns
+
+        - name: Ensure lock succeeded
+          ansible.builtin.assert:
+            that:
+              - lock_ns is changed
+              - lock_ns.raw is defined
+
+        - name: Unlock namespace API for test path
+          hashicorp.vault.vault_namespace:
+            state: unlocked
+            lock_subpath: "{{ vault_namespace_test_path }}"
+            unlock_key: "{{ lock_ns.unlock_key | default(omit, true) }}"
+          register: unlock_ns
+
+        - name: Ensure unlock succeeded
+          ansible.builtin.assert:
+            that:
+              - unlock_ns is changed
+              - unlock_ns.raw is defined
+
+        - name: Delete namespace (check mode)
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_test_path }}"
+            state: absent
+          register: del_check
+          check_mode: true
+
+        - name: Ensure absent check mode message
+          ansible.builtin.assert:
+            that:
+              - del_check is changed
+              - >-
+                del_check.msg
+                == ("Would have deleted namespace '" ~ vault_namespace_path_normalized ~ "' if not in check mode.")
+
+        - name: Delete namespace
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_test_path }}"
+            state: absent
+          register: del_ns
+
+        - name: Ensure namespace was deleted
+          ansible.builtin.assert:
+            that:
+              - del_ns is changed
+              - "'deleted successfully' in del_ns.msg"
+
+        - name: Delete namespace again (idempotent)
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_test_path }}"
+            state: absent
+          register: del_idem
+
+        - name: Ensure absent is idempotent
+          ansible.builtin.assert:
+            that:
+              - del_idem is not changed
+              - "'already absent' in del_idem.msg"
+
+  always:
+    - name: Remove integration test namespace if left behind
+      hashicorp.vault.vault_namespace:
+        path: "{{ vault_namespace_test_path }}"
+        state: absent
+      ignore_errors: true

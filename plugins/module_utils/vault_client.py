@@ -592,7 +592,7 @@ class VaultNamespaces:
 
         Example:
             namespaces.create_namespace(
-                namespace_path="engineering/",
+                namespace_path="engineering",
                 custom_metadata={"team": "platform", "environment": "prod"}
             )
         """
@@ -623,7 +623,7 @@ class VaultNamespaces:
 
         Example:
             namespaces.patch_namespace(
-                namespace_path="engineering/",
+                namespace_path="engineering",
                 custom_metadata={"owner": "alice"}
             )
         """
@@ -669,7 +669,7 @@ class VaultNamespaces:
             unlock_key = result.get("unlock_key")
 
             # Lock a subpath
-            result = namespaces.lock_namespace(subpath="child/")
+            result = namespaces.lock_namespace(subpath="child")
         """
         if subpath:
             path = f"v1/sys/namespaces/api-lock/lock/{subpath}"
@@ -698,7 +698,7 @@ class VaultNamespaces:
             namespaces.unlock_namespace()
 
             # Unlock a subpath
-            namespaces.unlock_namespace(subpath="child/", unlock_key="abc123...")
+            namespaces.unlock_namespace(subpath="child", unlock_key="abc123...")
         """
         if subpath:
             path = f"v1/sys/namespaces/api-lock/unlock/{subpath}"
