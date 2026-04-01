@@ -1,0 +1,11 @@
+---
+# Unique policy name per integration run (avoid collisions in shared Vault)
+# https://github.com/hashicorp/vault/issues/13647
+# Vault normalizes ACL policy names to lowercase across API responses.
+# Lowercase the generated suffix up front to keep integration assertions stable.
+acl_policy_test_name: "ansible-acl-int-{{ vault_resource_suffix | lower }}"
+
+# Single-line HCL improves round-trip equality with Vault's policy read API
+acl_policy_initial_rules: 'path "secret/data/ansible_acl_int/{{ vault_resource_suffix }}/*" { capabilities = ["read", "list"] }'
+
+acl_policy_updated_rules: 'path "secret/data/ansible_acl_int/{{ vault_resource_suffix }}/*" { capabilities = ["read", "list", "update", "create"] }'

@@ -46,8 +46,21 @@ def test_list_acl_policies_success(authenticated_client):
     policies_client = VaultAclPolicies(authenticated_client)
     result = policies_client.list_acl_policies()
 
-    authenticated_client._make_request.assert_called_once_with("GET", "v1/sys/policy")
-    assert result == ["root", "deploy", "my-policy"]
+    assert authenticated_client._make_request.call_args_list[0] == (("GET", "v1/sys/policy"),)
+    assert result == ["deploy", "my-policy", "root"]
+
+
+def test_list_acl_policies_data_policies(authenticated_client):
+    """HCP Vault wraps policy names under data.policies."""
+    response = {"data": {"policies": ["default", "hcp-root", "my-policy"]}}
+    authenticated_client._make_request.return_value = response
+
+    policies_client = VaultAclPolicies(authenticated_client)
+    result = policies_client.list_acl_policies()
+
+    assert "my-policy" in result
+    assert "default" in result
+    assert "hcp-root" in result
 
 
 def test_list_acl_policies_empty_response(authenticated_client):

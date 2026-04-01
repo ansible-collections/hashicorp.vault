@@ -462,18 +462,20 @@ class VaultAclPolicies:
 
     def list_acl_policies(self) -> List[str]:
         """
-        List all Vault ACL policy names.
+        List all Vault ACL policy names via GET /sys/policy.
 
         Returns:
-            list: ACL policy names (e.g. ["root", "deploy"]).
+            list: ACL policy names sorted lexicographically.
         """
-        path = "v1/sys/policy"
-        response = self._client._make_request("GET", path)
-        return response.get("policies", [])
+        response = self._client._make_request("GET", "v1/sys/policy")
+        # HCP commonly returns top-level "policies"; keeping a small fallback for data.policies.
+        names = response.get("policies") or response.get("data", {}).get("policies") or []
+        names = [name for name in names if isinstance(name, str)]
+        return sorted(names)
 
     def read_acl_policy(self, name: str) -> dict:
         """
-        Read a Vault ACL policy by name.
+        Read a Vault ACL policy by name via GET /sys/policy/:name.
 
         Args:
             name (str): The name of the ACL policy to read.
@@ -482,7 +484,10 @@ class VaultAclPolicies:
             dict: ACL policy data with "name" and "rules" keys.
         """
         path = f"v1/sys/policy/{name}"
-        return self._client._make_request("GET", path)
+        raw = self._client._make_request("GET", path)
+        data = raw.get("data") or {}
+        rules = raw.get("rules") or raw.get("policy") or data.get("rules") or data.get("policy") or ""
+        return {"name": name, "rules": rules.strip()}
 
     def create_or_update_acl_policy(self, name: str, acl_policy_rules: str) -> dict:
         """
