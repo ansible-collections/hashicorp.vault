@@ -26,6 +26,7 @@ Tested with the Python >= 3.10 versions.
 Name | Description
 --- | ---
 [hashicorp.vault.kv2_secret_get](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in Hasicorp vault
+---
 
 <!--end collection content-->
 
