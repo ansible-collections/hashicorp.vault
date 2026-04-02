@@ -10,6 +10,8 @@ jobs:
   run-integration-tests:
     name: Run Integration Tests
     runs-on: ubuntu-latest
+    # If this Pull Request is coming from a fork, use the 'vault-integration' environment. Otherwise,  don't use any environment at all.
+    environment: ${{ github.event.pull_request.head.repo.fork && 'vault-integration' || '' }}
     strategy:
       fail-fast: false
       matrix:
