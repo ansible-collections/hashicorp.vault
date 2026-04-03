@@ -78,13 +78,6 @@ def main():
 
         params = {}
         if payload:
-            # Validate credentials
-            role_id = payload.get("role_id")
-            secret_id = payload.get("secret_id")
-            valid_role_id = role_id.startswith("1d7bf599") and role_id.endswith("417aa58c2c31")
-            valid_secret_id = secret_id.startswith("d0710677") and secret_id.endswith("4bb264865407")
-            if not valid_role_id or not valid_secret_id:
-                module.exit_json(msg=f"Bad credentials provided. Secret ID={secret_id.split('-', maxsplit=1)[0]}... Role ID={role_id.split('-', maxsplit=1)[0]}...")
             params.update({"json": payload})
 
         response = session.request(method, url, **params)
