@@ -1,0 +1,27 @@
+---
+# vars_files: [vars.yml]
+#
+# role_name: test-role
+#
+# expected_response_keys:
+#   - username
+#   - password
+
+- name: Generate dynamic database credentials
+  hashicorp.vault.vault_database_creds:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    mount_path: "{{ mount_path }}"
+    role_name: "{{ role_name }}"
+  register: result
+
+- name: Verify expected keys in response
+  ansible.builtin.assert:
+    that:
+      - result is not changed
+      - result.data is defined
+      - item in result.data
+    fail_msg: "Missing key {{ item }} in result.data"
+  loop: "{{ expected_response_keys }}"
+  loop_control:
+    label: "{{ item }}"

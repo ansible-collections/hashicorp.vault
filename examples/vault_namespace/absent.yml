@@ -1,0 +1,13 @@
+---
+- name: Manage HashiCorp Vault Enterprise namespaces (absent)
+  hashicorp.vault.vault_namespace:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    state: absent
+    path: test-ns
+  register: result
+
+- name: Verify result
+  ansible.builtin.assert:
+    that:
+      - result is changed

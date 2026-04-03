@@ -1,0 +1,12 @@
+---
+# @hand-crafted
+- name: Cleanup - vault_database_static_role
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_database_static_role/vars.yml"
+  tasks:
+    - name: Include absent tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_database_static_role/absent.yml"

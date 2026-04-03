@@ -1,0 +1,28 @@
+---
+# vars_files: [vars.yml]
+#
+# name: test-pki-role
+# mount_path: pki
+# config:
+#   allowed_domains: ["example.com"]
+#   allow_subdomains: true
+#   max_ttl: "72h"
+
+- name: Manage Vault PKI roles (present)
+  hashicorp.vault.vault_pki_role:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    state: present
+    mount_path: "{{ mount_path }}"
+    name: "{{ name }}"
+    allowed_domains: "{{ config.allowed_domains }}"
+    allow_subdomains: "{{ config.allow_subdomains }}"
+    max_ttl: "{{ config.max_ttl }}"
+  register: result
+
+- name: Verify return matches contract
+  ansible.builtin.assert:
+    that:
+      - result is changed
+      - (config | hashicorp.vault.vault_config_match(result.data)).match
+    fail_msg: "Contract violation: {{ (config | hashicorp.vault.vault_config_match(result.data)).mismatches | to_json }}"

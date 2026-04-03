@@ -1,0 +1,6 @@
+---
+scenario:
+  name: vault_database_creds
+  test_sequence:
+    - converge
+    - verify

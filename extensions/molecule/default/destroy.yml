@@ -1,0 +1,23 @@
+---
+# @hand-crafted
+- name: Stop test infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Remove Vault container
+      containers.podman.podman_container:
+        name: vault-molecule
+        state: absent
+
+    - name: Remove PostgreSQL container
+      containers.podman.podman_container:
+        name: postgres-molecule
+        state: absent
+
+    - name: Remove podman network
+      ansible.builtin.command:
+        cmd: podman network rm molecule-net
+      register: net_rm
+      changed_when: net_rm.rc == 0
+      failed_when: false

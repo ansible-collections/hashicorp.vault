@@ -1,0 +1,9 @@
+---
+# @hand-crafted
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      vault_addr: "http://127.0.0.1:18200"
+      vault_token: "test-root-token"
+      vault_namespace: "admin"

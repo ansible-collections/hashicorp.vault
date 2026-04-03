@@ -1,6 +1,9 @@
 ---
 profile: production
 
+mock_modules:
+  - containers.podman.podman_container
+
 exclude_paths:
   - changelogs/changelog.yaml
   - .github/

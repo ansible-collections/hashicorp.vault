@@ -1,0 +1,20 @@
+---
+# vars_files: [vars.yml]
+#
+# mount_path: database
+# name: rotate-test-conn
+#
+# Rotate is fire-and-forget; Vault returns no meaningful data.
+
+- name: Rotate the root credentials for a database connection
+  hashicorp.vault.vault_database_rotate_root:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    mount_path: "{{ mount_path }}"
+    name: "{{ name }}"
+  register: result
+
+- name: Verify result
+  ansible.builtin.assert:
+    that:
+      - result is changed

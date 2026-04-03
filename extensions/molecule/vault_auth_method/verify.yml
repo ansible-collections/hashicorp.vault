@@ -1,0 +1,22 @@
+---
+# @hand-crafted
+- name: "Verify - vault_auth_method"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_auth_method/vars.yml"
+  tasks:
+    - name: Read auth methods from Vault
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/auth"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+      register: read_result
+
+    - name: Assert auth method exists with correct type
+      ansible.builtin.assert:
+        that:
+          - (auth_path ~ '/') in (read_result.json.data | default(read_result.json))
+        success_msg: "Auth method {{ auth_path }}/ exists"

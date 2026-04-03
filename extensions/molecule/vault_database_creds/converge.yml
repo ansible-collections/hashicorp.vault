@@ -1,0 +1,27 @@
+---
+# @hand-crafted
+- name: Converge - vault_database_creds
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_database_creds/vars.yml"
+  tasks:
+    - name: Create prerequisite dynamic role
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ mount_path }}/roles/{{ role_name }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        body_format: json
+        body:
+          db_name: my-postgres
+          creation_statements:
+            - !unsafe "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';"  # noqa: jinja[spacing]
+          default_ttl: "1h"
+          max_ttl: "24h"
+        status_code: [200, 204]
+
+    - name: Include example tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_database_creds/action.yml"

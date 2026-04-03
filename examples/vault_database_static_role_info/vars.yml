@@ -1,0 +1,9 @@
+---
+name: test-static-role
+mount_path: database
+
+config:
+  db_name: my-postgres
+  username: vault-user
+  credential_type: password
+  rotation_period: "24h"

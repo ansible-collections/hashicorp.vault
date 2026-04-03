@@ -10,4 +10,26 @@ action_groups:
     - kv1_secret
     - kv2_secret_info
     - kv2_secret
+    - vault_auth_method
+    - vault_auth_method_info
+    - vault_database_creds
+    - vault_database_role
+    - vault_database_role_info
+    - vault_database_rotate_root
+    - vault_database_static_role
+    - vault_database_static_role_creds
+    - vault_database_static_role_info
+    - vault_database_static_role_rotate
     - vault_namespace
+    - vault_pki_cert_info
+    - vault_pki_issue
+    - vault_pki_role
+    - vault_pki_role_info
+    - vault_pki_sign
+    - vault_token_create
+    - vault_token_list_accessors
+    - vault_token_lookup
+    - vault_token_renew
+    - vault_token_revoke
+    - vault_token_role
+    - vault_token_role_info

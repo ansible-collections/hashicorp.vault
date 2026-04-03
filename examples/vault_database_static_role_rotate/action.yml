@@ -1,0 +1,20 @@
+---
+# vars_files: [vars.yml]
+#
+# mount_path: database
+# name: test-static-role
+#
+# Rotate is fire-and-forget; Vault returns no meaningful data.
+
+- name: Force rotation of database static role credentials
+  hashicorp.vault.vault_database_static_role_rotate:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    mount_path: "{{ mount_path }}"
+    name: "{{ name }}"
+  register: result
+
+- name: Verify result
+  ansible.builtin.assert:
+    that:
+      - result is changed

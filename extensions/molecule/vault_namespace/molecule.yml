@@ -1,0 +1,7 @@
+---
+scenario:
+  name: vault_namespace
+  test_sequence:
+    - converge
+    - verify
+    - cleanup

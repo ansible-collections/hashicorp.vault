@@ -1,0 +1,27 @@
+---
+# @hand-crafted
+- name: "Verify - vault_database_static_role_creds"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_database_static_role_creds/vars.yml"
+  tasks:
+    - name: Re-invoke database static role creds API
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ mount_path }}/static-creds/{{ name }}"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        status_code: [200]
+      register: read_result
+
+    - name: Assert each expected response key is present
+      ansible.builtin.assert:
+        that:
+          - item in read_result.json.data
+        fail_msg: "Missing key {{ item }} in data"
+        success_msg: "{{ item }}: OK"
+      loop: "{{ expected_response_keys }}"
+      loop_control:
+        label: "{{ item }}"

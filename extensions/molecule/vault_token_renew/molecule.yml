@@ -1,0 +1,6 @@
+---
+scenario:
+  name: vault_token_renew
+  test_sequence:
+    - converge
+    - verify

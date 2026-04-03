@@ -1,0 +1,23 @@
+---
+# @hand-crafted
+- name: "Verify - vault_token_role"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_token_role/vars.yml"
+  tasks:
+    - name: Read back resource from Vault
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/auth/token/roles/{{ role_name }}"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+      register: read_result
+
+    - name: Assert config matches response
+      ansible.builtin.assert:
+        that:
+          - (config | hashicorp.vault.vault_config_match(read_result.json.data)).match
+        fail_msg: "{{ (config | hashicorp.vault.vault_config_match(read_result.json.data)).mismatches | to_json }}"
+        success_msg: "All config fields match"
