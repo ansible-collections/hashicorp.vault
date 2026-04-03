@@ -1,0 +1,48 @@
+---
+- name: Create temporary directory to install vault
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: .vault
+  register: tmp_dir
+
+- name: Set path to the ansible binary
+  ansible.builtin.set_fact:
+    ansible_test_vault_path: "{{ tmp_dir.path }}/vault"
+
+- name: Download and Unarchive Vault binary
+  ansible.builtin.unarchive:
+    src: "{{ vault_archive_url }}"
+    dest: "{{ tmp_dir.path }}"
+    remote_src: true
+    mode: '0755'
+    creates: "{{ ansible_test_vault_path }}"
+
+- name: Set vault token for future use
+  ansible.builtin.set_fact:
+    ansible_test_vault_token: "{{ lookup('password', 'dev/null length=12 chars=ascii_letters,digits') }}"
+    ansible_test_vault_url: "http://127.0.0.1:8200"
+    ansible_test_vault_server_container_name: "{{ vault_server_name }}"
+
+- name: Verify Vault installation
+  ansible.builtin.command: >-
+    {{ ansible_test_vault_path }} --version
+  register: vault_verify
+  changed_when: false
+
+- name: Force remove old container
+  ansible.builtin.shell: "docker rm -f {{ ansible_test_vault_server_container_name }} || true"
+  changed_when: false
+
+- name: Run new container
+  ansible.builtin.shell: "docker run -d --name {{ ansible_test_vault_server_container_name }} -p 8200:8200 -e 'VAULT_DEV_ROOT_TOKEN_ID={{ ansible_test_vault_token }}' hashicorp/vault"
+
+- name: Vault enable databse engine
+  ansible.builtin.command: >-
+    {{ ansible_test_vault_path }} secrets enable database
+  environment:
+    VAULT_TOKEN: "{{ ansible_test_vault_token }}"
+    VAULT_ADDR: "{{ ansible_test_vault_url }}"
+  register: result
+  retries: 10
+  delay: 3
+  until: result is successful
