@@ -155,7 +155,7 @@ class VaultClient:
 
 class VaultDatabaseConnection:
     """
-    Handles interactions with the Vault Database Secrets Engine.
+    Handles interactions with Vault Database Secrets Engine connections.
     """
 
     def __init__(self, client, mount_path="database"):
@@ -275,6 +275,179 @@ class VaultDatabaseConnection:
         """
         path = f"v1/{self._mount_path}/reset/{name}"
         self._client._make_request("POST", path, json={})
+
+
+class VaultDatabaseStaticRoles:
+    """
+    Handles interactions with Vault Database Secrets Engine static roles.
+    """
+
+    def __init__(self, client, mount_path="database"):
+        """
+        Initializes the Database static roles client.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+            mount_path (str): The mount path of the database secrets engine. Defaults to "database".
+        """
+        self._client = client
+        self._mount_path = (mount_path or "database").strip().strip("/")
+
+    def list_static_roles(self, read_snapshot_id: Optional[str] = None) -> list:
+        """
+        List all available static roles.
+
+        Args:
+            read_snapshot_id (str, optional): ID of a snapshot previously loaded into Vault
+                that contains the roles at the provided path
+
+        Returns:
+            List[str]: A list of static role names. Returns empty list if no static roles exist.
+        """
+        path = f"v1/{self._mount_path}/static-roles"
+        params = {}
+        if read_snapshot_id is not None:
+            params["read_snapshot_id"] = read_snapshot_id
+
+        try:
+            response_data = self._client._make_request("LIST", path, params=params)
+            roles = response_data.get("data", {}).get("keys", [])
+            return roles
+        except VaultSecretNotFoundError:
+            # Vault returns 404 when no static roles exist
+            return []
+
+    def read_static_role(self, name: str, read_snapshot_id: Optional[str] = None) -> dict:
+        """
+        Read the configuration of a database static role.
+
+        Args:
+            name (str): The name of the static role to read
+            read_snapshot_id (str, optional): ID of a snapshot previously loaded into Vault
+                that contains the role at the provided path
+
+        Returns:
+            dict: The static role configuration data
+
+        Raises:
+            VaultSecretNotFoundError: If the static role doesn't exist
+        """
+        path = f"v1/{self._mount_path}/static-roles/{name}"
+        params = {}
+        if read_snapshot_id is not None:
+            params["read_snapshot_id"] = read_snapshot_id
+
+        response_data = self._client._make_request("GET", path, params=params)
+        return response_data.get("data", {})
+
+    def create_or_update_static_role(self, name: str, config: dict) -> dict:
+        """
+        Configure a database static role.
+
+        Args:
+            name (str): The name of the static role
+            config (dict): Static role configuration containing:
+                - username (str, required): Database username for this role
+                - db_name (str, required): Name of the database connection to use
+                - Additional optional fields (see Vault database secrets engine documentation)
+
+        Returns:
+            dict: Response from Vault
+
+        Raises:
+            TypeError: If config is not a dict
+
+        Example:
+            db.create_or_update_static_role(
+                name="my-static-role",
+                config={
+                    "db_name": "my-postgres-db",
+                    "username": "vault-user",
+                    "rotation_period": "86400s"
+                }
+            )
+        """
+        if not isinstance(config, dict):
+            raise TypeError("config must be a dict")
+
+        path = f"v1/{self._mount_path}/static-roles/{name}"
+        return self._client._make_request("POST", path, json=config)
+
+    def delete_static_role(self, name: str) -> None:
+        """
+        Delete a database static role.
+
+        Args:
+            name (str): The name of the static role to delete.
+
+        Returns:
+            None
+        """
+        path = f"v1/{self._mount_path}/static-roles/{name}"
+        self._client._make_request("DELETE", path)
+
+    def get_static_role_credentials(self, name: str, read_snapshot_id: Optional[str] = None) -> dict:
+        """
+        Retrieve the current credentials for a database static role.
+
+        Args:
+            name (str): The name of the static role
+            read_snapshot_id (str, optional): ID of a snapshot previously loaded into Vault
+                that contains the credentials at the provided path
+
+        Returns:
+            dict: The credentials data containing username, password, and other metadata
+
+        Raises:
+            VaultSecretNotFoundError: If the static role doesn't exist
+        """
+        path = f"v1/{self._mount_path}/static-creds/{name}"
+        params = {}
+        if read_snapshot_id is not None:
+            params["read_snapshot_id"] = read_snapshot_id
+
+        response_data = self._client._make_request("GET", path, params=params)
+        return response_data.get("data", {})
+
+
+class Database:
+    """A container class for database secrets engine clients.
+
+    This class groups related database secrets engine clients (connections and static_roles)
+    that share the same mount path. It provides a convenient way to manage both connections
+    and static roles for a specific database secrets engine mount.
+
+    Examples:
+        # Default mount path ("database")
+        db = Database(client)
+        db.connections.list_connections()
+        db.static_roles.list_static_roles()
+
+        # Custom mount path
+        prod_db = Database(client, mount_path="postgres-prod")
+        dev_db = Database(client, mount_path="postgres-dev")
+        prod_db.static_roles.list_static_roles()
+        dev_db.connections.list_connections()
+
+        # Or use individual classes directly
+        from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
+            VaultDatabaseConnection,
+            VaultDatabaseStaticRoles
+        )
+        connections = VaultDatabaseConnection(client, "postgres-prod")
+        static_roles = VaultDatabaseStaticRoles(client, "postgres-prod")
+    """
+
+    def __init__(self, client, mount_path="database"):
+        """
+        Initializes the Database container.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+            mount_path (str): The mount path of the database secrets engine. Defaults to "database".
+        """
+        self.connections = VaultDatabaseConnection(client, mount_path)
+        self.static_roles = VaultDatabaseStaticRoles(client, mount_path)
 
 
 class VaultKv2Secrets:
