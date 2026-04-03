@@ -67,14 +67,14 @@ options:
 
 EXAMPLES = r'''
 - name: Login to Vault via AWS
-  auth_login:
+  hashicorp.vault.auth_login:
     url: "https://vault.example.com:8200"
     auth_method: "aws"
     auth_params:
       role: "prod-web-role"
 
 - name: Login to a custom mount path via userpass
-  auth_login:
+  hashicorp.vault.auth_login:
     url: "https://vault.example.com:8200"
     namespace: "admin/it-ops"
     auth_method: "aws"
@@ -139,7 +139,7 @@ def main():
         namespace=dict(type="str", aliases=["vault_namespace"]),
         auth_method=dict(type="str", default="approle", choices=auth_methods),
         mount_path=dict(),
-        auth_params=dict(type="dict"),
+        auth_params=dict(type="dict", no_log=True),
     )
 
     module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
@@ -148,7 +148,7 @@ def main():
     namespace = module.params.get("namespace")
     auth_method = module.params.get("auth_method")
     mount_path = module.params.get("mount_path")
-    auth_params = module.params.get("auth_params")
+    auth_params = module.params.get("auth_params") or {}
 
     try:
         vault_login = VaultLogin(

@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Any, Dict, Optional, Tuple
 
 try:
     import requests
@@ -203,7 +203,7 @@ class VaultLogin:
         self._namespace = vault_namespace
         self._mount_path = mount_path if mount_path is not None else auth_method
 
-    def validate_login_params(self, **kwargs: dict) -> None:
+    def validate_login_params(self, **kwargs: Any) -> None:
         """
         Validate that login parameters are as expected
 
@@ -215,10 +215,10 @@ class VaultLogin:
             VaultCredentialsError: If required parameters are missing
         """
         for param in self.LOGIN_CONFIG.get(self._auth_method, {}):
-            if param not in kwargs:
+            if param not in kwargs or not kwargs.get(param):
                 raise VaultLoginError(f"Missing required parameter {param!r} for {self._auth_method!r} login.")
 
-    def login(self, **kwargs: dict) -> tuple[str, dict]:
+    def login(self, **kwargs: Any) -> Tuple[str, Dict[str, Any]]:
         """
         Fetch a token.
 
@@ -231,10 +231,10 @@ class VaultLogin:
         login_url = f"{self._vault_address}/v1/auth/{self._mount_path}/login"
         if self._auth_method in ("ldap", "okta", "userpass"):
             username = kwargs.pop("username")
-            login_url += "/" + username
+            login_url += f"/{username}"
         elif self._auth_method == "oci":
             role = kwargs.pop("role")
-            login_url += "/" + role
+            login_url += f"/{role}"
         elif self._auth_method == "saml":
             login_url = f"{self._vault_address}/v1/auth/{self._mount_path}/token"
         payload = {key: kwargs.get(key) for key in kwargs}
@@ -248,7 +248,7 @@ class VaultLogin:
             response.raise_for_status()
             raw_response = response.json()
 
-            auth_data = raw_response.get("auth")
+            auth_data = raw_response.get("auth", {})
             # The OCI login operation uses the 'token' key for the client token
             client_token = auth_data.get("token") or auth_data.get("client_token")
             return client_token, auth_data

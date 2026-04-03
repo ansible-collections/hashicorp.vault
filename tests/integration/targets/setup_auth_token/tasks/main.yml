@@ -2,23 +2,41 @@
 - name: Setup auth token for use in integration tests
   run_once: true
   block:
-    - name: Authenticate with Vault using AppRole to get a token
-      ansible.builtin.uri:
-        url: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') | default(vault_url, true) }}/v1/auth/{{ vault_approle_auth_path }}/login"
-        method: POST
+    # - name: Authenticate with Vault using AppRole to get a token
+    #   ansible.builtin.uri:
+    #     url: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') | default(vault_url, true) }}/v1/auth/{{ vault_approle_auth_path }}/login"
+    #     method: POST
+    #     headers:
+    #       X-Vault-Namespace: "{{ lookup('ansible.builtin.env', 'VAULT_NAMESPACE') | default(vault_namespace, true) }}"
+    #     body_format: json
+    #     body:
+    #       role_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_ROLE_ID') | default(vault_approle_role_id, true) }}"
+    #       secret_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_SECRET_ID') | default(vault_approle_secret_id, true) }}"
+    #     return_content: true
+    #   register: vault_login
+    #   no_log: true
+    #   when: vault_approle_role_id is defined and vault_approle_secret_id is defined
+
+    - name: Get hashicorp vault token
+      url_request:
+        url: https://cloud-content-public-vault-1b6418b7.43bfda60.z1.hashicorp.cloud:8200/v1/auth/approle-integration-tests/login
         headers:
-          X-Vault-Namespace: "{{ lookup('ansible.builtin.env', 'VAULT_NAMESPACE') | default(vault_namespace, true) }}"
-        body_format: json
-        body:
-          role_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_ROLE_ID') | default(vault_approle_role_id, true) }}"
-          secret_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_SECRET_ID') | default(vault_approle_secret_id, true) }}"
-        return_content: true
+          X-Vault-Namespace: admin/hashicorp-vault-integration-tests
+        payload:
+          secret_id: "{{ vault_approle_secret_id }}"
+          role_id: "{{ vault_approle_role_id }}"
+        method: POST
+      ignore_errors: true
       register: vault_login
-      no_log: true
-      when: vault_approle_role_id is defined and vault_approle_secret_id is defined
+
+    - ansible.builtin.debug:
+        var: vault_login
+
+    - ansible.builtin.fail:
+        msg: "Authentication failed."
+      when: vault_login is failed
 
     - name: Save Vault token for use in tests
       ansible.builtin.set_fact:
         vault_token_from_setup_auth_token: "{{ vault_login.json.auth.client_token }}"
       no_log: true
-      when: vault_login.json.auth is defined
