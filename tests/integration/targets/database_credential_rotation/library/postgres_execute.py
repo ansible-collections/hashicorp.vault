@@ -10,7 +10,7 @@ __metaclass__ = type
 DOCUMENTATION = """
 ---
 module: postgres_execute
-short_description: Login and execute command into PostGreSQL database.
+short_description: Login and execute command into PostgreSQL database.
 author: Aubin Bikouo (@abikouo)
 description:
   - This module is used to validate login to a postgresql database.
