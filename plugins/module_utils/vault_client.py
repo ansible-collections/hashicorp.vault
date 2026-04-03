@@ -121,6 +121,7 @@ class VaultClient:
         Returns:
             (str): A token currently used by the client or None if not set.
         """
+        return self.vault_token
 
     def _make_request(self, method: str, path: str, **kwargs) -> dict:
         """

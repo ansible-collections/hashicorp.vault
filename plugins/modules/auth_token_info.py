@@ -35,18 +35,18 @@ extends_documentation_fragment:
 
 EXAMPLES = r'''
 - name: Look up details for a specific token
-  auth_token_info:
+  hashicorp.vault.auth_token_info:
     url: "https://vault.example.com:8200"
     auth_token: "{{ vault_admin_token }}"
     token_id: "hvs.CAESIL..."
   register: token_details
 
 - name: Debug token TTL
-  debug:
+  ansible.builtin.debug:
     msg: "The token expires in {{ token_details.data.ttl }} seconds"
 
 - name: Retrieve token details with token accessors
-  auth_token_info:
+  hashicorp.vault.auth_token_info:
     url: "https://vault.example.com:8200"
     auth_token: "{{ vault_admin_token }}"
     token_id: "hvs.CAESIL..."
@@ -106,7 +106,6 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils i
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
     VaultPermissionError,
-    VaultSecretNotFoundError,
 )
 
 
@@ -134,8 +133,6 @@ def main():
             result["accessors"] = vault_token.list_accessors(token_id)
         module.exit_json(**result)
 
-    except VaultSecretNotFoundError:
-        module.exit_json(data={})
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
     except VaultApiError as e:

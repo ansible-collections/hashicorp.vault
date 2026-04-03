@@ -215,7 +215,7 @@ class VaultTokens:
         path = "v1/auth/token/revoke"
         self._client._make_request("POST", path, json={"token": token_id})
 
-    def create_token(self, **kwargs: dict) -> dict:
+    def create_token(self, **kwargs: Any) -> Dict[str, Any]:
         """
         Creates a new token.
 
@@ -244,7 +244,7 @@ class VaultTokens:
         response = self._client._make_request("POST", path, json=kwargs)
         return response.get("auth", {}) or {}
 
-    def list_accessors(self, token_id: str) -> List:
+    def list_accessors(self, token_id: str) -> List[str]:
         """
         List token accessors.
 
@@ -259,7 +259,9 @@ class VaultTokens:
         # save the original token value
         original_token = self._client.token
         self._client.set_token(token_id)  # Use the token provide as input to retrieve accessors
-        response = self._client._make_request("LIST", path)
-        # set back the token value
-        self._client.set_token(original_token)
-        return response.get("data", {}).get("keys", []) or []
+        try:
+            response = self._client._make_request("LIST", path)
+            # set back the token value
+            return response.get("data", {}).get("keys", []) or []
+        finally:
+            self._client.set_token(original_token)

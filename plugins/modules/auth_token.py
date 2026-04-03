@@ -100,7 +100,7 @@ extends_documentation_fragment:
 
 EXAMPLES = r'''
 - name: Create a service token with specific metadata and no parent
-  auth_token:
+  hashicorp.vault.auth_token:
     url: "https://vault.example.com:8200"
     auth_method: token
     token: "{{ login_token }}"
@@ -115,7 +115,7 @@ EXAMPLES = r'''
     state: present
 
 - name: Create a batch token (non-renewable)
-  auth_token:
+  hashicorp.vault.auth_token:
     url: https://vault.example.com:8200
     auth_method: approle
     role_id: "{{ vault_role_id }}"
@@ -125,7 +125,7 @@ EXAMPLES = r'''
     state: present
 
 - name: Renew an existing token
-  auth_token:
+  hashicorp.vault.auth_token:
     url: https://vault.example.com:8200
     auth_method: approle
     role_id: "{{ vault_role_id }}"
@@ -136,7 +136,7 @@ EXAMPLES = r'''
     state: present
 
 - name: Revoke a token by ID
-  auth_token:
+  hashicorp.vault.auth_token:
     url: https://vault.example.com:8200
     auth_method: approle
     role_id: "{{ vault_role_id }}"
@@ -216,10 +216,6 @@ def ensure_present(module: AnsibleModule, vault_token: VaultTokens) -> NoReturn:
     Args:
         module (str): The ansible module object.
         vault_token (VaultTokens): The vault token object.
-
-    Returns:
-        (bool, dict): A tuple containing a boolean flag—indicating whether
-        the module performed any changes and a dictionary representing the JSON-structured result.
     """
 
     # Read existing token
@@ -284,10 +280,6 @@ def ensure_absent(module: AnsibleModule, vault_token: VaultTokens) -> NoReturn:
     Args:
         module (str): The ansible module object.
         vault_token (VaultTokens): The vault token object.
-
-    Returns:
-        (bool, dict): A tuple containing a boolean flag—indicating whether
-        the module performed any changes—and a dictionary representing the JSON-structured result.
     """
 
     # Read existing token
