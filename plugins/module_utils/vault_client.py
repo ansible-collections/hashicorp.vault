@@ -291,11 +291,9 @@ class VaultDatabaseConnection:
         """
         values_types = ('root', 'role')
         if type not in values_types:
-            raise VaultConfigurationError(
-               f"Invalid credential type {type!r}, expected one of {values_types}"
-            )
+            raise VaultConfigurationError(f"Invalid credential type {type!r}, expected one of {values_types}")
         path = f"v1/{self._mount_path}/rotate-{type}/{name}"
-        self._client._make_request("POST", path, json={})
+        return self._client._make_request("POST", path, json={})
 
 
 class VaultKv2Secrets:
