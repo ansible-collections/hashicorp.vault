@@ -1,0 +1,178 @@
+---
+- module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: token
+      token: "{{ vault_token_from_setup_auth_token }}"
+      vault_approle_path: "{{ ansible_test_vault_mount_path }}"
+  vars:
+    token_display_name: "ansible-test-token-{{ vault_resource_suffix }}"
+    token_ttl: "15m"
+  block:
+    ### Create token
+    - name: Create token (check mode)
+      hashicorp.vault.auth_token:
+        state: present
+        ttl: "{{ token_ttl }}"
+        display_name: "{{ token_display_name }}"
+      register: create_check_mode
+      check_mode: true
+
+    - name: Ensure module reported change while running in check mode
+      ansible.builtin.assert:
+        that:
+          - create_check_mode is changed
+
+    - name: Create token
+      hashicorp.vault.auth_token:
+        state: present
+        ttl: "{{ token_ttl }}"
+        display_name: "{{ token_display_name }}"
+      register: create_token
+    
+    - name: Retrieve token information
+      hashicorp.vault.auth_token_info:
+        token_id: "{{ create_token.token_id }}"
+      register: token_initial
+
+    - name: Ensure module reported change while running in check mode
+      ansible.builtin.assert:
+        that:
+          - create_token is changed
+          - token_initial.data.display_name == "token-" ~ token_display_name
+
+    - name: Idempotency for state=present and renew=false
+      hashicorp.vault.auth_token:
+        state: present
+        token_id: "{{ create_token.token_id }}"
+        renew: false
+      register: idempotency_create
+
+    - ansible.builtin.assert:
+        that:
+          - idempotency_create is not changed
+
+    ### Renew token
+    - name: Renew unexisting token
+      hashicorp.vault.auth_token:
+        token_id: "{{ create_token.token_id }}aaaa"
+        renew: true
+      ignore_errors: true
+      check_mode: true
+      register: renew_missing_token
+
+    - name: Ensure the module fails with proper message
+      ansible.builtin.assert:
+        that:
+          - renew_missing_token is failed
+          - '"The token does not exist or has already expired." in renew_missing_token.msg'
+
+    - name: Renew the token (check mode)
+      hashicorp.vault.auth_token:
+        token_id: "{{ create_token.token_id }}"
+        renew: true
+      check_mode: true
+      register: renew_check_mode
+
+    - name: Retrieve token information
+      hashicorp.vault.auth_token_info:
+        token_id: "{{ create_token.token_id }}"
+      register: token_renew_check_mode
+
+    - name: Ensure the module reported change while the token was not renewed
+      ansible.builtin.assert:
+        that:
+          - renew_check_mode is changed
+          - token_renew_check_mode.data.expire_time == token_initial.data.expire_time
+
+    - name: Renew the token
+      hashicorp.vault.auth_token:
+        token_id: "{{ create_token.token_id }}"
+        renew: true
+      register: renew_token
+
+    - name: Retrieve token information
+      hashicorp.vault.auth_token_info:
+        token_id: "{{ create_token.token_id }}"
+      register: token_renew
+
+    - name: Ensure the module reported change and the token was renewed
+      ansible.builtin.assert:
+        that:
+          - renew_token is changed
+          - token_renew.data.expire_time != token_initial.data.expire_time
+
+    - name: Renew the token once again (module is not idempotent for the renew operation)
+      hashicorp.vault.auth_token:
+        token_id: "{{ create_token.token_id }}"
+        renew: true
+      register: renew_token_again
+
+    - name: Retrieve token information
+      hashicorp.vault.auth_token_info:
+        token_id: "{{ create_token.token_id }}"
+      register: token_renew_again
+
+    - name: Ensure the module reported change and the token was renewed
+      ansible.builtin.assert:
+        that:
+          - renew_token_again is changed
+          - token_renew.data.expire_time != token_renew_again.data.expire_time
+
+    ### Revoke token
+    - name: Revoke token (check mode)
+      hashicorp.vault.auth_token:
+        token_id: "{{ create_token.token_id }}"
+        state: absent
+      check_mode: true
+      register: revoke_check_mode
+
+    - name: Retrieve token information
+      hashicorp.vault.auth_token_info:
+        token_id: "{{ create_token.token_id }}"
+      register: token_revoke_check_mode
+
+    - name: Ensure the module reported change while the token was not revoked
+      ansible.builtin.assert:
+        that:
+          - revoke_check_mode is changed
+          - token_revoke_check_mode.data != {}
+
+    - name: Revoke the token
+      hashicorp.vault.auth_token:
+        token_id: "{{ create_token.token_id }}"
+        state: absent
+      register: revoke_token
+
+    - name: Retrieve token information
+      hashicorp.vault.auth_token_info:
+        token_id: "{{ create_token.token_id }}"
+      register: token_revoke
+
+    - name: Ensure the module reported change and the token was revoked
+      ansible.builtin.assert:
+        that:
+          - revoke_token is changed
+          - token_revoke.data == {}
+
+    - name: Revoke the token once again (idempotency)
+      hashicorp.vault.auth_token:
+        token_id: "{{ create_token.token_id }}"
+        state: absent
+      register: revoke_idempotency
+
+    - name: Validate the module idempotency for state=absent
+      ansible.builtin.assert:
+        that:
+          - revoke_idempotency is not changed
+
+  always:
+    - name: Revoke token
+      hashicorp.vault.auth_token:
+        state: absent
+        token_id: "{{ create_token.token_id }}"
+      ignore_errors: true
+      when: 
+        - create_token is defined
+        - create_token is successful
