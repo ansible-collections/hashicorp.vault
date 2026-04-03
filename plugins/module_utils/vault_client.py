@@ -99,7 +99,6 @@ class VaultClient:
 
         logger.info("Initialized VaultClient for %s", vault_address)
         self.secrets = Secrets(self)
-        self.database = Database(self)
         self.acl_policies = VaultAclPolicies(self)
         self.namespaces = VaultNamespaces(self)
 
@@ -412,7 +411,32 @@ class VaultDatabaseStaticRoles:
 
 
 class Database:
-    """A container class for database secrets engine clients."""
+    """A container class for database secrets engine clients.
+
+    This class groups related database secrets engine clients (connections and static_roles)
+    that share the same mount path. It provides a convenient way to manage both connections
+    and static roles for a specific database secrets engine mount.
+
+    Examples:
+        # Default mount path ("database")
+        db = Database(client)
+        db.connections.list_connections()
+        db.static_roles.list_static_roles()
+
+        # Custom mount path
+        prod_db = Database(client, mount_path="postgres-prod")
+        dev_db = Database(client, mount_path="postgres-dev")
+        prod_db.static_roles.list_static_roles()
+        dev_db.connections.list_connections()
+
+        # Or use individual classes directly
+        from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
+            VaultDatabaseConnection,
+            VaultDatabaseStaticRoles
+        )
+        connections = VaultDatabaseConnection(client, "postgres-prod")
+        static_roles = VaultDatabaseStaticRoles(client, "postgres-prod")
+    """
 
     def __init__(self, client, mount_path="database"):
         """

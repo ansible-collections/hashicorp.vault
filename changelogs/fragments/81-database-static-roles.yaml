@@ -6,6 +6,6 @@ minor_changes:
     ``delete_static_role()``, and ``get_static_role_credentials()``
     (https://github.com/ansible-collections/hashicorp.vault/pull/81).
   - module_utils/vault_client.py - Add ``Database`` container class to
-    organize database-related clients under ``client.database.connections``
-    and ``client.database.static_roles``
+    organize database-related clients (connections and static_roles) for
+    a specific mount path
     (https://github.com/ansible-collections/hashicorp.vault/pull/81).
