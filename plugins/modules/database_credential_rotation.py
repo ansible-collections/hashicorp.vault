@@ -64,7 +64,7 @@ msg:
   returned: always
   type: str
 raw:
-  description: The complete response returned by Vault for the rotation operation..
+  description: The complete response returned by Vault for the rotation operation.
   returned: success
   type: dict
 """
