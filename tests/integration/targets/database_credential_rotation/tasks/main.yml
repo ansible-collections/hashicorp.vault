@@ -145,7 +145,7 @@
           - new_role_credentials.auth.last_vault_rotation != role_credentials.auth.last_vault_rotation
 
   always:
-    - name: Disconect container from network
+    - name: Disconnect container from network
       ansible.builtin.command: "docker network disconnect {{ vault_network_name }} {{ item }}"
       loop:
         - "{{ ansible_postgresql_container_name }}"
