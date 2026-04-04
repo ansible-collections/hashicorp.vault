@@ -10,4 +10,6 @@ action_groups:
     - kv1_secret
     - kv2_secret_info
     - kv2_secret
+    - pki_certificate
+    - pki_certificate_info
     - vault_namespace

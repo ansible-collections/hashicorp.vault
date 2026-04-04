@@ -1,0 +1,8 @@
+---
+# PKI mount and role must exist in the integration namespace; token needs PKI capabilities below (not sys/mounts).
+vault_pki_mount_path: pki
+vault_pki_role_name: dev-role
+
+# Unique hostnames per run (role must allow these, e.g. allowed_domains=example.com, allow_subdomains=true).
+pki_issue_cn: "ansible-issue-{{ vault_resource_suffix | lower }}.example.com"
+pki_sign_cn: "ansible-sign-{{ vault_resource_suffix | lower }}.example.com"

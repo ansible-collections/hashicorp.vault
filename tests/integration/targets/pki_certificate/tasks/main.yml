@@ -1,0 +1,274 @@
+---
+# Integration tests: pki_certificate (issue, sign, revoke) + pki_certificate_info (list, read)
+- name: Run PKI certificate modules integration tests
+  collections:
+    - hashicorp.vault
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: token
+      token: "{{ vault_token_from_setup_auth_token }}"
+  vars:
+    pki_csr_text: ""
+    pki_test_mount: "{{ vault_pki_mount_path }}"
+    pki_test_role: "{{ vault_pki_role_name }}"
+  block:
+    - name: List PKI certificates before leaf issue (expects at least CA material)
+      hashicorp.vault.pki_certificate_info:
+        engine_mount_point: "{{ pki_test_mount }}"
+      register: certs_before_leaf
+      no_log: true
+
+    - name: Read non-existent serial returns empty certificate_info
+      hashicorp.vault.pki_certificate_info:
+        engine_mount_point: "{{ pki_test_mount }}"
+        serial_number: "ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff"
+      register: pki_read_missing
+      no_log: true
+
+    - name: Assert missing serial read is empty
+      ansible.builtin.assert:
+        that:
+          - pki_read_missing is not changed
+          - pki_read_missing.certificate_info == {}
+      no_log: true
+
+    - name: Assert list returns serials
+      ansible.builtin.assert:
+        that:
+          - certs_before_leaf.serials is defined
+          - certs_before_leaf.serials is iterable
+          - certs_before_leaf is not changed
+      no_log: true
+
+    - name: Issue certificate (check mode)
+      hashicorp.vault.pki_certificate:
+        engine_mount_point: "{{ pki_test_mount }}"
+        role_name: "{{ pki_test_role }}"
+        common_name: "{{ pki_issue_cn }}"
+        state: issued
+        ttl: 24h
+      register: issue_check
+      check_mode: true
+      no_log: true
+
+    - name: Assert issue check mode
+      ansible.builtin.assert:
+        that:
+          - issue_check is changed
+          - issue_check.data == {}
+      no_log: true
+
+    - name: Issue certificate
+      hashicorp.vault.pki_certificate:
+        engine_mount_point: "{{ pki_test_mount }}"
+        role_name: "{{ pki_test_role }}"
+        common_name: "{{ pki_issue_cn }}"
+        state: issued
+        ttl: 24h
+      register: issued_leaf
+      no_log: true
+
+    - name: Assert issued certificate payload
+      ansible.builtin.assert:
+        that:
+          - issued_leaf is changed
+          - issued_leaf.data.certificate is defined
+          - issued_leaf.data.private_key is defined
+          - issued_leaf.data.serial_number is defined
+      no_log: true
+
+    - name: List certificates after leaf issue
+      hashicorp.vault.pki_certificate_info:
+        engine_mount_point: "{{ pki_test_mount }}"
+      register: certs_after_leaf
+      no_log: true
+
+    - name: Assert leaf serial appears in list
+      ansible.builtin.assert:
+        that:
+          - issued_leaf.data.serial_number in certs_after_leaf.serials
+      no_log: true
+
+    - name: Read leaf certificate by serial
+      hashicorp.vault.pki_certificate_info:
+        engine_mount_point: "{{ pki_test_mount }}"
+        serial_number: "{{ issued_leaf.data.serial_number }}"
+      register: read_leaf
+      no_log: true
+
+    - name: Assert read returns PEM
+      ansible.builtin.assert:
+        that:
+          - read_leaf is not changed
+          - read_leaf.certificate_info.certificate is defined
+          - "'BEGIN CERTIFICATE' in read_leaf.certificate_info.certificate"
+      no_log: true
+
+    - name: Create temp directory for CSR
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: pki
+      register: pki_tmp
+      no_log: true
+
+    - name: Generate CSR for sign test
+      ansible.builtin.command:
+        argv:
+          - openssl
+          - req
+          - -new
+          - -newkey
+          - rsa:2048
+          - -nodes
+          - -keyout
+          - "{{ pki_tmp.path }}/key.pem"
+          - -out
+          - "{{ pki_tmp.path }}/req.csr"
+          - -subj
+          - "/CN={{ pki_sign_cn }}"
+      changed_when: true
+      no_log: true
+
+    - name: Load CSR PEM
+      ansible.builtin.slurp:
+        src: "{{ pki_tmp.path }}/req.csr"
+      register: pki_csr_slurp
+      no_log: true
+
+    - name: Set CSR fact
+      ansible.builtin.set_fact:
+        pki_csr_text: "{{ pki_csr_slurp.content | b64decode }}"
+      no_log: true
+
+    - name: Sign CSR (check mode)
+      hashicorp.vault.pki_certificate:
+        engine_mount_point: "{{ pki_test_mount }}"
+        role_name: "{{ pki_test_role }}"
+        common_name: "{{ pki_sign_cn }}"
+        csr: "{{ pki_csr_text }}"
+        state: signed
+        ttl: 24h
+      register: sign_check
+      check_mode: true
+      no_log: true
+
+    - name: Assert sign check mode
+      ansible.builtin.assert:
+        that:
+          - sign_check is changed
+          - sign_check.data == {}
+      no_log: true
+
+    - name: Sign CSR
+      hashicorp.vault.pki_certificate:
+        engine_mount_point: "{{ pki_test_mount }}"
+        role_name: "{{ pki_test_role }}"
+        common_name: "{{ pki_sign_cn }}"
+        csr: "{{ pki_csr_text }}"
+        state: signed
+        ttl: 24h
+      register: signed_cert
+      no_log: true
+
+    - name: Assert signed certificate (no private key in response)
+      ansible.builtin.assert:
+        that:
+          - signed_cert is changed
+          - signed_cert.data.certificate is defined
+          - signed_cert.data.serial_number is defined
+      no_log: true
+
+    - name: Revoke leaf certificate (check mode)
+      hashicorp.vault.pki_certificate:
+        engine_mount_point: "{{ pki_test_mount }}"
+        state: revoked
+        serial_number: "{{ issued_leaf.data.serial_number }}"
+      register: revoke_check
+      check_mode: true
+      no_log: true
+
+    - name: Assert revoke check mode
+      ansible.builtin.assert:
+        that:
+          - revoke_check is changed
+      no_log: true
+
+    - name: Revoke leaf certificate by serial
+      hashicorp.vault.pki_certificate:
+        engine_mount_point: "{{ pki_test_mount }}"
+        state: revoked
+        serial_number: "{{ issued_leaf.data.serial_number }}"
+      register: revoked_leaf
+      no_log: true
+
+    - name: Assert revoke succeeded
+      ansible.builtin.assert:
+        that:
+          - revoked_leaf is changed
+      no_log: true
+
+    - name: Read revoked certificate when Vault still exposes stored metadata
+      hashicorp.vault.pki_certificate_info:
+        engine_mount_point: "{{ pki_test_mount }}"
+        serial_number: "{{ issued_leaf.data.serial_number }}"
+      register: read_revoked
+      no_log: true
+
+    - name: Assert PEM returned when read response is non-empty
+      when: read_revoked.certificate_info | length > 0
+      ansible.builtin.assert:
+        that:
+          - read_revoked.certificate_info.certificate is defined
+      no_log: true
+
+    - name: Revoke signed certificate by serial (cleanup signed leaf)
+      hashicorp.vault.pki_certificate:
+        engine_mount_point: "{{ pki_test_mount }}"
+        state: revoked
+        serial_number: "{{ signed_cert.data.serial_number }}"
+      register: revoke_signed
+      no_log: true
+
+    - name: Assert signed cert revoke succeeded
+      ansible.builtin.assert:
+        that:
+          - revoke_signed is changed
+      no_log: true
+
+  always:
+    # revoke certs if the block failed before main-path revokes (second revoke is a no-op on success).
+    - name: Cleanup — revoke issued leaf certificate if it was created
+      hashicorp.vault.pki_certificate:
+        engine_mount_point: "{{ pki_test_mount }}"
+        state: revoked
+        serial_number: "{{ issued_leaf.data.serial_number }}"
+      when:
+        - issued_leaf is defined
+        - not (issued_leaf.failed | default(false))
+        - issued_leaf.data is defined
+        - issued_leaf.data.serial_number is defined
+      failed_when: false
+      no_log: true
+
+    - name: Cleanup — revoke signed certificate if it was created
+      hashicorp.vault.pki_certificate:
+        engine_mount_point: "{{ pki_test_mount }}"
+        state: revoked
+        serial_number: "{{ signed_cert.data.serial_number }}"
+      when:
+        - signed_cert is defined
+        - not (signed_cert.failed | default(false))
+        - signed_cert.data is defined
+        - signed_cert.data.serial_number is defined
+      failed_when: false
+      no_log: true
+
+    - name: Remove temp directory
+      ansible.builtin.file:
+        path: "{{ pki_tmp.path }}"
+        state: absent
+      when: pki_tmp is defined
+      failed_when: false
+      no_log: true
