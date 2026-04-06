@@ -410,32 +410,167 @@ class VaultDatabaseStaticRoles:
         return response_data.get("data", {})
 
 
+class VaultDatabaseDynamicRoles:
+    """
+    Handles interactions with Vault Database Secrets Engine dynamic roles.
+
+    Dynamic roles generate database credentials on-demand with configurable TTLs.
+    """
+
+    def __init__(self, client, mount_path="database"):
+        """
+        Initializes the Database dynamic roles client.
+
+        Args:
+            client (VaultClient): An authenticated instance of the main VaultClient.
+            mount_path (str): The mount path of the database secrets engine. Defaults to "database".
+        """
+        self._client = client
+        self._mount_path = (mount_path or "database").strip().strip("/")
+
+    def list_dynamic_roles(self) -> list:
+        """
+        List all dynamic role names.
+
+        Returns:
+            List[str]: A list of dynamic role names. Returns empty list if no roles exist.
+
+        Example:
+            roles = db.list_dynamic_roles()
+            # Returns: ["readonly", "readwrite"]
+        """
+        path = f"v1/{self._mount_path}/roles"
+        try:
+            response_data = self._client._make_request("LIST", path)
+            roles = response_data.get("data", {}).get("keys", [])
+            return roles
+        except VaultSecretNotFoundError:
+            # Vault returns 404 when no roles exist
+            return []
+
+    def read_dynamic_role(self, name: str) -> dict:
+        """
+        Read the configuration of a dynamic role.
+
+        Args:
+            name (str): The name of the dynamic role to read.
+
+        Returns:
+            dict: The dynamic role configuration data.
+
+        Raises:
+            VaultSecretNotFoundError: If the role doesn't exist.
+
+        Example:
+            role_config = db.read_dynamic_role("readonly")
+            # Returns: {
+            #     "db_name": "my-postgres-db",
+            #     "creation_statements": ["CREATE ROLE ..."],
+            #     "default_ttl": 3600,
+            #     "max_ttl": 86400
+            # }
+        """
+        path = f"v1/{self._mount_path}/roles/{name}"
+        response_data = self._client._make_request("GET", path)
+        return response_data.get("data", {})
+
+    def create_or_update_dynamic_role(self, name: str, config: dict) -> dict:
+        """
+        Create or update a dynamic role configuration.
+
+        Args:
+            name (str): The name of the dynamic role.
+            config (dict): Role configuration containing:
+                - db_name (str, required): Name of the database connection to use
+                - creation_statements (list, required): SQL statements to create credentials
+                - default_ttl (int, optional): Default TTL for credentials in seconds
+                - max_ttl (int, optional): Maximum TTL for credentials in seconds
+                - revocation_statements (list, optional): SQL statements to revoke credentials
+                - rollback_statements (list, optional): SQL statements to rollback partial creation
+                - renew_statements (list, optional): SQL statements executed during credential renewal
+                - credential_type (str, optional): Type of credential (e.g., "password", "rsa_private_key")
+                - credential_config (dict, optional): Additional credential configuration
+
+        Returns:
+            dict: Response from Vault (typically empty dict on success).
+
+        Raises:
+            TypeError: If config is not a dict, or required fields are missing/invalid.
+
+        Example:
+            db.create_or_update_dynamic_role(
+                name="readonly",
+                config={
+                    "db_name": "my-postgres-db",
+                    "creation_statements": [
+                        "CREATE ROLE '{{name}}' WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
+                        "GRANT SELECT ON ALL TABLES IN SCHEMA public TO '{{name}}';"
+                    ],
+                    "default_ttl": 3600,
+                    "max_ttl": 86400
+                }
+            )
+        """
+        if not isinstance(config, dict):
+            raise TypeError("config must be a dict")
+        if "db_name" not in config:
+            raise TypeError('config must contain "db_name"')
+        if not isinstance(config["db_name"], str):
+            raise TypeError('config["db_name"] must be a str')
+        if "creation_statements" not in config:
+            raise TypeError('config must contain "creation_statements"')
+        if not isinstance(config["creation_statements"], list):
+            raise TypeError('config["creation_statements"] must be a list')
+
+        path = f"v1/{self._mount_path}/roles/{name}"
+        return self._client._make_request("POST", path, json=config)
+
+    def delete_dynamic_role(self, name: str) -> None:
+        """
+        Delete a dynamic role.
+
+        Args:
+            name (str): The name of the dynamic role to delete.
+
+        Returns:
+            None
+
+        Example:
+            db.delete_dynamic_role("readonly")
+        """
+        path = f"v1/{self._mount_path}/roles/{name}"
+        self._client._make_request("DELETE", path)
+
+
 class Database:
     """A container class for database secrets engine clients.
 
-    This class groups related database secrets engine clients (connections and static_roles)
-    that share the same mount path. It provides a convenient way to manage both connections
-    and static roles for a specific database secrets engine mount.
+    This class groups related database secrets engine clients (connections, static_roles,
+    and dynamic_roles) that share the same mount path. It provides a convenient way to
+    manage connections and roles for a specific database secrets engine mount.
 
     Examples:
         # Default mount path ("database")
         db = Database(client)
         db.connections.list_connections()
         db.static_roles.list_static_roles()
+        db.dynamic_roles.list_dynamic_roles()
 
         # Custom mount path
         prod_db = Database(client, mount_path="postgres-prod")
         dev_db = Database(client, mount_path="postgres-dev")
         prod_db.static_roles.list_static_roles()
-        dev_db.connections.list_connections()
+        dev_db.dynamic_roles.list_dynamic_roles()
 
         # Or use individual classes directly
         from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
             VaultDatabaseConnection,
-            VaultDatabaseStaticRoles
+            VaultDatabaseStaticRoles,
+            VaultDatabaseDynamicRoles
         )
         connections = VaultDatabaseConnection(client, "postgres-prod")
         static_roles = VaultDatabaseStaticRoles(client, "postgres-prod")
+        dynamic_roles = VaultDatabaseDynamicRoles(client, "postgres-prod")
     """
 
     def __init__(self, client, mount_path="database"):
@@ -448,6 +583,7 @@ class Database:
         """
         self.connections = VaultDatabaseConnection(client, mount_path)
         self.static_roles = VaultDatabaseStaticRoles(client, mount_path)
+        self.dynamic_roles = VaultDatabaseDynamicRoles(client, mount_path)
 
 
 class VaultKv2Secrets:

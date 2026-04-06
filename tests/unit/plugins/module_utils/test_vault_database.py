@@ -14,6 +14,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client impor
     Database,
     VaultClient,
     VaultDatabaseConnection,
+    VaultDatabaseDynamicRoles,
     VaultDatabaseStaticRoles,
 )
 
@@ -43,16 +44,20 @@ class TestDatabaseContainer:
 
         assert isinstance(db.connections, VaultDatabaseConnection)
         assert isinstance(db.static_roles, VaultDatabaseStaticRoles)
+        assert isinstance(db.dynamic_roles, VaultDatabaseDynamicRoles)
         assert db.connections._mount_path == "database"
         assert db.static_roles._mount_path == "database"
+        assert db.dynamic_roles._mount_path == "database"
 
     def test_database_container_initialization_custom_mount(self, authenticated_client):
         db = Database(authenticated_client, mount_path="postgres-prod")
 
         assert isinstance(db.connections, VaultDatabaseConnection)
         assert isinstance(db.static_roles, VaultDatabaseStaticRoles)
+        assert isinstance(db.dynamic_roles, VaultDatabaseDynamicRoles)
         assert db.connections._mount_path == "postgres-prod"
         assert db.static_roles._mount_path == "postgres-prod"
+        assert db.dynamic_roles._mount_path == "postgres-prod"
 
     def test_database_container_multiple_instances(self, authenticated_client):
         prod_db = Database(authenticated_client, mount_path="postgres-prod")
@@ -61,15 +66,19 @@ class TestDatabaseContainer:
 
         assert prod_db.connections._mount_path == "postgres-prod"
         assert prod_db.static_roles._mount_path == "postgres-prod"
+        assert prod_db.dynamic_roles._mount_path == "postgres-prod"
 
         assert dev_db.connections._mount_path == "postgres-dev"
         assert dev_db.static_roles._mount_path == "postgres-dev"
+        assert dev_db.dynamic_roles._mount_path == "postgres-dev"
 
         assert default_db.connections._mount_path == "database"
         assert default_db.static_roles._mount_path == "database"
+        assert default_db.dynamic_roles._mount_path == "database"
 
     def test_database_container_shares_client(self, authenticated_client):
         db = Database(authenticated_client)
 
         assert db.connections._client is authenticated_client
         assert db.static_roles._client is authenticated_client
+        assert db.dynamic_roles._client is authenticated_client
