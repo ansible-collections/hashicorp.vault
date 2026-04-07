@@ -1,0 +1,13 @@
+---
+- name: Manage Vault token roles (absent)
+  hashicorp.vault.vault_token_role:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    state: absent
+    role_name: "{{ role_name }}"
+  register: result
+
+- name: Verify result
+  ansible.builtin.assert:
+    that:
+      - result is not failed

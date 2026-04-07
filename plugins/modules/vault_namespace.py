@@ -71,58 +71,41 @@ options:
 """
 
 EXAMPLES = """
-- name: Create a child namespace with metadata
+- name: Manage HashiCorp Vault Enterprise namespaces (present)
   hashicorp.vault.vault_namespace:
-    url: https://vault.example.com:8200
+    url: "{{ vault_addr }}"
     token: "{{ vault_token }}"
-    namespace: parent/
-    path: engineering/
     state: present
-    custom_metadata:
-      team: platform
-      environment: prod
+    path: userpass
+  register: result
 
-- name: Ensure namespace exists without changing metadata on an existing namespace
-  hashicorp.vault.vault_namespace:
-    url: https://vault.example.com:8200
-    path: engineering/
-    state: present
+- name: Verify result
+  ansible.builtin.assert:
+    that:
+      - result is changed
 
-- name: Update custom metadata only
+- name: Manage HashiCorp Vault Enterprise namespaces (absent)
   hashicorp.vault.vault_namespace:
-    url: https://vault.example.com:8200
-    path: engineering/
-    state: metadata
-    custom_metadata:
-      owner: alice
-
-- name: Remove a namespace
-  hashicorp.vault.vault_namespace:
-    url: https://vault.example.com:8200
-    path: engineering/
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
     state: absent
+    path: test-ns
+  register: result
 
-- name: Lock API for the current connection namespace
-  hashicorp.vault.vault_namespace:
-    url: https://vault.example.com:8200
-    state: locked
-  register: ns_lock
-
-- name: Unlock using key from lock response
-  hashicorp.vault.vault_namespace:
-    url: https://vault.example.com:8200
-    state: unlocked
-    unlock_key: "{{ ns_lock.unlock_key }}"
-
-- name: Lock a subpath within the current namespace
-  hashicorp.vault.vault_namespace:
-    url: https://vault.example.com:8200
-    namespace: parent/
-    state: locked
-    lock_subpath: child/
+- name: Verify result
+  ansible.builtin.assert:
+    that:
+      - result is changed
 """
 
 RETURN = """
+data:
+  description: >-
+    Extracted payload from the Vault response envelope. Contains the
+    resource fields from the C(data) or C(auth) key of the API response.
+    Validated against the module argspec at runtime.
+  returned: success
+  type: dict
 msg:
   description: Human-readable result message.
   returned: always

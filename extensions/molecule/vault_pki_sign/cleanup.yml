@@ -1,0 +1,16 @@
+---
+# @hand-crafted
+- name: Cleanup - vault_pki_sign
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_pki_sign/vars.yml"
+  tasks:
+    - name: Delete prerequisite PKI role
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ mount_path }}/roles/{{ role }}"
+        method: DELETE
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        status_code: [200, 204, 404]

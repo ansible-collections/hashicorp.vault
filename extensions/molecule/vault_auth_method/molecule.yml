@@ -1,0 +1,7 @@
+---
+scenario:
+  name: vault_auth_method
+  test_sequence:
+    - converge
+    - verify
+    - cleanup

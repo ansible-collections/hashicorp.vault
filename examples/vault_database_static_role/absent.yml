@@ -1,0 +1,14 @@
+---
+- name: Manage Vault database static roles (absent)
+  hashicorp.vault.vault_database_static_role:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    state: absent
+    mount_path: "{{ mount_path }}"
+    name: "{{ name }}"
+  register: result
+
+- name: Verify result
+  ansible.builtin.assert:
+    that:
+      - result is not failed

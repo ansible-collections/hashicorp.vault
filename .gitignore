@@ -165,8 +165,15 @@ cython_debug/
 # MacOS
 .DS_Store
 
+# Cursor IDE
+.cursor/
+
 # Ansible
 .ansible/
+collections/
+
+# OpenAPI spec (developer-local)
+vault-spec-full.json
 
 # Integration tests
 tests/integration/inventory

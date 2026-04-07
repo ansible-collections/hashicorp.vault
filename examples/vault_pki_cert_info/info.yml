@@ -1,0 +1,24 @@
+---
+# vars_files: [vars.yml]
+#
+# expected_response_keys:
+#   - certificate
+
+- name: Read a PKI certificate by serial number
+  hashicorp.vault.vault_pki_cert_info:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    mount_path: "{{ mount_path }}"
+    serial: "{{ test_cert_serial }}"
+  register: result
+
+- name: Verify expected keys in response
+  ansible.builtin.assert:
+    that:
+      - result is not changed
+      - result.data is defined
+      - item in result.data
+    fail_msg: "Missing key {{ item }} in result.data"
+  loop: "{{ expected_response_keys }}"
+  loop_control:
+    label: "{{ item }}"

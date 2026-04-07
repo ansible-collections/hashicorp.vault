@@ -1,0 +1,11 @@
+---
+role_name: test-role
+
+config:
+  allowed_entity_aliases:
+    - entity-*
+  allowed_policies:
+    - default
+  orphan: true
+  renewable: true
+  token_type: default-service

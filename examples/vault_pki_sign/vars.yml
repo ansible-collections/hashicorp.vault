@@ -1,0 +1,14 @@
+---
+mount_path: pki
+role: test-pki-role
+
+params:
+  common_name: sign-test.example.com
+  ttl: "1h"
+
+expected_response_keys:
+  - certificate
+  - serial_number
+  - issuing_ca
+  - ca_chain
+  - expiration

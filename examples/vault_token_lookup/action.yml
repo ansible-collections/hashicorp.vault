@@ -1,0 +1,26 @@
+---
+# vars_files: [vars.yml]
+#
+# expected_response_keys:
+#   - accessor
+#   - creation_time
+#   - display_name
+#   - id
+#   - policies
+#   - renewable
+
+- name: Look up information about a Vault token
+  hashicorp.vault.vault_token_lookup:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+  register: result
+
+- name: Verify expected keys in response
+  ansible.builtin.assert:
+    that:
+      - result.data is defined
+      - item in result.data
+    fail_msg: "Missing key {{ item }} in result.data"
+  loop: "{{ expected_response_keys }}"
+  loop_control:
+    label: "{{ item }}"

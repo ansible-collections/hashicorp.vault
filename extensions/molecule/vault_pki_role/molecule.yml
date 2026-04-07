@@ -1,0 +1,7 @@
+---
+scenario:
+  name: vault_pki_role
+  test_sequence:
+    - converge
+    - verify
+    - cleanup

@@ -1,0 +1,25 @@
+---
+# @hand-crafted
+- name: Converge - vault_database_static_role_rotate
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_database_static_role_rotate/vars.yml"
+  tasks:
+    - name: Create prerequisite static role
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ mount_path }}/static-roles/{{ name }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        body_format: json
+        body:
+          db_name: my-postgres
+          username: vault-user
+          rotation_period: "86400"
+        status_code: [200, 204]
+
+    - name: Include example tasks
+      ansible.builtin.include_tasks:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_database_static_role_rotate/action.yml"

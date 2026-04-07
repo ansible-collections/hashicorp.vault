@@ -1,0 +1,40 @@
+---
+# vars_files: [vars.yml]
+#
+# params:
+#   display_name: my-service-token
+#   renewable: true
+#   policies: ["default"]
+#   num_uses: 10
+#
+# expected_response_keys:
+#   - client_token
+#   - accessor
+#   - policies
+#   - renewable
+#   - token_type
+
+- name: Create a new Vault token
+  hashicorp.vault.vault_token_create:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    display_name: "{{ params.display_name }}"
+    explicit_max_ttl: "{{ params.explicit_max_ttl }}"
+    no_default_policy: "{{ params.no_default_policy }}"
+    no_parent: "{{ params.no_parent }}"
+    num_uses: "{{ params.num_uses }}"
+    period: "{{ params.period }}"
+    policies: "{{ params.policies }}"
+    renewable: "{{ params.renewable }}"
+  register: result
+
+- name: Verify expected keys in response
+  ansible.builtin.assert:
+    that:
+      - result is changed
+      - result.data is defined
+      - item in result.data
+    fail_msg: "Missing key {{ item }} in result.data"
+  loop: "{{ expected_response_keys }}"
+  loop_control:
+    label: "{{ item }}"

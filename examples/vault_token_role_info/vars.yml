@@ -1,0 +1,9 @@
+---
+role_name: test-role
+
+config:
+  allowed_policies:
+    - default
+  orphan: true
+  renewable: true
+  token_type: default-service

@@ -1,0 +1,10 @@
+---
+# @hand-crafted
+- name: "Verify - vault_database_static_role_rotate"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Verify converge completed
+      ansible.builtin.debug:
+        msg: "vault_database_static_role_rotate verified (runtime contract enforced by base class)"

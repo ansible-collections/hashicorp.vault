@@ -1,0 +1,7 @@
+---
+name: test-static-role
+mount_path: database
+
+expected_response_keys:
+  - username
+  - password

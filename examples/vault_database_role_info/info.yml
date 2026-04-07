@@ -1,0 +1,24 @@
+---
+# vars_files: [vars.yml]
+#
+# name: test-dynamic-role
+# mount_path: database
+# config:
+#   db_name: my-postgres
+#   default_ttl: "1h"
+#   max_ttl: "24h"
+
+- name: Read or list Vault database dynamic roles
+  hashicorp.vault.vault_database_role_info:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    mount_path: "{{ mount_path }}"
+    name: "{{ name }}"
+  register: result
+
+- name: Verify return matches contract
+  ansible.builtin.assert:
+    that:
+      - result is not changed
+      - (config | hashicorp.vault.vault_config_match(result.data)).match
+    fail_msg: "Contract violation: {{ (config | hashicorp.vault.vault_config_match(result.data)).mismatches | to_json }}"

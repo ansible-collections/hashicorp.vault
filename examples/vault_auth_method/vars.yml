@@ -1,0 +1,6 @@
+---
+auth_path: userpass
+
+config:
+  type: userpass
+  description: "Managed by Ansible"

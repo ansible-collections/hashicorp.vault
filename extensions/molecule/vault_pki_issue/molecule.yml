@@ -1,0 +1,6 @@
+---
+scenario:
+  name: vault_pki_issue
+  test_sequence:
+    - converge
+    - verify

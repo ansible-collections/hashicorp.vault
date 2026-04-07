@@ -1,0 +1,33 @@
+---
+# vars_files: [vars.yml]
+#
+# params:
+#   common_name: test.example.com
+#   ttl: "1h"
+#
+# expected_response_keys:
+#   - certificate
+#   - serial_number
+#   - private_key
+#   - issuing_ca
+
+- name: Issue a certificate from a PKI role
+  hashicorp.vault.vault_pki_issue:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_token }}"
+    mount_path: "{{ mount_path }}"
+    role: "{{ role }}"
+    common_name: "{{ params.common_name }}"
+    ttl: "{{ params.ttl }}"
+  register: result
+
+- name: Verify expected keys in response
+  ansible.builtin.assert:
+    that:
+      - result is changed
+      - result.data is defined
+      - item in result.data
+    fail_msg: "Missing key {{ item }} in result.data"
+  loop: "{{ expected_response_keys }}"
+  loop_control:
+    label: "{{ item }}"

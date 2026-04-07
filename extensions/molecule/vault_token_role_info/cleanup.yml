@@ -1,0 +1,16 @@
+---
+# @hand-crafted
+- name: Cleanup - vault_token_role_info
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/examples/vault_token_role_info/vars.yml"
+  tasks:
+    - name: Delete test token role
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/auth/token/roles/{{ role_name }}"
+        method: DELETE
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        status_code: [200, 204, 404]

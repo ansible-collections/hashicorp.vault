@@ -111,6 +111,26 @@ class VaultClient:
         self.session.headers.update({"X-Vault-Token": token})
         logger.debug("Token set for VaultClient")
 
+    def request(self, method: str, path: str, **kwargs) -> dict:
+        """
+        Public interface to the Vault HTTP API.
+
+        Args:
+            method (str): The HTTP method (GET, POST, DELETE, LIST, etc.).
+            path (str): The API endpoint path (e.g., "v1/auth/token/create").
+            **kwargs: Additional arguments passed to requests (json, params, etc.).
+
+        Returns:
+            dict: The JSON response data, or empty dict for 204/no-content.
+
+        Raises:
+            VaultPermissionError: If Vault returns HTTP 403.
+            VaultSecretNotFoundError: If Vault returns HTTP 404.
+            VaultApiError: For other HTTP error responses from Vault.
+            VaultConnectionError: If the HTTP request fails.
+        """
+        return self._make_request(method, path, **kwargs)
+
     def _make_request(self, method: str, path: str, **kwargs) -> dict:
         """
         Make requests to the Vault API.

@@ -1,0 +1,6 @@
+---
+scenario:
+  name: vault_auth_method_info
+  test_sequence:
+    - converge
+    - verify
