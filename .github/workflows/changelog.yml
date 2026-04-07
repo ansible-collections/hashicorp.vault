@@ -1,5 +1,5 @@
 ---
-name: Changelog
+name: CI
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
