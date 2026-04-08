@@ -1,0 +1,22 @@
+---
+name: CI
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - labeled
+      - unlabeled
+      - synchronize
+    branches:
+      - main
+      - stable-*
+
+jobs:
+  changelog:
+    uses: ansible/ansible-content-actions/.github/workflows/changelog.yaml@main
