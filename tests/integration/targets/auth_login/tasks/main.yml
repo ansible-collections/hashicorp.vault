@@ -21,7 +21,7 @@
 
     - name: Login with approle (check mode)
       hashicorp.vault.auth_login:
-        auth_params: 
+        auth_params:
           role_id: "{{ vault_approle_role_id }}"
           secret_id: "{{ vault_approle_secret_id }}"
       check_mode: true
@@ -36,7 +36,7 @@
 
     - name: Login with approle
       hashicorp.vault.auth_login:
-        auth_params: 
+        auth_params:
           role_id: "{{ vault_approle_role_id }}"
           secret_id: "{{ vault_approle_secret_id }}"
       register: approle_login
