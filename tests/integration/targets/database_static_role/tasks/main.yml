@@ -47,6 +47,43 @@
           - create_missing_params is failed
           - '"db_name" in create_missing_params.msg or "username" in create_missing_params.msg'
 
+    # Test: Validation - Mutual exclusivity of rotation_period and rotation_schedule
+    - name: Try to create static role with both rotation_period and rotation_schedule
+      hashicorp.vault.database_static_role:
+        name: "{{ static_role_name }}-validation"
+        db_name: "{{ db_connection_name }}"
+        username: "{{ static_role_username }}"
+        rotation_period: "24h"
+        rotation_schedule: "0 0 * * *"
+        skip_import_rotation: true
+      ignore_errors: true
+      register: create_mutual_exclusive
+
+    - name: Ensure task failed due to mutual exclusivity
+      ansible.builtin.assert:
+        that:
+          - create_mutual_exclusive is failed
+          - '"mutually exclusive" in create_mutual_exclusive.msg'
+
+    # Test: Validation - rotation_window cannot be used with rotation_period
+    - name: Try to create static role with rotation_window and rotation_period
+      hashicorp.vault.database_static_role:
+        name: "{{ static_role_name }}-validation"
+        db_name: "{{ db_connection_name }}"
+        username: "{{ static_role_username }}"
+        rotation_period: "24h"
+        rotation_window: "3h"
+        skip_import_rotation: true
+      ignore_errors: true
+      register: create_window_with_period
+
+    - name: Ensure task failed due to invalid rotation_window usage
+      ansible.builtin.assert:
+        that:
+          - create_window_with_period is failed
+          - '"rotation_window" in create_window_with_period.msg'
+          - '"rotation_schedule" in create_window_with_period.msg'
+
     # Test: Create static role (check mode)
     # Note: skip_import_rotation prevents immediate password rotation, allowing tests
     # to verify Vault API operations without requiring an actual database connection.
@@ -123,6 +160,35 @@
           - static_role_read_again.static_roles[0].db_name == db_connection_name
           - static_role_read_again.static_roles[0].username == static_role_username
 
+    # Test: Create static role with rotation_schedule and rotation_window
+    - name: Create static role with rotation_schedule and rotation_window
+      hashicorp.vault.database_static_role:
+        name: "{{ static_role_name }}-schedule"
+        db_name: "{{ db_connection_name }}"
+        username: "{{ static_role_username }}"
+        rotation_schedule: "0 0 * * *"
+        rotation_window: "3h"
+        skip_import_rotation: true
+      register: create_with_schedule_window
+
+    - name: Read the schedule-based static role
+      hashicorp.vault.database_static_role_info:
+        name: "{{ static_role_name }}-schedule"
+      register: schedule_role_read
+
+    - name: Validate that rotation_window works with rotation_schedule
+      ansible.builtin.assert:
+        that:
+          - create_with_schedule_window is changed
+          - schedule_role_read.static_roles | length == 1
+          - schedule_role_read.static_roles[0].rotation_schedule == "0 0 * * *"
+          - schedule_role_read.static_roles[0].rotation_window == 10800
+
+    - name: Delete the schedule-based static role
+      hashicorp.vault.database_static_role:
+        name: "{{ static_role_name }}-schedule"
+        state: absent
+
     # Test: List static roles returns only names when no specific role requested
     - name: List all static roles
       hashicorp.vault.database_static_role_info:
@@ -188,6 +254,12 @@
     - name: Delete static role (cleanup)
       hashicorp.vault.database_static_role:
         name: "{{ static_role_name }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Delete schedule-based static role (cleanup)
+      hashicorp.vault.database_static_role:
+        name: "{{ static_role_name }}-schedule"
         state: absent
       ignore_errors: true
 

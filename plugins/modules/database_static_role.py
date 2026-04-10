@@ -198,6 +198,14 @@ def ensure_present(module: AnsibleModule, db_static_role_client: VaultDatabaseSt
     if not module.params.get("rotation_period") and not module.params.get("rotation_schedule"):
         module.fail_json(msg="one of rotation_period or rotation_schedule is required when state=present")
 
+    # Validate that both are not provided (mutual exclusivity)
+    if module.params.get("rotation_period") and module.params.get("rotation_schedule"):
+        module.fail_json(msg="rotation_period and rotation_schedule are mutually exclusive")
+
+    # Validate that rotation_window is only used with rotation_schedule
+    if module.params.get("rotation_window") and module.params.get("rotation_period"):
+        module.fail_json(msg="rotation_window can only be used with rotation_schedule, not rotation_period")
+
     # Build configuration from module parameters, filtering out None values
     config_params = (
         "username",
