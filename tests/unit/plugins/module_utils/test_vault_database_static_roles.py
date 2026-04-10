@@ -12,6 +12,8 @@ import pytest
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
     VaultClient,
+)
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_database import (
     VaultDatabaseStaticRoles,
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (

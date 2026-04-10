@@ -71,7 +71,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.args_common import
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils import (
     get_authenticated_client,
 )
-from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import (
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_database import (
     VaultDatabaseConnection,
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
