@@ -296,7 +296,7 @@ def main() -> None:
             rotation_schedule=dict(type="str"),
             rotation_window=dict(type="raw"),
             rotation_statements=dict(type="list", elements="str"),
-            skip_import_rotation=dict(type="bool"),
+            skip_import_rotation=dict(type="bool", default=False),
             credential_type=dict(
                 type="str", default="password", choices=["password", "rsa_private_key", "client_certificate"]
             ),
