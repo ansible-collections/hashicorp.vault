@@ -1,12 +1,14 @@
 ---
-name: linters
+name: CI
 
 env:
   LC_ALL: "C.UTF-8" # prevent ERROR: Ansible could not initialize the preferred locale: unsupported locale setting
 
 on: # yamllint disable-line rule:truthy
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - stable-*
 
 jobs:
   linters:
