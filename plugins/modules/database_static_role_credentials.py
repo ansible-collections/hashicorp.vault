@@ -5,7 +5,6 @@
 
 from __future__ import absolute_import, annotations, division, print_function
 
-
 DOCUMENTATION = """
 ---
 module: database_static_role_credentials
@@ -75,7 +74,6 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_database imp
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
     VaultPermissionError,
-    VaultSecretNotFoundError,
 )
 
 
