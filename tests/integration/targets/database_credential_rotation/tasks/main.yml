@@ -4,27 +4,11 @@
     group/hashicorp.vault.vault:
       url: "{{ ansible_test_vault_url }}"
       auth_method: "token"
-      token: "{{ ansible_test_vault_token }}"
+      token: "{{ ansible_test_vault_root_token }}"
   vars:
-    static_app_user: ansible
-    static_app_user_initial_pass: "{{ lookup('password', 'dev/null length=16') }}"
     database_connection_name: "ansible-test-{{ vault_resource_suffix }}"
     database_static_role_name: "ansible-static-role-{{ vault_resource_suffix }}"
-    vault_network_name: "vault-net-{{ vault_resource_suffix }}"
   block:
-    - name: Validate connection to the database and create additional user
-      postgres_execute:
-        user: postgres
-        password: "{{ ansible_postgresql_root_password }}"
-        connection_retries: 10
-        commands:
-          - "CREATE USER {{ static_app_user }} WITH PASSWORD '{{ static_app_user_initial_pass }}';"
-          - "GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{ static_app_user }};"
-
-    - name: Ensure we can connect to database we the new user
-      postgres_execute:
-        user: "{{ static_app_user }}"
-        password: "{{ static_app_user_initial_pass }}"
 
     # Root credential rotation
     - name: Create database connection
@@ -33,9 +17,9 @@
         plugin_name: "postgresql-database-plugin"
         allowed_roles:
           - "{{ database_static_role_name }}"
-        connection_url: "{% raw %}postgresql://{{username}}:{{password}}@{% endraw %}{{ ansible_postgresql_container_name }}:5432/postgres?sslmode=disable"
-        username: postgres
-        password: "{{ ansible_postgresql_root_password }}"
+        connection_url: "{% raw %}postgresql://{{username}}:{{password}}@{% endraw %}{{ ansible_test_postgres_container_name }}:5432/postgres?sslmode=disable"
+        username: "{{ ansible_test_db_admin_user }}"
+        password: "{{ ansible_test_db_admin_user_password }}"
 
     - name: Rotate root credentials
       hashicorp.vault.database_credential_rotation:
@@ -49,9 +33,9 @@
           - rotate_root_creds is changed
 
     - name: Ensure we cannot log anymore into database
-      postgres_execute:
-        user: postgres
-        password: "{{ ansible_postgresql_root_password }}"
+      postgres_connect:
+        db_user: "{{ ansible_test_db_admin_user }}"
+        db_user_password: "{{ ansible_test_db_admin_user_password }}"
       register: root_login
       ignore_errors: true
 
@@ -59,24 +43,24 @@
       ansible.builtin.assert:
         that:
           - root_login is failed
-          - '"password authentication failed for user \"postgres\"" in root_login.msg'
+          - '"password authentication failed for user" in root_login.msg'
 
     # Static role credential rotation
     # TODO: update this once the corresponding module is created
-    - name: Create static role
+    - name: Create databse static role
       vault_static_role:
         vault_address: "{{ ansible_test_vault_url }}"
-        vault_token: "{{ ansible_test_vault_token }}"
+        vault_token: "{{ ansible_test_vault_root_token }}"
         name: "{{ database_static_role_name }}"
         db_name: "{{ database_connection_name }}"
-        username: "{{ static_app_user }}"
+        username: "{{ ansible_test_db_user }}"
         rotation_period: 1h
         operation: create
 
     - name: Ensure we cannot connect to database anymore
-      postgres_execute:
-        user: "{{ static_app_user }}"
-        password: "{{ static_app_user_initial_pass }}"
+      postgres_connect:
+        db_user: "{{ ansible_test_db_user }}"
+        db_user_password: "{{ ansible_test_db_user_password }}"
       register: login_static
       ignore_errors: true
 
@@ -84,7 +68,7 @@
       ansible.builtin.assert:
         that:
           - login_static is failed
-          - '"password authentication failed for user \"ansible\"" in login_static.msg'
+          - '"password authentication failed for user" in login_static.msg'
 
     - name: Rotate static role credentials
       hashicorp.vault.database_credential_rotation:
@@ -100,15 +84,15 @@
     - name: Read new credentials
       vault_static_role:
         vault_address: "{{ ansible_test_vault_url }}"
-        vault_token: "{{ ansible_test_vault_token }}"
+        vault_token: "{{ ansible_test_vault_root_token }}"
         name: "{{ database_static_role_name }}"
         operation: read
       register: role_credentials
 
     - name: Ensure we can log with new credentials
-      postgres_execute:
-        user: "{{ role_credentials.auth.username }}"
-        password: "{{ role_credentials.auth.password }}"
+      postgres_connect:
+        db_user: "{{ role_credentials.auth.username }}"
+        db_user_password: "{{ role_credentials.auth.password }}"
 
     - name: Rotate static role credentials once again
       hashicorp.vault.database_credential_rotation:
@@ -124,7 +108,7 @@
     - name: Read role credentials again
       vault_static_role:
         vault_address: "{{ ansible_test_vault_url }}"
-        vault_token: "{{ ansible_test_vault_token }}"
+        vault_token: "{{ ansible_test_vault_root_token }}"
         name: "{{ database_static_role_name }}"
         operation: read
       register: new_role_credentials

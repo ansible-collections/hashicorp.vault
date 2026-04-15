@@ -1,0 +1,5 @@
+-- Create the second user
+CREATE USER {{ ansible_test_db_user }} WITH PASSWORD '{{ ansible_test_db_user_password }}';
+
+-- Grant permissions
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{ ansible_test_db_user }};

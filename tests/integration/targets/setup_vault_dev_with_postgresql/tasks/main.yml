@@ -1,41 +1,25 @@
 ---
-- name: Set vault token for future use
-  ansible.builtin.set_fact:
-    ansible_test_vault_token: "{{ lookup('password', 'dev/null length=12 chars=ascii_letters,digits') }}"
-    ansible_test_vault_url: "http://127.0.0.1:8200"
-    ansible_test_vault_server_container_name: "{{ vault_container_name }}"
-    ansible_postgresql_root_password: "{{ lookup('password', 'dev/null length=16') }}"
-    ansible_postgresql_container_name: "{{ postgresql_container_name }}"
-
 - name: Create temporary file for compose containers configuration
   ansible.builtin.tempfile:
     suffix: .compose
     state: directory
-  register: compose_dir
+  register: ansible_test_tmp_dir
   notify: 'Clean resources'
 
-- name: Generate container configuration file
-  ansible.builtin.template:
-    src: compose.yaml.j2
-    dest: "{{ compose_dir.path }}/docker-compose.yaml"
-
-- name: Delete old resources
+# Vault server
+- name: Deploy vault dev server
   ansible.builtin.command: >-
-    {{ container_compose_runtime }} down --remove-orphans
-  args:
-    chdir: "{{ compose_dir.path }}"
-
-- name: Spawn containers
-  ansible.builtin.command: >-
-    {{ container_compose_runtime }} up -d --remove-orphans
-  args:
-    chdir: "{{ compose_dir.path }}"
+    {{ container_runtime }} run --name {{ ansible_test_vault_container_name }} -d \
+    -e 'SKIP_SETCAP=true' \
+    -e 'VAULT_LOCAL_CONFIG={"disable_mlock": true}' \
+    -p 8200:8200 -e VAULT_DEV_ROOT_TOKEN_ID="{{ ansible_test_vault_root_token }}" \
+    hashicorp/vault:latest
 
 - name: Vault enable databse engine
   vault_http_request:
     url: "{{ ansible_test_vault_url }}/v1/sys/mounts/database"
     method: POST
-    token: "{{ ansible_test_vault_token }}"
+    token: "{{ ansible_test_vault_root_token }}"
     payload:
       type: "database"
       description: "Database secrets engine"
@@ -43,3 +27,41 @@
   retries: 10
   delay: 3
   until: result is successful
+
+
+# PostGreSQL
+- name: Generate init-user.sql file
+  ansible.builtin.template:
+    src: init-user.sql.j2
+    dest: "{{ ansible_test_tmp_dir.path }}/init-user.sql"
+  
+- name: Deploy the PostGreSQL container
+  ansible.builtin.command: >-
+    {{ container_runtime }} run --name {{ ansible_test_postgres_container_name }} -d \
+    -p 5432:5432 \
+    -e POSTGRES_USER={{ ansible_test_db_admin_user }} \
+    -e POSTGRES_PASSWORD={{ ansible_test_db_admin_user_password }} \
+    -v {{ ansible_test_tmp_dir.path }}/init-user.sql:/docker-entrypoint-initdb.d/init-user.sql \
+    postgres:17-alpine
+
+- name: Validate connection to PostGreSQL
+  postgres_connect:
+    db_user: "{{ item.user }}"
+    db_user_password: "{{ item.password }}"
+  loop:
+    - user: "{{ ansible_test_db_admin_user }}"
+      password: "{{ ansible_test_db_admin_user_password }}"
+    - user: "{{ ansible_test_db_user }}"
+      password: "{{ ansible_test_db_user_password }}"
+
+# Attach container to private network
+- name: Create container network
+  ansible.builtin.command: >-
+    {{ container_runtime }} network create {{ ansible_test_container_network }}
+
+- name: Attach container to the network
+  ansible.builtin.command: >-
+    {{ container_runtime }} network connect {{ ansible_test_container_network }} {{ item }}
+  loop:
+    - "{{ ansible_test_postgres_container_name }}"
+    - "{{ ansible_test_vault_container_name }}"
