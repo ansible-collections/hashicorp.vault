@@ -25,7 +25,7 @@
   args:
     chdir: "{{ compose_dir.path }}"
 
-- name: Spwan containers
+- name: Spawn containers
   ansible.builtin.command: >-
     {{ container_runtime }}-compose up -d --remove-orphans
   args:

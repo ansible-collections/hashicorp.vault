@@ -167,13 +167,14 @@ class VaultDatabaseConnection(VaultDatabaseParent):
 
     def rotate_credentials(self, name: str, credential_type: str) -> None:
         """
-        Reset a database connection by closing the connection and its underlying plugin,
-        then restarting it.
+        Trigger immediate credential rotation via the Vault Database Secrets Engine API.
+
+        Sends POST to 'v1/{mount}/rotate-root/{name}' when 'credential_type' is 'root',
+        or 'v1/{mount}/rotate-role/{name}' when it is 'role' (static role password rotation).
 
         Args:
-            name (str): The identifier for the database connection (for root user rotation) or the static role to trigger
-                        a password rotation for.
-            credential_type (str): Whether to rotate root or static-role credentials. choices are 'root' or 'role'
+            name (str): Database connection name (for 'root') or static role name (for 'role')
+            credential_type (str): 'root' or 'role'
 
         Returns:
             None
