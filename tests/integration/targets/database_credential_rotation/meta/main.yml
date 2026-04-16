@@ -1,0 +1,3 @@
+---
+dependencies:
+  - setup_vault_dev_with_postgresql

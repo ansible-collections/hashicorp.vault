@@ -18,6 +18,7 @@ __metaclass__ = type
 from typing import Any, Dict, List, Optional
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultConfigurationError,
     VaultSecretNotFoundError,
 )
 
@@ -162,6 +163,28 @@ class VaultDatabaseConnection(VaultDatabaseParent):
             None
         """
         path = f"v1/{self._mount_path}/reset/{name}"
+        self._client._make_request("POST", path, json={})
+
+    def rotate_credentials(self, name: str, credential_type: str) -> None:
+        """
+        Trigger immediate credential rotation via the Vault Database Secrets Engine API.
+
+        Sends POST to 'v1/{mount}/rotate-root/{name}' when 'credential_type' is 'root',
+        or 'v1/{mount}/rotate-role/{name}' when it is 'role' (static role password rotation).
+
+        Args:
+            name (str): Database connection name (for 'root') or static role name (for 'role')
+            credential_type (str): 'root' or 'role'
+
+        Returns:
+            None
+        """
+        credential_type_options = ('root', 'role')
+        if credential_type not in credential_type_options:
+            raise VaultConfigurationError(
+                f"Unexpected type used to rotate credential {credential_type!r}, should be one of {credential_type_options}"
+            )
+        path = f"v1/{self._mount_path}/rotate-{credential_type}/{name}"
         self._client._make_request("POST", path, json={})
 
 

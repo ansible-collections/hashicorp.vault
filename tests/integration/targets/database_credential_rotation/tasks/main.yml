@@ -1,0 +1,119 @@
+---
+- name: Run database_credential_rotation tests
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ ansible_test_vault_url }}"
+      auth_method: "token"
+      token: "{{ ansible_test_vault_root_token }}"
+  vars:
+    database_connection_name: "ansible-test-{{ vault_resource_suffix }}"
+    database_static_role_name: "ansible-static-role-{{ vault_resource_suffix }}"
+  block:
+
+    # Root credential rotation
+    - name: Create database connection
+      hashicorp.vault.database_connection:
+        name: "{{ database_connection_name }}"
+        plugin_name: "postgresql-database-plugin"
+        allowed_roles:
+          - "{{ database_static_role_name }}"
+        connection_url: "{% raw %}postgresql://{{username}}:{{password}}@{% endraw %}{{ ansible_test_postgres_container_name }}:5432/postgres?sslmode=disable"
+        username: "{{ ansible_test_db_admin_user }}"
+        password: "{{ ansible_test_db_admin_user_password }}"
+
+    - name: Rotate root credentials
+      hashicorp.vault.database_credential_rotation:
+        name: "{{ database_connection_name }}"
+        credential_type: root
+      register: rotate_root_creds
+
+    - name: Ensure the module reported change
+      ansible.builtin.assert:
+        that:
+          - rotate_root_creds is changed
+
+    - name: Ensure we cannot log anymore into database
+      postgres_connect:
+        db_user: "{{ ansible_test_db_admin_user }}"
+        db_user_password: "{{ ansible_test_db_admin_user_password }}"
+      register: root_login
+      ignore_errors: true
+
+    - name: Validate that root login failed after credentials rotation
+      ansible.builtin.assert:
+        that:
+          - root_login is failed
+          - '"password authentication failed for user" in root_login.msg'
+
+    # Static role credential rotation
+    # TODO: update this once the corresponding module is created
+    - name: Create databse static role
+      vault_static_role:
+        vault_address: "{{ ansible_test_vault_url }}"
+        vault_token: "{{ ansible_test_vault_root_token }}"
+        name: "{{ database_static_role_name }}"
+        db_name: "{{ database_connection_name }}"
+        username: "{{ ansible_test_db_user }}"
+        rotation_period: 1h
+        operation: create
+
+    - name: Ensure we cannot connect to database anymore
+      postgres_connect:
+        db_user: "{{ ansible_test_db_user }}"
+        db_user_password: "{{ ansible_test_db_user_password }}"
+      register: login_static
+      ignore_errors: true
+
+    - name: Validate that login failed
+      ansible.builtin.assert:
+        that:
+          - login_static is failed
+          - '"password authentication failed for user" in login_static.msg'
+
+    - name: Rotate static role credentials
+      hashicorp.vault.database_credential_rotation:
+        name: "{{ database_static_role_name }}"
+        credential_type: role
+      register: rotate_role_creds
+
+    - name: Ensure the module reported change
+      ansible.builtin.assert:
+        that:
+          - rotate_role_creds is changed
+
+    - name: Read new credentials
+      vault_static_role:
+        vault_address: "{{ ansible_test_vault_url }}"
+        vault_token: "{{ ansible_test_vault_root_token }}"
+        name: "{{ database_static_role_name }}"
+        operation: read
+      register: role_credentials
+
+    - name: Ensure we can log with new credentials
+      postgres_connect:
+        db_user: "{{ role_credentials.auth.username }}"
+        db_user_password: "{{ role_credentials.auth.password }}"
+
+    - name: Rotate static role credentials once again
+      hashicorp.vault.database_credential_rotation:
+        name: "{{ database_static_role_name }}"
+        credential_type: role
+      register: rotate_role_creds
+
+    - name: Ensure the module reported change again
+      ansible.builtin.assert:
+        that:
+          - rotate_role_creds is changed
+
+    - name: Read role credentials again
+      vault_static_role:
+        vault_address: "{{ ansible_test_vault_url }}"
+        vault_token: "{{ ansible_test_vault_root_token }}"
+        name: "{{ database_static_role_name }}"
+        operation: read
+      register: new_role_credentials
+
+    - name: Ensure the credentials have changed
+      ansible.builtin.assert:
+        that:
+          - new_role_credentials.auth.last_vault_rotation != role_credentials.auth.last_vault_rotation

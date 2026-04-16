@@ -1,0 +1,27 @@
+---
+- name: Stop running containers
+  ansible.builtin.command: >-
+    {{ container_runtime }} stop {{ item }}
+  loop:
+    - "{{ ansible_test_vault_container_name }}"
+    - "{{ ansible_test_postgres_container_name }}"
+  ignore_errors: true
+
+- name: Remove running containers
+  ansible.builtin.command: >-
+    {{ container_runtime }} rm {{ item }}
+  loop:
+    - "{{ ansible_test_vault_container_name }}"
+    - "{{ ansible_test_postgres_container_name }}"
+  ignore_errors: true
+
+- name: Delete container network
+  ansible.builtin.command: >
+    {{ container_runtime }} network rm {{ ansible_test_container_network }}
+  ignore_errors: true
+
+- name: Delete temporary directory created for container configuration
+  ansible.builtin.file:
+    state: absent
+    path: "{{ ansible_test_tmp_dir.path }}"
+  ignore_errors: true

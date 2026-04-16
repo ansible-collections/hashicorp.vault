@@ -1,0 +1,67 @@
+---
+- name: Create temporary file for compose containers configuration
+  ansible.builtin.tempfile:
+    suffix: .compose
+    state: directory
+  register: ansible_test_tmp_dir
+  notify: 'Clean resources'
+
+# Vault server
+- name: Deploy vault dev server
+  ansible.builtin.command: >-
+    {{ container_runtime }} run --name {{ ansible_test_vault_container_name }} -d \
+    -e 'SKIP_SETCAP=true' \
+    -e 'VAULT_LOCAL_CONFIG={"disable_mlock": true}' \
+    -p 8200:8200 -e VAULT_DEV_ROOT_TOKEN_ID="{{ ansible_test_vault_root_token }}" \
+    hashicorp/vault:latest
+
+- name: Vault enable databse engine
+  vault_http_request:
+    url: "{{ ansible_test_vault_url }}/v1/sys/mounts/database"
+    method: POST
+    token: "{{ ansible_test_vault_root_token }}"
+    payload:
+      type: "database"
+      description: "Database secrets engine"
+  register: result
+  retries: 10
+  delay: 3
+  until: result is successful
+
+
+# PostGreSQL
+- name: Generate init-user.sql file
+  ansible.builtin.template:
+    src: init-user.sql.j2
+    dest: "{{ ansible_test_tmp_dir.path }}/init-user.sql"
+  
+- name: Deploy the PostGreSQL container
+  ansible.builtin.command: >-
+    {{ container_runtime }} run --name {{ ansible_test_postgres_container_name }} -d \
+    -p 5432:5432 \
+    -e POSTGRES_USER={{ ansible_test_db_admin_user }} \
+    -e POSTGRES_PASSWORD={{ ansible_test_db_admin_user_password }} \
+    -v {{ ansible_test_tmp_dir.path }}/init-user.sql:/docker-entrypoint-initdb.d/init-user.sql \
+    postgres:17-alpine
+
+- name: Validate connection to PostGreSQL
+  postgres_connect:
+    db_user: "{{ item.user }}"
+    db_user_password: "{{ item.password }}"
+  loop:
+    - user: "{{ ansible_test_db_admin_user }}"
+      password: "{{ ansible_test_db_admin_user_password }}"
+    - user: "{{ ansible_test_db_user }}"
+      password: "{{ ansible_test_db_user_password }}"
+
+# Attach container to private network
+- name: Create container network
+  ansible.builtin.command: >-
+    {{ container_runtime }} network create {{ ansible_test_container_network }}
+
+- name: Attach container to the network
+  ansible.builtin.command: >-
+    {{ container_runtime }} network connect {{ ansible_test_container_network }} {{ item }}
+  loop:
+    - "{{ ansible_test_postgres_container_name }}"
+    - "{{ ansible_test_vault_container_name }}"

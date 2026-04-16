@@ -1,0 +1,13 @@
+---
+container_runtime: "docker"
+ansible_test_vault_url: "http://127.0.0.1:8200"
+ansible_test_vault_container_name: vault-ansible-test
+ansible_test_vault_root_token: ansible_root
+ansible_test_postgres_container_name: postgres-ansible-test
+ansible_test_postgres_password: ansible_postgres
+ansible_test_db_user: ansible
+ansible_test_db_user_password: 'ansible123!'
+ansible_test_db_admin_user: admin
+ansible_test_db_admin_user_password: 'adminpass123!'
+ansible_test_controller_container_name: python-ansible-test
+ansible_test_container_network: ansible-test-network
