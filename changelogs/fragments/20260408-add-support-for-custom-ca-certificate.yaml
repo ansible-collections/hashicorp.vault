@@ -1,0 +1,6 @@
+---
+minor_changes:
+  - Add support for custom CA certificate verification via the ``ca_cert`` parameter or the ``VAULT_CACERT`` environment variable
+    (https://github.com/ansible-collections/hashicorp.vault/pull/109).
+  - Add the ability to bypass TLS verification using the ``tls_skip_verify`` parameter or the ``VAULT_SKIP_VERIFY`` environment variable
+    (https://github.com/ansible-collections/hashicorp.vault/pull/109).

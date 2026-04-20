@@ -50,6 +50,23 @@ options:
     description: AppRole auth method mount path.
     default: approle
     type: str
+  ca_cert:
+    description:
+      - The path to a PEM-encoded CA certificate file to use for TLS verification.
+      - If this parameter is not provided, the value of the E(VAULT_CACERT) environment variable will be used.
+    type: str
+    aliases:
+      - cacert
+      - ssl_ca_cert
+    version_added: 1.2.0
+  tls_skip_verify:
+    description:
+      - Controls whether the module verifies the TLS certificate presented by the Vault server.
+      - If this parameter is not provided, the value of the E(VAULT_SKIP_VERIFY) environment variable will be used.
+      - Setting this to V(true) disables certificate validation.
+    type: bool
+    default: false
+    version_added: 1.2.0
 notes:
   - Authentication is required for all Vault operations.
   - Token authentication is the default method.
@@ -106,6 +123,22 @@ options:
     type: str
     env:
       - name: VAULT_APPROLE_PATH
+  ca_cert:
+    description:
+      - The path to a PEM-encoded CA certificate file to use for TLS verification.
+    type: str
+    env:
+      - name: VAULT_CACERT
+    version_added: 1.2.0
+  tls_skip_verify:
+    description:
+      - Controls whether the module verifies the TLS certificate presented by the Vault server.
+      - Setting this to V(true) disables certificate validation.
+    type: bool
+    default: false
+    env:
+      - name: VAULT_SKIP_VERIFY
+    version_added: 1.2.0
 notes:
   - Authentication is required for all Vault operations.
 """

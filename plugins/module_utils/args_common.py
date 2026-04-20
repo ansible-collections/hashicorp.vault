@@ -28,4 +28,13 @@ AUTH_ARG_SPEC = {
         "fallback": (env_fallback, ["VAULT_APPROLE_SECRET_ID"]),
     },
     "vault_approle_path": {"default": "approle"},
+    "ca_cert": {
+        "aliases": ["cacert", "ssl_ca_cert"],
+        "fallback": (env_fallback, ["VAULT_CACERT"]),
+    },
+    "tls_skip_verify": {
+        "type": "bool",
+        "default": False,
+        "fallback": (env_fallback, ["VAULT_SKIP_VERIFY"]),
+    },
 }

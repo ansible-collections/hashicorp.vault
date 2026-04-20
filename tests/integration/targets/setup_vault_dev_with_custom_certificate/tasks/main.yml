@@ -1,0 +1,54 @@
+---
+- name: Create temporary directory for vault resources
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: .dev.vault
+  register: vault_dir
+  notify: 'Delete resources'
+
+- name: Set variable for vault directory
+  ansible.builtin.set_fact:
+    vault_temp_dir: "{{ vault_dir.path }}"
+
+- name: Generate custom certificate
+  generate_certificate:
+    cert_path: "{{ vault_temp_dir }}/vault.crt"
+    key_path: "{{ vault_temp_dir }}/vault.key"
+
+- name: Create container compose configuration file
+  ansible.builtin.template:
+      src: compose.yaml.j2
+      dest: "{{ vault_temp_dir }}/docker-compose.yaml"
+
+- name: Copy vault configuration file
+  ansible.builtin.copy:
+    src: vault-config.hcl
+    dest: "{{ vault_temp_dir }}/vault-config.hcl"
+
+- name: 'Run {{ container_runtime }} compose up'
+  ansible.builtin.command: >-
+    {{ container_runtime }} compose up -d --remove-orphans
+  args:
+    chdir: "{{ vault_temp_dir }}"
+
+- name: Get containers logs (debug)
+  ansible.builtin.command: >-
+    {{ container_runtime }} logs vault-server
+  register: _containers_logs
+
+- name: Display container logs
+  ansible.builtin.debug:
+    var: _containers_logs
+
+- name: Configure the vault dev server
+  vault_config:
+    ca_cert: "{{ vault_temp_dir }}/vault.crt"
+    engine_path: "{{ ansible_test_engine_mount_path }}"
+  register: result
+
+- name: Set server variable for later use
+  ansible.builtin.set_fact:
+    vault_dev_server_cacert: "{{ vault_temp_dir }}/vault.crt"
+    vault_dev_server_url: "https://127.0.0.1:8200"
+    vault_dev_server_root_token: "{{ result.root_token }}"
+    vault_dev_server_engine_mount_path: "{{ ansible_test_engine_mount_path }}"

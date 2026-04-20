@@ -157,7 +157,10 @@ class TestKv2SecretGetLookup:
 
             # Verify that VaultClient was created with correct parameters
             mock_vault_client_class.assert_called_once_with(
-                vault_address="https://vault.example.com:8200", vault_namespace="admin"
+                vault_address="https://vault.example.com:8200",
+                vault_namespace="admin",
+                ca_certificate=None,
+                tls_skip_verify=None,
             )
 
             # Verify authentication was called

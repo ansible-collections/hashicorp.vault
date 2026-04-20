@@ -1,0 +1,16 @@
+services:
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault-server
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_ADDR=https://127.0.0.1:8200
+      - SKIP_SETCAP=true
+    cap_add:
+      - IPC_LOCK
+    command: ["vault", "server", "-config=/vault/config/vault-config.hcl"]
+    volumes:
+      - {{ vault_temp_dir }}/vault-config.hcl:/vault/config/vault-config.hcl
+      - {{ vault_temp_dir }}/vault.crt:/vault/config/vault.crt
+      - {{ vault_temp_dir }}/vault.key:/vault/config/vault.key

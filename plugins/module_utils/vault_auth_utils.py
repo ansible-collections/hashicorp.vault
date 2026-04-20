@@ -89,10 +89,17 @@ def get_authenticated_client(module):
 
     vault_namespace = module.params["namespace"]
     vault_address = module.params["url"]
+    ca_cert = module.params["ca_cert"]
+    tls_skip_verify = module.params["tls_skip_verify"]
 
     try:
         # Create client
-        client = VaultClient(vault_address=vault_address, vault_namespace=vault_namespace)
+        client = VaultClient(
+            vault_address=vault_address,
+            vault_namespace=vault_namespace,
+            ca_certificate=ca_cert,
+            tls_skip_verify=tls_skip_verify,
+        )
 
         # Authenticate using module parameters
         authenticate_module(module, client)

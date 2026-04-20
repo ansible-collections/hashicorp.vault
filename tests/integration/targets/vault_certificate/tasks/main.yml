@@ -1,0 +1,71 @@
+---
+- name: Run tests for custom certificate
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_dev_server_url }}"
+      auth_method: token
+      token: "{{ vault_dev_server_root_token }}"
+      secret_mount_path: "{{ vault_dev_server_engine_mount_path }}"
+  block:
+    - name: Trying to create a secret without the custom certificate
+      hashicorp.vault.kv2_secret:
+        path: "ansible-test"
+        data:
+          username: ansible
+          password: pass123
+        state: present
+      ignore_errors: true
+      register: create_secret_without_cacert
+
+    - name: Ensure module failed to authenticate to vault server
+      ansible.builtin.assert:
+        that:
+          - create_secret_without_cacert is failed
+          - '"certificate verify failed" in create_secret_without_cacert.msg'
+
+    - name: Create a secret using custom certificate
+      hashicorp.vault.kv2_secret:
+        path: "ansible-test"
+        data:
+          username: ansible
+          password: pass123
+        state: present
+        ca_cert: "{{ vault_dev_server_cacert }}"
+
+    - name: Read secret using custom certificate as environment variable
+      hashicorp.vault.kv1_secret_info:
+        path: "ansible-test"
+      environment:
+        VAULT_CACERT: "{{ vault_dev_server_cacert }}"
+    
+    - name: Read secret (tls_skip_verify=true)
+      hashicorp.vault.kv1_secret_info:
+        path: "ansible-test"
+        tls_skip_verify: true
+
+    - name: Read secret (tls_skip_verify=true as environment variable)
+      hashicorp.vault.kv1_secret_info:
+        path: "ansible-test"
+      environment:
+        VAULT_SKIP_VERIFY: "true"
+
+    # Lookups
+    - name: Read secret using lookup plugin without ca_cert
+      ansible.builtin.debug:
+        msg: "{{ lookup('hashicorp.vault.kv2_secret_get', secret='ansible-test', url=vault_dev_server_url, token=vault_dev_server_root_token) }}"
+      ignore_errors: true
+      register: lookup_without_cacert
+
+    - name: Ensure module failed to authenticate to vault server
+      ansible.builtin.assert:
+        that:
+          - lookup_without_cacert is failed
+          - '"certificate verify failed" in lookup_without_cacert.msg'
+
+    - name: Read secret using lookup plugin with ca_cert
+      ansible.builtin.debug:
+        msg: "{{ lookup('hashicorp.vault.kv2_secret_get', secret='ansible-test', url=vault_dev_server_url, token=vault_dev_server_root_token, ca_cert=vault_dev_server_cacert) }}"
+
+    - name: Read secret using lookup plugin and skip tls verification
+      ansible.builtin.debug:
+        msg: "{{ lookup('hashicorp.vault.kv2_secret_get', secret='ansible-test', url=vault_dev_server_url, token=vault_dev_server_root_token, tls_skip_verify=true) }}"

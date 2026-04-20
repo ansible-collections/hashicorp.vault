@@ -19,6 +19,8 @@ except ImportError as imp_exc:
 else:
     REQUESTS_IMPORT_ERROR = None
 
+from ansible.module_utils.parsing.convert_bool import boolean
+
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
     VaultConfigurationError,
@@ -78,7 +80,13 @@ class VaultClient:
         session (requests.Session): HTTP session with Vault headers configured
     """
 
-    def __init__(self, vault_address: str, vault_namespace: str) -> None:
+    def __init__(
+        self,
+        vault_address: str,
+        vault_namespace: str,
+        ca_certificate: Optional[str] = None,
+        tls_skip_verify: bool = None,
+    ) -> None:
         """
         Initialize the Vault client.
 
@@ -88,6 +96,8 @@ class VaultClient:
         Args:
             vault_address (str): The Vault server address (e.g., "https://vault.example.com:8200")
             vault_namespace (str): Vault Enterprise namespace (use "root" for OSS Vault)
+            ca_certificate (str): Path to an optional custom CA certificate file.
+            tls_skip_verify (bool): When set to true, skip tls verification.
 
         Raises:
             VaultConfigurationError: If vault_address or vault_namespace are empty/None
@@ -112,6 +122,10 @@ class VaultClient:
         self.secrets = Secrets(self)
         self.acl_policies = VaultAclPolicies(self)
         self.namespaces = VaultNamespaces(self)
+
+        tls_skip_verify_b = boolean(tls_skip_verify) if tls_skip_verify is not None else False
+        if ca_certificate or tls_skip_verify_b:
+            self.session.verify = not tls_skip_verify_b if tls_skip_verify_b else ca_certificate
 
     def set_token(self, token: str) -> None:
         """

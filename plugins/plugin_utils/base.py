@@ -52,5 +52,12 @@ class VaultLookupBase(LookupBase):
 
         vault_namespace = self.get_option("namespace")
         vault_address = self.get_option("url")
-        self.client = VaultClient(vault_address=vault_address, vault_namespace=vault_namespace)
+        ca_cert = self.get_option("ca_cert")
+        tls_skip_verify = self.get_option("tls_skip_verify")
+        self.client = VaultClient(
+            vault_address=vault_address,
+            vault_namespace=vault_namespace,
+            ca_certificate=ca_cert,
+            tls_skip_verify=tls_skip_verify,
+        )
         self._authenticate()
