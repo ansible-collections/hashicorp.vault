@@ -252,7 +252,7 @@ def _validate_duration_format(value, param_name):
     # If it's neither int nor string, raise an error
     raise ValueError(
         f"{param_name} must be an integer (seconds) or a duration string (e.g., '72h', '5m', '30s'). "
-        f"Got type {type(value).__name__}: {value!r}"
+        f"Got type {value.__class__.__name__}: {value!r}"
     )
 
 
@@ -308,7 +308,7 @@ def _normalize_duration_to_seconds(value):
         return int(round(seconds))
 
     # If not int or string, this is a programming error
-    raise TypeError(f"Duration must be int or str, got {type(value).__name__}: {value!r}")
+    raise TypeError(f"Duration must be int or str, got {value.__class__.__name__}: {value!r}")
 
 
 def _validate_rotation_params(module):
