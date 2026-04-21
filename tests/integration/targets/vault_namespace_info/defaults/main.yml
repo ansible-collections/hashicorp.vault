@@ -1,0 +1,16 @@
+---
+# Unique namespace paths per integration run (avoid collisions in shared Vault)
+vault_namespace_info_test_path_1: "ansible-ns-info-int-1-{{ vault_resource_suffix }}"
+vault_namespace_info_test_path_2: "ansible-ns-info-int-2-{{ vault_resource_suffix }}"
+
+# Metadata for test namespaces
+vault_namespace_info_metadata_1:
+  team: ansible-integration
+  resource_suffix: "{{ vault_resource_suffix }}"
+  test: namespace-info-1
+
+vault_namespace_info_metadata_2:
+  team: ansible-integration
+  resource_suffix: "{{ vault_resource_suffix }}"
+  test: namespace-info-2
+  owner: test-ci
