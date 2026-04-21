@@ -23,8 +23,8 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions i
     VaultSecretNotFoundError,
 )
 from ansible_collections.hashicorp.vault.plugins.modules.database_static_role import (
-    _validate_duration_format,
     _normalize_duration_to_seconds,
+    _validate_duration_format,
 )
 
 TEST_ROLE_NAME = "test-role"
@@ -88,20 +88,13 @@ class TestConfigsMatch:
     def test_nested_dict_vault_defaults_ignored(self):
         """Test that Vault-added defaults in nested dicts don't affect comparison."""
         # User provided credential_config with only key_bits
-        user_config = {
-            "db_name": "mydb",
-            "credential_type": "rsa_private_key",
-            "credential_config": {"key_bits": 2048}
-        }
+        user_config = {"db_name": "mydb", "credential_type": "rsa_private_key", "credential_config": {"key_bits": 2048}}
 
         # Vault added algorithm default to credential_config
         existing = {
             "db_name": "mydb",
             "credential_type": "rsa_private_key",
-            "credential_config": {
-                "key_bits": 2048,
-                "algorithm": "rsa"  # Vault default
-            }
+            "credential_config": {"key_bits": 2048, "algorithm": "rsa"},  # Vault default
         }
 
         # Should match because user-provided keys in nested dict are the same
@@ -109,13 +102,9 @@ class TestConfigsMatch:
 
     def test_nested_dict_change_detected(self):
         """Test that changes in nested dict values are detected."""
-        user_config = {
-            "credential_config": {"key_bits": 2048}
-        }
+        user_config = {"credential_config": {"key_bits": 2048}}
 
-        existing = {
-            "credential_config": {"key_bits": 4096}  # Different!
-        }
+        existing = {"credential_config": {"key_bits": 4096}}  # Different!
 
         assert compare_vault_configs(existing, user_config) is False
 
@@ -165,7 +154,7 @@ class TestNormalizeDurationToSeconds:
     def test_decimal_duration(self):
         """Test duration strings with decimal values."""
         assert _normalize_duration_to_seconds("1.5h") == 5400  # 1.5 hours = 5400 seconds
-        assert _normalize_duration_to_seconds("2.5m") == 150   # 2.5 minutes = 150 seconds
+        assert _normalize_duration_to_seconds("2.5m") == 150  # 2.5 minutes = 150 seconds
 
     def test_equivalent_formats(self):
         """Test that equivalent durations in different formats normalize to same value."""

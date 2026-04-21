@@ -186,9 +186,9 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils i
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_database import (
     VaultDatabaseStaticRoles,
+    build_config_params,
     compare_vault_configs,
     get_static_role,
-    build_config_params,
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
