@@ -671,6 +671,26 @@ class Database:
         self.dynamic_roles = VaultDatabaseDynamicRoles(client, mount_path)
 
 
+def get_static_role(static_role_client: "VaultDatabaseStaticRoles", name: str) -> Dict[str, Any]:
+    """
+    Get a database static role configuration, returning an empty dict if not found.
+
+    This is a utility function to avoid repetitive try/except blocks when
+    reading static roles where a "not found" condition is acceptable.
+
+    Args:
+        static_role_client: VaultDatabaseStaticRoles instance
+        name: The name of the static role to read
+
+    Returns:
+        dict: The static role configuration, or {} if not found
+    """
+    try:
+        return static_role_client.read_static_role(name)
+    except VaultSecretNotFoundError:
+        return {}
+
+
 __all__ = [
     'VaultDatabaseParent',
     'Database',
@@ -679,6 +699,7 @@ __all__ = [
     'VaultDatabaseDynamicRoles',
     'build_config_params',
     'get_existing_role_or_none',
+    'get_static_role',
     'normalize_value',
     'compare_vault_configs',
 ]

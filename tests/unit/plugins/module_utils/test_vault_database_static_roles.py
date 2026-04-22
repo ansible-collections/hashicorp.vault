@@ -15,14 +15,240 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client impor
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_database import (
     VaultDatabaseStaticRoles,
+    compare_vault_configs,
 )
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
     VaultPermissionError,
     VaultSecretNotFoundError,
 )
+from ansible_collections.hashicorp.vault.plugins.modules.database_static_role import (
+    _normalize_duration_to_seconds,
+    _validate_duration_format,
+)
 
 TEST_ROLE_NAME = "test-role"
+
+
+class TestConfigsMatch:
+    """Test the compare_vault_configs utility function."""
+
+    def test_empty_existing_config_returns_false(self):
+        """Test that an empty existing config indicates a change (new creation)."""
+        existing = {}
+        user_config = {"db_name": "mydb", "username": "user", "rotation_period": 86400}
+
+        assert compare_vault_configs(existing, user_config) is False
+
+    def test_matching_configs_returns_true(self):
+        """Test that matching configs indicate no change."""
+        existing = {"db_name": "mydb", "username": "user", "rotation_period": 86400}
+        user_config = {"db_name": "mydb", "username": "user", "rotation_period": 86400}
+
+        assert compare_vault_configs(existing, user_config) is True
+
+    def test_vault_defaults_ignored(self):
+        """Test that Vault-added defaults don't affect comparison."""
+        # User only provided these keys (normalized)
+        user_config = {"db_name": "mydb", "username": "user", "rotation_period": 86400}
+
+        # Existing has user keys + Vault defaults
+        existing = {
+            "db_name": "mydb",
+            "username": "user",
+            "rotation_period": 86400,
+            "rotation_statements": [],  # Vault default
+            "credential_type": "password",  # Vault default
+        }
+
+        # Should match because user-provided keys are the same
+        assert compare_vault_configs(existing, user_config) is True
+
+    def test_user_key_changed_returns_false(self):
+        """Test that a change in a user-provided key is detected."""
+        existing = {"db_name": "mydb", "username": "user", "rotation_period": 86400}
+        user_config = {"db_name": "mydb", "username": "user", "rotation_period": 3600}  # Changed!
+
+        assert compare_vault_configs(existing, user_config) is False
+
+    def test_partial_user_config_match(self):
+        """Test that only user-provided keys are checked."""
+        # User only provided db_name and username (normalized)
+        user_config = {"db_name": "mydb", "username": "user"}
+
+        existing = {
+            "db_name": "mydb",
+            "username": "user",
+            "rotation_period": 86400,  # Not in user_config, so not checked
+        }
+
+        # Should match because user keys (db_name, username) are the same
+        assert compare_vault_configs(existing, user_config) is True
+
+    def test_nested_dict_vault_defaults_ignored(self):
+        """Test that Vault-added defaults in nested dicts don't affect comparison."""
+        # User provided credential_config with only key_bits
+        user_config = {"db_name": "mydb", "credential_type": "rsa_private_key", "credential_config": {"key_bits": 2048}}
+
+        # Vault added algorithm default to credential_config
+        existing = {
+            "db_name": "mydb",
+            "credential_type": "rsa_private_key",
+            "credential_config": {"key_bits": 2048, "algorithm": "rsa"},  # Vault default
+        }
+
+        # Should match because user-provided keys in nested dict are the same
+        assert compare_vault_configs(existing, user_config) is True
+
+    def test_nested_dict_change_detected(self):
+        """Test that changes in nested dict values are detected."""
+        user_config = {"credential_config": {"key_bits": 2048}}
+
+        existing = {"credential_config": {"key_bits": 4096}}  # Different!
+
+        assert compare_vault_configs(existing, user_config) is False
+
+
+class TestNormalizeDurationToSeconds:
+    """Test the _normalize_duration_to_seconds helper function."""
+
+    def test_integer_passthrough(self):
+        """Test that integers are returned as-is."""
+        assert _normalize_duration_to_seconds(86400) == 86400
+        assert _normalize_duration_to_seconds(1) == 1
+        assert _normalize_duration_to_seconds(3600) == 3600
+
+    def test_hours_conversion(self):
+        """Test hour-based duration strings."""
+        assert _normalize_duration_to_seconds("24h") == 86400
+        assert _normalize_duration_to_seconds("1h") == 3600
+        assert _normalize_duration_to_seconds("72h") == 259200
+
+    def test_minutes_conversion(self):
+        """Test minute-based duration strings."""
+        assert _normalize_duration_to_seconds("60m") == 3600
+        assert _normalize_duration_to_seconds("1m") == 60
+        assert _normalize_duration_to_seconds("90m") == 5400
+
+    def test_seconds_conversion(self):
+        """Test second-based duration strings."""
+        assert _normalize_duration_to_seconds("86400s") == 86400
+        assert _normalize_duration_to_seconds("1s") == 1
+        assert _normalize_duration_to_seconds("3600s") == 3600
+
+    def test_milliseconds_conversion(self):
+        """Test millisecond-based duration strings."""
+        assert _normalize_duration_to_seconds("1000ms") == 1
+        assert _normalize_duration_to_seconds("500ms") == 0  # Rounds to 0 (banker's rounding: 0.5 → 0)
+        assert _normalize_duration_to_seconds("1500ms") == 2  # Rounds to 2 (banker's rounding: 1.5 → 2)
+
+    def test_microseconds_conversion(self):
+        """Test microsecond-based duration strings."""
+        assert _normalize_duration_to_seconds("1000000us") == 1
+        assert _normalize_duration_to_seconds("1000000µs") == 1
+
+    def test_nanoseconds_conversion(self):
+        """Test nanosecond-based duration strings."""
+        assert _normalize_duration_to_seconds("1000000000ns") == 1
+
+    def test_decimal_duration(self):
+        """Test duration strings with decimal values."""
+        assert _normalize_duration_to_seconds("1.5h") == 5400  # 1.5 hours = 5400 seconds
+        assert _normalize_duration_to_seconds("2.5m") == 150  # 2.5 minutes = 150 seconds
+
+    def test_equivalent_formats(self):
+        """Test that equivalent durations in different formats normalize to same value."""
+        # All represent 24 hours
+        assert _normalize_duration_to_seconds("24h") == 86400
+        assert _normalize_duration_to_seconds("1440m") == 86400
+        assert _normalize_duration_to_seconds("86400s") == 86400
+        assert _normalize_duration_to_seconds(86400) == 86400
+
+    def test_invalid_type_raises_error(self):
+        """Test that invalid types raise TypeError."""
+        with pytest.raises(TypeError, match="Duration must be int or str"):
+            _normalize_duration_to_seconds(None)
+        with pytest.raises(TypeError, match="Duration must be int or str"):
+            _normalize_duration_to_seconds([1, 2, 3])
+        with pytest.raises(TypeError, match="Duration must be int or str"):
+            _normalize_duration_to_seconds({"duration": "24h"})
+
+    def test_invalid_duration_string_raises_error(self):
+        """Test that invalid duration strings raise TypeError."""
+        # These should have been caught by validation, but test normalization fails fast
+        with pytest.raises(TypeError, match="Invalid duration format"):
+            _normalize_duration_to_seconds("invalid_time")
+        with pytest.raises(TypeError, match="Invalid duration format"):
+            _normalize_duration_to_seconds("24")  # Missing unit
+        with pytest.raises(TypeError, match="Invalid duration format"):
+            _normalize_duration_to_seconds("h24")  # Unit before number
+
+
+class TestValidateDurationFormat:
+    """Test the _validate_duration_format helper function."""
+
+    def test_valid_integer_duration(self):
+        """Test that positive integers are valid."""
+        _validate_duration_format(86400, "rotation_period")
+        _validate_duration_format(1, "rotation_period")
+        _validate_duration_format(3600, "rotation_window")
+
+    def test_invalid_integer_zero(self):
+        """Test that zero is invalid."""
+        with pytest.raises(ValueError, match="must be a positive integer"):
+            _validate_duration_format(0, "rotation_period")
+
+    def test_invalid_negative_integer(self):
+        """Test that negative integers are invalid."""
+        with pytest.raises(ValueError, match="must be a positive integer"):
+            _validate_duration_format(-100, "rotation_period")
+
+    def test_valid_duration_strings(self):
+        """Test various valid duration string formats."""
+        valid_durations = [
+            "24h",
+            "72h",
+            "5m",
+            "30s",
+            "1h",
+            "86400s",
+            "1000ms",
+            "500us",
+            "500µs",
+            "1000000ns",
+            "1.5h",
+            "2.5m",
+        ]
+        for duration in valid_durations:
+            _validate_duration_format(duration, "rotation_period")
+
+    def test_invalid_duration_strings(self):
+        """Test invalid duration string formats."""
+        invalid_durations = [
+            "invalid_time",
+            "24",  # Missing unit
+            "h24",  # Unit before number
+            "24hours",  # Invalid unit
+            "24 h",  # Space between number and unit
+            "",  # Empty string
+            "abc",  # No number
+        ]
+        for duration in invalid_durations:
+            with pytest.raises(ValueError, match="must be a valid duration string"):
+                _validate_duration_format(duration, "rotation_period")
+
+    def test_invalid_types(self):
+        """Test that invalid types are rejected."""
+        invalid_values = [
+            ["list", "of", "times"],
+            {"key": "value"},
+            None,
+            True,
+            3.14,
+        ]
+        for value in invalid_values:
+            with pytest.raises(ValueError, match="must be an integer"):
+                _validate_duration_format(value, "rotation_period")
 
 
 @pytest.fixture
@@ -244,7 +470,7 @@ class TestCreateOrUpdateStaticRole:
         static_roles = VaultDatabaseStaticRoles(authenticated_client)
 
         with pytest.raises(TypeError, match="config must be a dict"):
-            static_roles.create_or_update_static_role(TEST_ROLE_NAME, "invalid_config")
+            static_roles.create_or_update_static_role(TEST_ROLE_NAME, "invalid_config")  # type: ignore[arg-type]
         authenticated_client._make_request.assert_not_called()
 
 
