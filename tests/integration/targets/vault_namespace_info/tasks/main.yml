@@ -1,0 +1,270 @@
+---
+# Integration tests: vault_namespace_info (list/read)
+# Covers: list, read, check mode, path alias, delete verification
+- name: Run vault_namespace_info integration tests
+  collections:
+    - hashicorp.vault
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: token
+      token: "{{ vault_token_from_setup_auth_token }}"
+  block:
+    # Check if Vault Enterprise namespaces API is available
+    - name: Check namespaces API availability (LIST /v1/sys/namespaces)
+      ansible.builtin.uri:
+        url: "{{ vault_url | regex_replace('/+$', '') }}/v1/sys/namespaces"
+        method: LIST
+        headers:
+          X-Vault-Token: "{{ vault_token_from_setup_auth_token }}"
+          X-Vault-Namespace: "{{ vault_namespace }}"
+        status_code: [200]
+        return_content: true
+      register: vault_namespaces_api_heartbeat
+      ignore_errors: true
+      no_log: true
+
+    - name: Report skipped tests when namespaces API is unavailable
+      ansible.builtin.debug:
+        msg: >-
+          Skipping vault_namespace_info integration tests: namespaces API not usable
+          on this Vault instance (expected for Open Source Vault or insufficient permissions).
+          Heartbeat LIST /v1/sys/namespaces did not return HTTP 200.
+      when: vault_namespaces_api_heartbeat is failed
+
+    - name: Exercise vault_namespace_info module
+      when: not (vault_namespaces_api_heartbeat is failed)
+      block:
+        # Setup
+        - name: Set stable vault_resource_suffix for this test run
+          ansible.builtin.set_fact:
+            vault_resource_suffix: "{{ lookup('password', '/dev/null', chars='ascii_letters,digits', length=8) }}"
+          run_once: true
+
+        - name: Set normalized paths for assertions
+          ansible.builtin.set_fact:
+            vault_namespace_info_test_path_1_normalized: >-
+              {{ vault_namespace_info_test_path_1 | regex_replace('^/+', '') | regex_replace('/+$', '') }}
+            vault_namespace_info_test_path_2_normalized: >-
+              {{ vault_namespace_info_test_path_2 | regex_replace('^/+', '') | regex_replace('/+$', '') }}
+
+        # Cleanup
+        - name: Remove test namespaces if left from prior run
+          hashicorp.vault.vault_namespace:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - "{{ vault_namespace_info_test_path_1 }}"
+            - "{{ vault_namespace_info_test_path_2 }}"
+          failed_when: false
+
+        # LIST (vault_namespace_info, no path) — before any create
+        - name: List namespaces before create
+          hashicorp.vault.vault_namespace_info:
+          register: namespaces_before
+
+        - name: List in check mode (no changes expected)
+          hashicorp.vault.vault_namespace_info:
+          register: namespaces_list_check
+          check_mode: true
+
+        - name: Assert list shape and check mode unchanged
+          ansible.builtin.assert:
+            that:
+              - namespaces_before.namespaces is defined
+              - namespaces_before.namespaces is iterable
+              - (namespaces_before.namespaces | select('mapping') | list | length) == (namespaces_before.namespaces | length)
+              - (namespaces_before.namespaces | selectattr('id', 'defined') | list | length) == (namespaces_before.namespaces | length)
+              - (namespaces_before.namespaces | selectattr('path', 'defined') | list | length) == (namespaces_before.namespaces | length)
+              - (namespaces_before.namespaces | selectattr('custom_metadata', 'defined') | list | length) == (namespaces_before.namespaces | length)
+              - namespaces_before.namespaces_keys is defined
+              - namespaces_before.namespaces_keys is iterable
+              - namespaces_before.namespaces_key_info is defined
+              - namespaces_before.namespaces_key_info is mapping
+              - namespaces_list_check.namespaces is defined
+              - namespaces_list_check.namespaces_keys is defined
+              - namespaces_list_check.namespaces_key_info is defined
+              - namespaces_list_check is not changed
+
+        # CREATE
+        - name: Create first test namespace
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_info_test_path_1 }}"
+            state: present
+            custom_metadata: "{{ vault_namespace_info_metadata_1 }}"
+          register: create_ns_1
+
+        - name: Create second test namespace
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_info_test_path_2 }}"
+            state: present
+            custom_metadata: "{{ vault_namespace_info_metadata_2 }}"
+          register: create_ns_2
+
+        - name: Assert namespaces created
+          ansible.builtin.assert:
+            that:
+              - create_ns_1 is changed
+              - create_ns_2 is changed
+
+        # READ (vault_namespace_info with path)
+        - name: Read first namespace via vault_namespace_info
+          hashicorp.vault.vault_namespace_info:
+            path: "{{ vault_namespace_info_test_path_1 }}"
+          register: namespace_read_1
+
+        - name: Read first namespace in check mode
+          hashicorp.vault.vault_namespace_info:
+            path: "{{ vault_namespace_info_test_path_1 }}"
+          register: namespace_read_1_check
+          check_mode: true
+
+        - name: Assert read first namespace
+          ansible.builtin.assert:
+            that:
+              - namespace_read_1.namespaces is defined
+              - namespace_read_1.namespaces | length == 1
+              - namespace_read_1.namespaces[0].id is defined
+              - namespace_read_1.namespaces[0].path is defined
+              - vault_namespace_info_test_path_1_normalized in namespace_read_1.namespaces[0].path
+              - namespace_read_1.namespaces[0].custom_metadata is defined
+              - namespace_read_1.namespaces[0].custom_metadata.team == "ansible-integration"
+              - namespace_read_1_check is not changed
+              - namespace_read_1_check.namespaces[0].id == namespace_read_1.namespaces[0].id
+
+        - name: Read second namespace via vault_namespace_info
+          hashicorp.vault.vault_namespace_info:
+            path: "{{ vault_namespace_info_test_path_2 }}"
+          register: namespace_read_2
+
+        - name: Assert read second namespace with different metadata
+          ansible.builtin.assert:
+            that:
+              - namespace_read_2.namespaces is defined
+              - namespace_read_2.namespaces | length == 1
+              - namespace_read_2.namespaces[0].custom_metadata is defined
+              - namespace_read_2.namespaces[0].custom_metadata.owner == "test-ci"
+
+        - name: Read non-existent namespace
+          hashicorp.vault.vault_namespace_info:
+            path: "ansible-nonexistent-namespace-{{ vault_resource_suffix }}"
+          register: read_nonexistent
+
+        - name: Assert read non-existent returns empty list
+          ansible.builtin.assert:
+            that:
+              - read_nonexistent.namespaces is defined
+              - read_nonexistent.namespaces | length == 0
+
+        # LIST — after create
+        - name: List namespaces after create
+          hashicorp.vault.vault_namespace_info:
+          register: namespaces_after_create
+
+        - name: Assert list contains all expected fields
+          ansible.builtin.assert:
+            that:
+              - namespaces_after_create.namespaces is defined
+              - namespaces_after_create.namespaces | length > 0
+              - (namespaces_after_create.namespaces | selectattr('id', 'defined') | list | length) == (namespaces_after_create.namespaces | length)
+              - (namespaces_after_create.namespaces | selectattr('path', 'defined') | list | length) == (namespaces_after_create.namespaces | length)
+              - (namespaces_after_create.namespaces | selectattr('custom_metadata', 'defined') | list | length) == (namespaces_after_create.namespaces | length)
+              - namespaces_after_create.namespaces_keys is defined
+              - namespaces_after_create.namespaces_keys | length > 0
+              - namespaces_after_create.namespaces_key_info is defined
+              - namespaces_after_create.namespaces_key_info | length > 0
+
+        - name: Find our test namespaces in list
+          ansible.builtin.set_fact:
+            found_ns_1: "{{ namespaces_after_create.namespaces | selectattr('path', 'search', vault_namespace_info_test_path_1_normalized) | list | first | default(none) }}"
+            found_ns_2: "{{ namespaces_after_create.namespaces | selectattr('path', 'search', vault_namespace_info_test_path_2_normalized) | list | first | default(none) }}"
+
+        - name: Assert test namespaces found in list with metadata
+          ansible.builtin.assert:
+            that:
+              - found_ns_1 is not none
+              - found_ns_1.id is defined
+              - found_ns_1.custom_metadata is defined
+              - found_ns_1.custom_metadata.team == "ansible-integration"
+              - found_ns_2 is not none
+              - found_ns_2.id is defined
+              - found_ns_2.custom_metadata is defined
+              - found_ns_2.custom_metadata.owner == "test-ci"
+
+        # PATH ALIAS
+        - name: Read namespace using path alias (namespace_path)
+          hashicorp.vault.vault_namespace_info:
+            namespace_path: "{{ vault_namespace_info_test_path_1 }}"
+          register: namespace_alias_read
+
+        - name: Assert alias works
+          ansible.builtin.assert:
+            that:
+              - namespace_alias_read.namespaces is defined
+              - namespace_alias_read.namespaces | length == 1
+              - namespace_alias_read.namespaces[0].id == namespace_read_1.namespaces[0].id
+
+        # DELETE
+        - name: Delete first test namespace
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_info_test_path_1 }}"
+            state: absent
+          register: delete_ns_1
+
+        - name: Delete second test namespace
+          hashicorp.vault.vault_namespace:
+            path: "{{ vault_namespace_info_test_path_2 }}"
+            state: absent
+          register: delete_ns_2
+
+        - name: Assert delete changed
+          ansible.builtin.assert:
+            that:
+              - delete_ns_1 is changed
+              - delete_ns_2 is changed
+
+        # LIST — after delete
+        - name: List namespaces after delete
+          hashicorp.vault.vault_namespace_info:
+          register: namespaces_after_delete
+
+        - name: Try to find deleted namespaces in list
+          ansible.builtin.set_fact:
+            found_deleted_ns_1: "{{ namespaces_after_delete.namespaces | selectattr('path', 'search', vault_namespace_info_test_path_1_normalized) | list }}"
+            found_deleted_ns_2: "{{ namespaces_after_delete.namespaces | selectattr('path', 'search', vault_namespace_info_test_path_2_normalized) | list }}"
+
+        - name: Assert deleted namespaces not in list
+          ansible.builtin.assert:
+            that:
+              - namespaces_after_delete.namespaces is defined
+              - namespaces_after_delete.namespaces_keys is defined
+              - namespaces_after_delete.namespaces_key_info is defined
+              - found_deleted_ns_1 == []
+              - found_deleted_ns_2 == []
+
+        - name: Read deleted namespace 1
+          hashicorp.vault.vault_namespace_info:
+            path: "{{ vault_namespace_info_test_path_1 }}"
+          register: read_deleted_ns_1
+
+        - name: Read deleted namespace 2
+          hashicorp.vault.vault_namespace_info:
+            path: "{{ vault_namespace_info_test_path_2 }}"
+          register: read_deleted_ns_2
+
+        - name: Assert read deleted namespace returns empty list
+          ansible.builtin.assert:
+            that:
+              - read_deleted_ns_1.namespaces | length == 0
+              - read_deleted_ns_2.namespaces | length == 0
+
+  always:
+    - name: Ensure test namespaces removed
+      hashicorp.vault.vault_namespace:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ vault_namespace_info_test_path_1 }}"
+        - "{{ vault_namespace_info_test_path_2 }}"
+      failed_when: false

@@ -19,3 +19,4 @@ action_groups:
     - pki_certificate
     - pki_certificate_info
     - vault_namespace
+    - vault_namespace_info
