@@ -4,29 +4,16 @@
     group/hashicorp.vault.vault:
       url: "{{ ansible_test_vault_url }}"
       auth_method: "token"
-      token: "{{ ansible_test_vault_token }}"
+      token: "{{ ansible_test_vault_root_token }}"
   vars:
-    static_app_user: ansible_test_user
-    static_app_user_initial_pass: "{{ lookup('password', 'dev/null length=16') }}"
     db_connection_name: "test-db-conn-{{ vault_resource_suffix }}"
     static_role_name: "test-static-role-{{ vault_resource_suffix }}"
   block:
-    # Setup: Create actual user in PostgreSQL
-    - name: Create database user for static role testing
-      postgres_execute:
-        user: postgres
-        password: "{{ ansible_postgresql_root_password }}"
-        database_port: "{{ ansible_postgresql_port }}"
-        connection_retries: 10
-        commands:
-          - "CREATE USER {{ static_app_user }} WITH PASSWORD '{{ static_app_user_initial_pass }}';"
-          - "GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{ static_app_user }};"
-
-    - name: Verify we can connect with the new user
-      postgres_execute:
-        user: "{{ static_app_user }}"
-        password: "{{ static_app_user_initial_pass }}"
-        database_port: "{{ ansible_postgresql_port }}"
+    # Verify we can connect with the pre-existing user before Vault manages it
+    - name: Verify initial database connection
+      postgres_connect:
+        db_user: "{{ ansible_test_db_user }}"
+        db_user_password: "{{ ansible_test_db_user_password }}"
 
     # Setup: Create database connection in Vault
     - name: Create database connection
@@ -35,9 +22,9 @@
         plugin_name: "postgresql-database-plugin"
         allowed_roles:
           - "{{ static_role_name }}"
-        connection_url: "{% raw %}postgresql://{{username}}:{{password}}@{% endraw %}localhost:{{ ansible_postgresql_port }}/postgres?sslmode=disable"
-        username: postgres
-        password: "{{ ansible_postgresql_root_password }}"
+        connection_url: "{% raw %}postgresql://{{username}}:{{password}}@{% endraw %}{{ ansible_test_postgres_container_name }}:5432/postgres?sslmode=disable"
+        username: "{{ ansible_test_db_admin_user }}"
+        password: "{{ ansible_test_db_admin_user_password }}"
       register: setup_db_conn
 
     - name: Validate database connection was created
@@ -50,7 +37,7 @@
       hashicorp.vault.database_static_role:
         name: "{{ static_role_name }}"
         db_name: "{{ db_connection_name }}"
-        username: "{{ static_app_user }}"
+        username: "{{ ansible_test_db_user }}"
         rotation_period: "24h"
       register: create_static_role
 
@@ -72,17 +59,30 @@
           - read_credentials is not changed
           - read_credentials.static_role_credentials is defined
           - read_credentials.static_role_credentials.username is defined
-          - read_credentials.static_role_credentials.username == static_app_user
+          - read_credentials.static_role_credentials.username == ansible_test_db_user
           - read_credentials.static_role_credentials.password is defined
           - read_credentials.static_role_credentials.last_vault_rotation is defined
           - read_credentials.static_role_credentials.ttl is defined
 
+    # Test: Verify the old password no longer works
+    - name: Ensure old credentials no longer work
+      postgres_connect:
+        db_user: "{{ ansible_test_db_user }}"
+        db_user_password: "{{ ansible_test_db_user_password }}"
+      register: old_login
+      ignore_errors: true
+
+    - name: Validate that old password failed after Vault rotation
+      ansible.builtin.assert:
+        that:
+          - old_login is failed
+          - '"password authentication failed for user" in old_login.msg'
+
     # Test: Verify the credentials actually work by connecting to PostgreSQL
-    - name: Test credentials work with PostgreSQL
-      postgres_execute:
-        user: "{{ read_credentials.static_role_credentials.username }}"
-        password: "{{ read_credentials.static_role_credentials.password }}"
-        database_port: "{{ ansible_postgresql_port }}"
+    - name: Test new credentials work with PostgreSQL
+      postgres_connect:
+        db_user: "{{ read_credentials.static_role_credentials.username }}"
+        db_user_password: "{{ read_credentials.static_role_credentials.password }}"
 
   always:
     # Cleanup
