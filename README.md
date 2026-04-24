@@ -25,11 +25,14 @@ Tested with the Python >= 3.10 versions.
 ### Lookup plugins
 Name | Description
 --- | ---
-[hashicorp.vault.kv2_secret_get](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in Hasicorp vault
+[hashicorp.vault.kv1_secret_get](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/lookup/kv1_secret_get.py)|Look up KV1 secrets stored in HashiCorp Vault
+[hashicorp.vault.kv2_secret_get](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/lookup/kv2_secret_get.py)|Look up KV2 secrets stored in HashiCorp Vault
 
 <!--end collection content-->
 
 ### Modules
+
+#### ACL & Authentication
 Name | Description
 --- | ---
 [hashicorp.vault.acl_policy](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/acl_policy.py)|Manage HashiCorp Vault ACL policies
@@ -37,17 +40,39 @@ Name | Description
 [hashicorp.vault.auth_login](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/auth_login.py)|Authenticate to HashiCorp Vault
 [hashicorp.vault.auth_token](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/auth_token.py)|Manage HashiCorp Vault tokens
 [hashicorp.vault.auth_token_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/auth_token_info.py)|Retrieve information about a specific HashiCorp Vault token
+
+#### Database Secrets Engine
+Name | Description
+--- | ---
 [hashicorp.vault.database_connection](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/database_connection.py)|Manage database secrets engine connections in HashiCorp Vault
 [hashicorp.vault.database_connection_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/database_connection_info.py)|List available connections or read configuration for a specific connection
+[hashicorp.vault.database_credential_rotation](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/database_credential_rotation.py)|Rotate database credentials in HashiCorp Vault
+[hashicorp.vault.database_dynamic_role_credentials](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/database_dynamic_role_credentials.py)|Generate credentials for a database dynamic role
+[hashicorp.vault.database_role](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/database_role.py)|Manage HashiCorp Vault database dynamic roles
+[hashicorp.vault.database_role_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/database_role_info.py)|List available dynamic roles or read configuration for a specific role
 [hashicorp.vault.database_static_role](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/database_static_role.py)|Manage database static roles in HashiCorp Vault
+[hashicorp.vault.database_static_role_credentials](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/database_static_role_credentials.py)|Read the credentials for a specific static role
 [hashicorp.vault.database_static_role_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/database_static_role_info.py)|List available static roles or read the configuration for a specific static role
+
+#### KV Secrets
+Name | Description
+--- | ---
 [hashicorp.vault.kv1_secret](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv1_secret.py)|Manage HashiCorp Vault KV version 1 secrets
 [hashicorp.vault.kv1_secret_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv1_secret_info.py)|Read HashiCorp Vault KV version 1 secrets
 [hashicorp.vault.kv2_secret](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret.py)|Manage HashiCorp Vault KV version 2 secrets
 [hashicorp.vault.kv2_secret_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/kv2_secret_info.py)|Read HashiCorp Vault KV version 2 secrets
+
+#### PKI
+Name | Description
+--- | ---
 [hashicorp.vault.pki_certificate](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/pki_certificate.py)|Issue, sign, or revoke HashiCorp Vault PKI certificates
 [hashicorp.vault.pki_certificate_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/pki_certificate_info.py)|List and read HashiCorp Vault PKI certificates
+
+#### Namespaces
+Name | Description
+--- | ---
 [hashicorp.vault.vault_namespace](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/vault_namespace.py)|Manage HashiCorp Vault Enterprise namespaces
+[hashicorp.vault.vault_namespace_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/vault_namespace_info.py)|List and read HashiCorp Vault Enterprise namespaces
 
 ## Installation
 
@@ -101,7 +126,9 @@ Currently the collection supports:
 - Managing KV1 and KV2 secrets in HashiCorp Vault (create, read, update, delete)
 - Managing ACL policies in HashiCorp Vault
 - Authentication and token management
-- Managing database secrets engine connections and static roles
+- Managing database secrets engine connections, dynamic roles, and static roles
+- Generating credentials for database dynamic and static roles
+- Rotating database credentials
 - Managing PKI certificates (issue, sign, revoke, read)
 - Managing Vault Enterprise namespaces
 
@@ -135,7 +162,7 @@ Copy the integration config template and fill in your Vault details:
 cp tests/integration/integration_config.yml.template tests/integration/integration_config.yml
 ```
 
-Add you Vault details:
+Add your Vault details:
 ```yaml
 vault_url_from_int_config: "<VAULT_URL_HERE>"
 vault_namespace_from_int_config: "<VAULT_NAMESPACE_HERE>" # example: admin/hashicorp-vault-integration-tests
