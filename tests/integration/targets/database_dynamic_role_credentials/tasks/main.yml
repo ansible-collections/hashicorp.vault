@@ -1,0 +1,98 @@
+---
+- name: Run database_dynamic_role_credentials tests
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ ansible_test_vault_url }}"
+      auth_method: "token"
+      token: "{{ ansible_test_vault_root_token }}"
+  vars:
+    test_role_name: "readonly-{{ vault_resource_suffix }}"
+    test_db_connection: "postgresql-{{ vault_resource_suffix }}"
+    test_creation_statements:
+      - "{% raw %}CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}' INHERIT;{% endraw %}"
+      - "{% raw %}GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"{{name}}\";{% endraw %}"
+  block:
+    - name: Create test database connection
+      hashicorp.vault.database_connection:
+        name: "{{ test_db_connection }}"
+        plugin_name: "postgresql-database-plugin"
+        connection_url: "{% raw %}postgresql://{{username}}:{{password}}@{% endraw %}{{ ansible_test_postgres_container_name }}:5432/postgres?sslmode=disable"
+        username: "{{ ansible_test_db_admin_user }}"
+        password: "{{ ansible_test_db_admin_user_password }}"
+        allowed_roles: "*"
+      register: setup_connection
+
+    - name: Validate connection was created
+      ansible.builtin.assert:
+        that:
+          - setup_connection is changed
+
+    - name: Create dynamic role
+      hashicorp.vault.database_role:
+        role_name: "{{ test_role_name }}"
+        db_name: "{{ test_db_connection }}"
+        creation_statements: "{{ test_creation_statements }}"
+        default_ttl: 3600
+        max_ttl: 86400
+      register: create_role
+
+    - name: Validate role was created
+      ansible.builtin.assert:
+        that:
+          - create_role is changed
+
+    - name: Generate credentials from dynamic role
+      hashicorp.vault.database_dynamic_role_credentials:
+        name: "{{ test_role_name }}"
+      register: first_creds
+      no_log: true
+
+    - name: Validate credentials were generated
+      ansible.builtin.assert:
+        that:
+          - first_creds is changed
+          - first_creds.dynamic_role_credentials is defined
+          - first_creds.dynamic_role_credentials.username is defined
+          - first_creds.dynamic_role_credentials.password is defined
+          - first_creds.dynamic_role_credentials.lease_id is defined
+          - first_creds.dynamic_role_credentials.lease_duration is defined
+          - first_creds.dynamic_role_credentials.renewable is defined
+
+    - name: Generate credentials again
+      hashicorp.vault.database_dynamic_role_credentials:
+        name: "{{ test_role_name }}"
+      register: second_creds
+      no_log: true
+
+    - name: Validate new credentials were generated (different from first)
+      ansible.builtin.assert:
+        that:
+          - second_creds is changed
+          - second_creds.dynamic_role_credentials.username != first_creds.dynamic_role_credentials.username
+          - second_creds.dynamic_role_credentials.password != first_creds.dynamic_role_credentials.password
+          - second_creds.dynamic_role_credentials.lease_id != first_creds.dynamic_role_credentials.lease_id
+
+    - name: Try to generate credentials for non-existent role
+      hashicorp.vault.database_dynamic_role_credentials:
+        name: "nonexistent-role-{{ vault_resource_suffix }}"
+      ignore_errors: true
+      register: nonexistent_role
+
+    - name: Validate error for non-existent role
+      ansible.builtin.assert:
+        that:
+          - nonexistent_role is failed
+          - "'Vault API error' in nonexistent_role.msg or 'Operation failed' in nonexistent_role.msg"
+
+  always:
+    - name: Delete dynamic role (cleanup)
+      hashicorp.vault.database_role:
+        role_name: "{{ test_role_name }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Delete database connection (cleanup)
+      hashicorp.vault.database_connection:
+        name: "{{ test_db_connection }}"
+        state: absent
+      ignore_errors: true

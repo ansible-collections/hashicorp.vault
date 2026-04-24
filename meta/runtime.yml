@@ -9,9 +9,10 @@ action_groups:
     - auth_token_info
     - database_connection
     - database_connection_info
+    - database_credential_rotation
+    - database_dynamic_role_credentials
     - database_role
     - database_role_info
-    - database_credential_rotation
     - database_static_role
     - database_static_role_info
     - kv1_secret

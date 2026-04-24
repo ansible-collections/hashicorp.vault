@@ -1,0 +1,2 @@
+hashicorp.vault.database_role
+hashicorp.vault.database_dynamic_role_credentials
