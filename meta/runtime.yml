@@ -15,6 +15,7 @@ action_groups:
     - database_role_info
     - database_static_role
     - database_static_role_info
+    - database_static_role_credentials
     - kv1_secret
     - kv1_secret_info
     - kv2_secret

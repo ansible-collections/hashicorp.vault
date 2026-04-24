@@ -1,0 +1,99 @@
+---
+- name: Run database_static_role_credentials tests
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ ansible_test_vault_url }}"
+      auth_method: "token"
+      token: "{{ ansible_test_vault_root_token }}"
+  vars:
+    db_connection_name: "test-db-conn-{{ vault_resource_suffix }}"
+    static_role_name: "test-static-role-{{ vault_resource_suffix }}"
+  block:
+    # Verify we can connect with the pre-existing user before Vault manages it
+    - name: Verify initial database connection
+      postgres_connect:
+        db_user: "{{ ansible_test_db_user }}"
+        db_user_password: "{{ ansible_test_db_user_password }}"
+
+    # Setup: Create database connection in Vault
+    - name: Create database connection
+      hashicorp.vault.database_connection:
+        name: "{{ db_connection_name }}"
+        plugin_name: "postgresql-database-plugin"
+        allowed_roles:
+          - "{{ static_role_name }}"
+        connection_url: "{% raw %}postgresql://{{username}}:{{password}}@{% endraw %}{{ ansible_test_postgres_container_name }}:5432/postgres?sslmode=disable"
+        username: "{{ ansible_test_db_admin_user }}"
+        password: "{{ ansible_test_db_admin_user_password }}"
+      register: setup_db_conn
+
+    - name: Validate database connection was created
+      ansible.builtin.assert:
+        that:
+          - setup_db_conn is changed
+
+    # Setup: Create static role (Vault will immediately rotate the user's password)
+    - name: Create static role
+      hashicorp.vault.database_static_role:
+        name: "{{ static_role_name }}"
+        db_name: "{{ db_connection_name }}"
+        username: "{{ ansible_test_db_user }}"
+        rotation_period: "24h"
+      register: create_static_role
+
+    - name: Validate static role was created
+      ansible.builtin.assert:
+        that:
+          - create_static_role is changed
+
+    # Test: Read credentials for static role
+    - name: Read static role credentials
+      hashicorp.vault.database_static_role_credentials:
+        name: "{{ static_role_name }}"
+      register: read_credentials
+      no_log: true
+
+    - name: Validate credentials were returned
+      ansible.builtin.assert:
+        that:
+          - read_credentials is not changed
+          - read_credentials.static_role_credentials is defined
+          - read_credentials.static_role_credentials.username is defined
+          - read_credentials.static_role_credentials.username == ansible_test_db_user
+          - read_credentials.static_role_credentials.password is defined
+          - read_credentials.static_role_credentials.last_vault_rotation is defined
+          - read_credentials.static_role_credentials.ttl is defined
+
+    # Test: Verify the old password no longer works
+    - name: Ensure old credentials no longer work
+      postgres_connect:
+        db_user: "{{ ansible_test_db_user }}"
+        db_user_password: "{{ ansible_test_db_user_password }}"
+      register: old_login
+      ignore_errors: true
+
+    - name: Validate that old password failed after Vault rotation
+      ansible.builtin.assert:
+        that:
+          - old_login is failed
+          - '"password authentication failed for user" in old_login.msg'
+
+    # Test: Verify the credentials actually work by connecting to PostgreSQL
+    - name: Test new credentials work with PostgreSQL
+      postgres_connect:
+        db_user: "{{ read_credentials.static_role_credentials.username }}"
+        db_user_password: "{{ read_credentials.static_role_credentials.password }}"
+
+  always:
+    # Cleanup
+    - name: Delete static role (cleanup)
+      hashicorp.vault.database_static_role:
+        name: "{{ static_role_name }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Delete database connection (cleanup)
+      hashicorp.vault.database_connection:
+        name: "{{ db_connection_name }}"
+        state: absent
+      ignore_errors: true
