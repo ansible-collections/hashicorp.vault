@@ -94,6 +94,21 @@ def sample_dynamic_role_config():
     }
 
 
+@pytest.fixture
+def mock_generate_credentials_response():
+    """Mock response from Vault for credential generation."""
+    return {
+        "request_id": "5ad6de83-134c-4f51-a003-6c2e8b6f0633",
+        "lease_id": "database/creds/readonly/abc123",
+        "renewable": True,
+        "lease_duration": 3600,
+        "data": {
+            "username": "v-token-readonly-abc123",
+            "password": "A1a-randompassword123",
+        },
+    }
+
+
 class TestDatabaseListDynamicRoles:
     def test_list_dynamic_roles_success(self, authenticated_client, mock_list_dynamic_roles_response):
         authenticated_client._make_request.return_value = mock_list_dynamic_roles_response
@@ -312,3 +327,62 @@ class TestDeleteDynamicRole:
         dynamic_roles = VaultDatabaseDynamicRoles(authenticated_client)
         with pytest.raises(VaultApiError):
             dynamic_roles.delete_dynamic_role(TEST_ROLE_NAME)
+
+
+class TestGenerateDynamicRoleCredentials:
+    def test_generate_credentials_success(self, authenticated_client, mock_generate_credentials_response):
+        authenticated_client._make_request.return_value = mock_generate_credentials_response
+
+        dynamic_roles = VaultDatabaseDynamicRoles(client=authenticated_client)
+        credentials = dynamic_roles.generate_dynamic_role_credentials(name=TEST_ROLE_NAME)
+
+        expected_path = f"v1/database/creds/{TEST_ROLE_NAME}"
+        authenticated_client._make_request.assert_called_once_with("GET", expected_path)
+        assert credentials == {
+            **mock_generate_credentials_response["data"],
+            "lease_id": mock_generate_credentials_response["lease_id"],
+            "lease_duration": mock_generate_credentials_response["lease_duration"],
+            "renewable": mock_generate_credentials_response["renewable"],
+        }
+        assert credentials["username"] == "v-token-readonly-abc123"
+        assert credentials["password"] == "A1a-randompassword123"
+        assert credentials["lease_id"] == "database/creds/readonly/abc123"
+        assert credentials["lease_duration"] == 3600
+        assert credentials["renewable"] is True
+
+    def test_generate_credentials_custom_mount_path_success(
+        self, authenticated_client, vault_config, mock_generate_credentials_response
+    ):
+        authenticated_client._make_request.return_value = mock_generate_credentials_response
+
+        dynamic_roles = VaultDatabaseDynamicRoles(
+            client=authenticated_client, mount_path=vault_config["custom_mount_path"]
+        )
+        credentials = dynamic_roles.generate_dynamic_role_credentials(name=TEST_ROLE_NAME)
+
+        expected_path = f"v1/{vault_config['custom_mount_path']}/creds/{TEST_ROLE_NAME}"
+        authenticated_client._make_request.assert_called_once_with("GET", expected_path)
+        assert credentials == {
+            **mock_generate_credentials_response["data"],
+            "lease_id": mock_generate_credentials_response["lease_id"],
+            "lease_duration": mock_generate_credentials_response["lease_duration"],
+            "renewable": mock_generate_credentials_response["renewable"],
+        }
+
+    def test_generate_credentials_role_not_found(self, authenticated_client):
+        authenticated_client._make_request.side_effect = VaultSecretNotFoundError("role not found")
+        dynamic_roles = VaultDatabaseDynamicRoles(client=authenticated_client)
+        with pytest.raises(VaultSecretNotFoundError):
+            dynamic_roles.generate_dynamic_role_credentials(TEST_ROLE_NAME)
+
+    def test_generate_credentials_permission_denied(self, authenticated_client):
+        authenticated_client._make_request.side_effect = VaultPermissionError("permission denied")
+        dynamic_roles = VaultDatabaseDynamicRoles(client=authenticated_client)
+        with pytest.raises(VaultPermissionError):
+            dynamic_roles.generate_dynamic_role_credentials(TEST_ROLE_NAME)
+
+    def test_generate_credentials_api_error(self, authenticated_client):
+        authenticated_client._make_request.side_effect = VaultApiError("API error")
+        dynamic_roles = VaultDatabaseDynamicRoles(client=authenticated_client)
+        with pytest.raises(VaultApiError):
+            dynamic_roles.generate_dynamic_role_credentials(TEST_ROLE_NAME)
