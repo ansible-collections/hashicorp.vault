@@ -625,6 +625,48 @@ class VaultDatabaseDynamicRoles(VaultDatabaseParent):
         path = self._role_path(name)
         self._client._make_request("DELETE", path)
 
+    def generate_dynamic_role_credentials(self, name: str) -> Dict[str, Any]:
+        """
+        Generate new credentials for a database dynamic role.
+
+        Each call to this method generates a new set of database credentials
+        with a new lease. The credentials are temporary and will be automatically
+        revoked when the lease expires.
+
+        Args:
+            name (str): The name of the dynamic role to generate credentials for.
+
+        Returns:
+            Dict[str, Any]: The generated credentials and lease information containing:
+                - username (str): The generated database username
+                - password (str): The generated database password
+                - lease_id (str): The lease ID for these credentials
+                - lease_duration (int): TTL in seconds before credentials expire
+                - renewable (bool): Whether the lease can be renewed
+
+        Raises:
+            VaultSecretNotFoundError: If the dynamic role doesn't exist.
+
+        Example:
+            creds = db.generate_dynamic_role_credentials("readonly")
+            # Returns: {
+            #     "username": "v-token-readonly-abc123",
+            #     "password": "A1a-randompassword",
+            #     "lease_id": "database/creds/readonly/abc123",
+            #     "lease_duration": 3600,
+            #     "renewable": True
+            # }
+        """
+        path = f"v1/{self._mount_path}/creds/{name}"
+        response_data = self._client._make_request("GET", path)
+        out = dict(response_data.get("data", {}))
+        # Vault returns credentials under 'data' but lease info at the top level.
+        # Merge lease fields into the output for easier access to credential lifecycle info.
+        for key in ("lease_id", "lease_duration", "renewable"):
+            if key in response_data:
+                out[key] = response_data[key]
+        return out
+
 
 class Database:
     """A container class for database secrets engine clients.
