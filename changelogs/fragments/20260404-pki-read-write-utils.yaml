@@ -1,5 +1,0 @@
----
-minor_changes:
-    - module_utils/vault_client.py - Added ``VaultPki`` to vault_client.py with ``generate_certificate()``,
-      ``sign_certificate()``, ``revoke_certificate()``, ``read_certificate()``, and ``list_certificates()``
-      for managing PKI certificate lifecycle (https://github.com/ansible-collections/hashicorp.vault/pull/78).

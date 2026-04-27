@@ -1,8 +1,0 @@
----
-minor_changes:
-  - module_utils/vault_client.py - implemented ``list_connections()`` method to list all configured database connections in Vault Database Secrets Engine
-    (https://github.com/hashicorp/hashicorp.vault/pull/34).
-  - module_utils/vault_client.py - implemented ``read_connection()`` method to read configuration details for a specific database connection
-    (https://github.com/hashicorp/hashicorp.vault/pull/34).
-  - module_utils/vault_client.py - added ``mount_path`` parameter to support database engines mounted at custom paths
-    (https://github.com/hashicorp/hashicorp.vault/pull/34).

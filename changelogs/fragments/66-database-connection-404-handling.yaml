@@ -1,5 +1,0 @@
----
-bugfixes:
-  - module_utils/vault_client.py - ``VaultDatabaseConnection.list_connections()`` now returns an empty list
-    instead of raising ``VaultSecretNotFoundError`` when no database connections are configured
-    (https://github.com/ansible-collections/hashicorp.vault/pull/66).

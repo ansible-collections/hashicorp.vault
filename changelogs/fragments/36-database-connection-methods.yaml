@@ -1,8 +1,0 @@
----
-minor_changes:
-  - module_utils/vault_client.py - Implement create_or_update_connection() in VaultDatabaseConnection class
-    (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
-  - module_utils/vault_client.py - Implement delete_connection() in VaultDatabaseConnection class
-    (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
-  - module_utils/vault_client.py - Implement reset_connection() in VaultDatabaseConnection class
-    (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
