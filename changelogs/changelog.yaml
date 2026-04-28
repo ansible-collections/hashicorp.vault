@@ -197,4 +197,4 @@ releases:
     - description: List and read HashiCorp Vault Enterprise namespaces
       name: vault_namespace_info
       namespace: ''
-    release_date: '2026-04-27'
+    release_date: '2026-04-28'
