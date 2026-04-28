@@ -4,55 +4,197 @@ releases:
     changes:
       release_summary: This marks the first release of the hashicorp.vault collection.
     fragments:
-      - v1.0.0.yml
+    - v1.0.0.yml
     modules:
-      - description: Manage HashiCorp Vault KV version 2 secrets
-        name: kv2_secret
-        namespace: ""
-      - description: Read HashiCorp Vault KV version 2 secrets
-        name: kv2_secret_info
-        namespace: ""
+    - description: Manage HashiCorp Vault KV version 2 secrets
+      name: kv2_secret
+      namespace: ''
+    - description: Read HashiCorp Vault KV version 2 secrets
+      name: kv2_secret_info
+      namespace: ''
     plugins:
       lookup:
-        - description: Look up KV2 secrets stored in HashiCorp Vault.
-          name: kv2_secret_get
-          namespace: null
-    release_date: "2025-09-19"
+      - description: Look up KV2 secrets stored in HashiCorp Vault.
+        name: kv2_secret_get
+        namespace: null
+    release_date: '2025-09-19'
   1.1.0:
     changes:
       minor_changes:
-        - Add an action group for the collection modules ``kv1_secret``, ``kv1_secret_info``,
-          ``kv2_secret``, ``kv2_secret_info`` (https://github.com/ansible-collections/hashicorp.vault/pull/23).
-        - kv2_secret_info - module will not fail when the requested secret does not
-          exist instead returns an empty response (https://github.com/ansible-collections/hashicorp.vault/pull/23).
-      release_summary:
-        This release includes new modules and lookup plugin for KV1
+      - Add an action group for the collection modules ``kv1_secret``, ``kv1_secret_info``,
+        ``kv2_secret``, ``kv2_secret_info`` (https://github.com/ansible-collections/hashicorp.vault/pull/23).
+      - kv2_secret_info - module will not fail when the requested secret does not
+        exist instead returns an empty response (https://github.com/ansible-collections/hashicorp.vault/pull/23).
+      release_summary: This release includes new modules and lookup plugin for KV1
         secret management.
     fragments:
-      - 1.1.0.yml
-      - 20251007-add-action-group.yaml
+    - 1.1.0.yml
+    - 20251007-add-action-group.yaml
     modules:
-      - description: Manage HashiCorp Vault KV version 1 secrets
-        name: kv1_secret
-        namespace: ""
-      - description: Read HashiCorp Vault KV version 1 secrets
-        name: kv1_secret_info
-        namespace: ""
+    - description: Manage HashiCorp Vault KV version 1 secrets
+      name: kv1_secret
+      namespace: ''
+    - description: Read HashiCorp Vault KV version 1 secrets
+      name: kv1_secret_info
+      namespace: ''
     plugins:
       lookup:
-        - description: Look up KV1 secrets stored in HashiCorp Vault.
-          name: kv1_secret_get
-          namespace: null
-    release_date: "2025-11-13"
+      - description: Look up KV1 secrets stored in HashiCorp Vault.
+        name: kv1_secret_get
+        namespace: null
+    release_date: '2025-11-13'
   1.1.1:
     changes:
       bugfixes:
-        - Fix parameter names used by authentication methods so parameters must be passed
-          by correct names. See https://github.com/ansible-collections/hashicorp.vault/pull/35
-          for more details.
+      - Fix parameter names used by authentication methods so parameters must be passed
+        by correct names. See https://github.com/ansible-collections/hashicorp.vault/pull/35
+        for more details.
       release_summary: This release fixes a bug in the ``kv2_secret_get`` lookup plugin's
         authentication parameters names so parameters must be passed by correct names.
     fragments:
-      - 20260311-fix-auth-param-names.yaml
-      - v1.1.1.yml
-    release_date: "2026-03-13"
+    - 20260311-fix-auth-param-names.yaml
+    - v1.1.1.yml
+    release_date: '2026-03-13'
+  1.2.0:
+    changes:
+      bugfixes:
+      - module_utils/vault_client.py - ``VaultDatabaseConnection.list_connections()``
+        now returns an empty list instead of raising ``VaultSecretNotFoundError``
+        when no database connections are configured (https://github.com/ansible-collections/hashicorp.vault/pull/66).
+      minor_changes:
+      - module_utils/vault_client.py - add ACL policy management on the Vault client
+        (list, read, create/update, delete) (https://github.com/ansible-collections/hashicorp.vault/pull/45).
+      - module_utils/vault_client.py - add custom CA certificate verification via the
+        ``ca_cert`` parameter or the ``VAULT_CACERT`` environment variable (https://github.com/ansible-collections/hashicorp.vault/pull/109).
+      - module_utils/vault_client.py - add optional TLS verification bypass via the
+        ``tls_skip_verify`` parameter or the ``VAULT_SKIP_VERIFY`` environment variable
+        (https://github.com/ansible-collections/hashicorp.vault/pull/109).
+      - module_utils/vault_client.py - add ``Database`` container class to organize
+        database-related clients (connections and static_roles) for a specific mount
+        path (https://github.com/ansible-collections/hashicorp.vault/pull/81).
+      - module_utils/vault_client.py - add ``VaultDatabaseStaticRoles`` class for
+        managing database static roles with ``list_static_roles()``, ``read_static_role()``,
+        ``create_or_update_static_role()``, ``delete_static_role()``, and ``get_static_role_credentials()``
+        (https://github.com/ansible-collections/hashicorp.vault/pull/81).
+      - module_utils/vault_client.py - add ``VaultPki`` with ``generate_certificate()``,
+        ``sign_certificate()``, ``revoke_certificate()``,
+        ``read_certificate()``, and ``list_certificates()`` for managing PKI certificate
+        lifecycle (https://github.com/ansible-collections/hashicorp.vault/pull/78).
+      - module_utils/vault_client.py - implement ``create_or_update_connection()`` in
+        ``VaultDatabaseConnection`` (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
+      - module_utils/vault_client.py - implement ``delete_connection()`` in ``VaultDatabaseConnection``
+        (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
+      - module_utils/vault_client.py - implement ``reset_connection()`` in ``VaultDatabaseConnection``
+        (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
+      - module_utils/vault_client.py - add ``mount_path`` parameter to support database
+        engines mounted at custom paths (https://github.com/hashicorp/hashicorp.vault/pull/34).
+      - module_utils/vault_client.py - extend ``VaultNamespaces`` with ``create_namespace()``,
+        ``patch_namespace()``, ``delete_namespace()``, ``lock_namespace()``, and ``unlock_namespace()``
+        for managing namespace lifecycle and API locks (https://github.com/ansible-collections/hashicorp.vault/pull/55).
+      - module_utils/vault_client.py - implement ``VaultNamespaces`` with ``list_namespaces()``
+        and ``read_namespace()`` for listing and reading namespace configuration (https://github.com/ansible-collections/hashicorp.vault/pull/51).
+      - module_utils/vault_client.py - implement ``list_connections()`` to list all
+        configured database connections in the Database Secrets Engine
+        (https://github.com/hashicorp/hashicorp.vault/pull/34).
+      - module_utils/vault_client.py - implement ``read_connection()`` to read configuration
+        details for a specific database connection (https://github.com/hashicorp/hashicorp.vault/pull/34).
+      - module_utils/vault_database.py - add ``VaultDatabaseDynamicRoles`` class for
+        managing database dynamic roles with ``list_dynamic_roles()``, ``read_dynamic_role()``,
+        ``create_or_update_dynamic_role()``, and ``delete_dynamic_role()`` (https://github.com/ansible-collections/hashicorp.vault/pull/91).
+      - module_utils/vault_database.py - add ``VaultDatabaseParent`` base class to
+        eliminate code duplication across database client classes (https://github.com/ansible-collections/hashicorp.vault/pull/91).
+      - module_utils/vault_database.py - refactor database secrets engine classes
+        into a dedicated module. Move ``VaultDatabaseConnection``, ``VaultDatabaseStaticRoles``,
+        ``VaultDatabaseDynamicRoles``, and ``Database`` classes from ``vault_client.py``
+        to ``vault_database.py`` for better code organization (https://github.com/ansible-collections/hashicorp.vault/pull/91).
+      - module_utils/vault_database.py - update ``Database`` container class to include
+        ``dynamic_roles`` client for managing dynamic database roles (https://github.com/ansible-collections/hashicorp.vault/pull/91).
+      - module_utils/vault_database.py - add ``generate_dynamic_role_credentials()`` to
+        ``VaultDatabaseDynamicRoles`` (https://github.com/ansible-collections/hashicorp.vault/pull/116).
+      release_summary: 'This release significantly expands the hashicorp.vault collection
+        with new modules.
+
+
+        New capabilities include:
+
+        - **Database Secrets Engine**: Manage database connections, dynamic roles,
+        static roles, and credential generation/rotation (9 modules)
+
+        - **PKI**: Issue, sign, revoke, and read PKI certificates (2 modules)
+
+        - **Authentication & ACL**: Manage Vault tokens, authentication, and ACL policies
+        (5 modules)
+
+        - **Namespaces**: Manage and query Vault Enterprise namespaces (2 modules)'
+    fragments:
+    - 1.2.0.yml
+    - 20260317-acl-policy-module-utils.yaml
+    - 20260319-namespace-read-utils.yaml
+    - 20260320-namespace-write-utils.yaml
+    - 20260404-pki-read-write-utils.yaml
+    - 20260408-add-support-for-custom-ca-certificate.yaml
+    - 34-database-connection-read-list.yaml
+    - 36-database-connection-methods.yaml
+    - 66-database-connection-404-handling.yaml
+    - 81-database-static-roles.yaml
+    - 91-database-dynamic-roles.yaml
+    - database-dynamic-role-credentials.yaml
+    modules:
+    - description: Manage HashiCorp Vault ACL policies
+      name: acl_policy
+      namespace: ''
+    - description: List and read HashiCorp Vault ACL policies
+      name: acl_policy_info
+      namespace: ''
+    - description: Authenticate to HashiCorp Vault
+      name: auth_login
+      namespace: ''
+    - description: Manage HashiCorp Vault tokens
+      name: auth_token
+      namespace: ''
+    - description: Retrieve information about a specific HashiCorp Vault token
+      name: auth_token_info
+      namespace: ''
+    - description: Manage database secrets engine connections in HashiCorp Vault.
+      name: database_connection
+      namespace: ''
+    - description: List available connections or read configuration for a specific
+        connection.
+      name: database_connection_info
+      namespace: ''
+    - description: Rotate Database Credentials in HashiCorp Vault.
+      name: database_credential_rotation
+      namespace: ''
+    - description: Generate credentials for a database dynamic role.
+      name: database_dynamic_role_credentials
+      namespace: ''
+    - description: Manage HashiCorp Vault database dynamic roles
+      name: database_role
+      namespace: ''
+    - description: List available dynamic roles or read configuration for a specific
+        role
+      name: database_role_info
+      namespace: ''
+    - description: Manage database static roles in HashiCorp Vault
+      name: database_static_role
+      namespace: ''
+    - description: Read the credentials for a specific static role.
+      name: database_static_role_credentials
+      namespace: ''
+    - description: List available static roles or read the configuration for a specific
+        static role
+      name: database_static_role_info
+      namespace: ''
+    - description: Issue, sign, or revoke HashiCorp Vault PKI certificates
+      name: pki_certificate
+      namespace: ''
+    - description: List and read HashiCorp Vault PKI certificates
+      name: pki_certificate_info
+      namespace: ''
+    - description: Manage HashiCorp Vault Enterprise namespaces
+      name: vault_namespace
+      namespace: ''
+    - description: List and read HashiCorp Vault Enterprise namespaces
+      name: vault_namespace_info
+      namespace: ''
+    release_date: '2026-04-28'
