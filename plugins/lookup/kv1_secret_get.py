@@ -36,6 +36,16 @@ EXAMPLES = """
     msg: "{{ lookup('hashicorp.vault.kv1_secret_get',
                     secret='hello',
                     url='https://myvault_url:8200') }}"
+
+- name: Read secret from Vault using proxy configuration
+  vars:
+    vault_proxies:
+      https: https://10.10.1.10:1080
+  ansible.builtin.debug:
+    msg: "{{ lookup('hashicorp.vault.kv1_secret_get',
+                    secret='hello',
+                    url='https://myvault_url:8200',
+                    proxies=vault_proxies) }}"
 """
 
 RETURN = """

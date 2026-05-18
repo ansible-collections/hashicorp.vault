@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - Add proxies parameter to modules and lookup plugins to enable access to Vault servers via a proxy
+    (https://github.com/ansible-collections/hashicorp.vault/pull/128).

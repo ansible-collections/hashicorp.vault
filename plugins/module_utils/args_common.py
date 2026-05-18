@@ -37,4 +37,8 @@ AUTH_ARG_SPEC = {
         "default": False,
         "fallback": (env_fallback, ["VAULT_SKIP_VERIFY"]),
     },
+    "proxies": {
+        "type": "raw",
+        "fallback": (env_fallback, ["VAULT_PROXIES"]),
+    },
 }

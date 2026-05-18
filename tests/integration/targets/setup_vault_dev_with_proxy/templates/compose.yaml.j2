@@ -1,0 +1,37 @@
+services:
+  # Container running vault dev server
+  vault_dev:
+    image: docker.io/hashicorp/vault:latest
+    command: server -dev -dev-root-token-id="{{ ansible_test_vault_root_token }}" -dev-listen-address="0.0.0.0:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "{{ ansible_test_vault_root_token }}"
+      VAULT_LOCAL_CONFIG: '{"disable_mlock": true}'
+      SKIP_SETCAP: true
+    ports:
+      - "8200:8200"
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  # Container to activate KV-V2 on vault server
+  vault-init:
+    image: hashicorp/vault:latest
+    environment:
+      VAULT_ADDR: "http://vault_dev:8200"
+      VAULT_TOKEN: "{{ ansible_test_vault_root_token }}"
+    depends_on:
+      vault_dev:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      sh -c "vault secrets enable -path={{ ansible_test_vault_secret_mount_path }} kv-v2 || echo 'KV-V2 already enabled'"
+
+  # Container running the proxy server
+  vault_proxy:
+    image: vimagick/tinyproxy
+    ports:
+      - "8888:8888"
+    depends_on:
+      - vault_dev

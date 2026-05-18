@@ -9,7 +9,7 @@ __metaclass__ = type
 
 import json  # noqa: F401
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import quote
 
 try:
@@ -86,6 +86,7 @@ class VaultClient:
         vault_namespace: str,
         ca_certificate: Optional[str] = None,
         tls_skip_verify: bool = None,
+        proxies: Optional[Union[str, Dict[str, str]]] = None,
     ) -> None:
         """
         Initialize the Vault client.
@@ -126,6 +127,9 @@ class VaultClient:
         tls_skip_verify_b = boolean(tls_skip_verify) if tls_skip_verify is not None else False
         if ca_certificate or tls_skip_verify_b:
             self.session.verify = not tls_skip_verify_b if tls_skip_verify_b else ca_certificate
+        # add proxy configuration
+        if proxies:
+            self.session.proxies.update(self.read_proxies(proxies))
 
     def set_token(self, token: str) -> None:
         """
@@ -136,6 +140,52 @@ class VaultClient:
         self.vault_token = token
         self.session.headers.update({"X-Vault-Token": token})
         logger.debug("Token set for VaultClient")
+
+    @staticmethod
+    def read_proxies(proxies: Union[str, dict]) -> Dict[str, str]:
+        """
+        Parses and validates proxy configurations from multiple input formats.
+
+        This method normalizes the `proxies` input into a standard dictionary.
+        It supports three input types:
+        1. A dictionary: Returned as-is.
+        2. A JSON string: Parsed and validated to ensure only 'http' and 'https' keys exist.
+        3. A plain string: Treated as a single URL to be used for both 'http' and 'https'.
+
+        Args:
+            proxies (Union[str, dict]): The proxy configuration.
+                Can be a dictionary, a JSON-encoded string, or a single URL string.
+
+        Returns:
+            Dict[str, str]: A dictionary containing 'http' and/or 'https' proxy URLs.
+
+        Raises:
+            VaultConfigurationError: If the input is a JSON string containing keys
+                other than 'http' or 'https'.
+
+        Example:
+            >>> VaultClient.read_proxies('http://proxy.example.com:8888')
+            {'http': 'http://proxy.example.com:8888', 'https': 'http://proxy.example.com:8888'}
+
+            >>> VaultClient.read_proxies('{"http": "http://10.10.1.10:1080"}')
+            {'http': 'http://10.10.1.10:1080'}
+        """
+        if isinstance(proxies, dict):
+            return proxies
+        else:
+            try:
+                proxies = json.loads(proxies)
+                for key in proxies.keys():
+                    if key not in ("http", "https"):
+                        raise VaultConfigurationError(
+                            f"Unexpected proxy key '{key}', should be one of ['http', 'https']"
+                        )
+            except json.decoder.JSONDecodeError:
+                proxies = {
+                    'http': proxies,
+                    'https': proxies,
+                }
+            return proxies
 
     @property
     def token(self) -> Optional[str]:
