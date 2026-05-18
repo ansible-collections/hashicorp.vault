@@ -7,7 +7,7 @@
 from typing import NoReturn
 
 from ansible.errors import AnsibleLookupError
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_text
 from ansible.plugins.lookup import LookupBase
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import (
@@ -44,7 +44,7 @@ class VaultLookupBase(LookupBase):
 
                 AppRoleAuthenticator().authenticate(self.client, **params)
         except VaultError as e:
-            raise AnsibleLookupError(f"Vault lookup exception: {to_native(e)}")
+            raise AnsibleLookupError(f"Vault lookup exception: {to_text(e)}")
 
     def run(self, terms, variables=None, **kwargs):
 
@@ -54,10 +54,12 @@ class VaultLookupBase(LookupBase):
         vault_address = self.get_option("url")
         ca_cert = self.get_option("ca_cert")
         tls_skip_verify = self.get_option("tls_skip_verify")
+        proxies = self.get_option("proxies")
         self.client = VaultClient(
             vault_address=vault_address,
             vault_namespace=vault_namespace,
             ca_certificate=ca_cert,
             tls_skip_verify=tls_skip_verify,
+            proxies=proxies,
         )
         self._authenticate()

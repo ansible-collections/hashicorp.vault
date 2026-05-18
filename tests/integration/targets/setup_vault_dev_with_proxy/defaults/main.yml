@@ -1,0 +1,6 @@
+---
+container_runtime: "docker"
+ansible_test_vault_url: "http://vault_dev:8200"
+ansible_test_vault_root_token: "token_{{ vault_resource_suffix }}"
+ansible_test_vault_secret_mount_path: "secret"
+ansible_test_vault_proxy_url: "http://127.0.0.1:8888"

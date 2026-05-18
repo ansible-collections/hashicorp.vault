@@ -1,0 +1,22 @@
+---
+- name: Create temporary directory for vault resources
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: .dev.vault
+  register: vault_dir
+  notify: 'Clean resources'
+
+- name: Set variable for vault directory
+  ansible.builtin.set_fact:
+    vault_temp_dir: "{{ vault_dir.path }}"
+
+- name: Create container compose configuration file
+  ansible.builtin.template:
+      src: compose.yaml.j2
+      dest: "{{ vault_temp_dir }}/docker-compose.yaml"
+
+- name: 'Run {{ container_runtime }} compose up'
+  ansible.builtin.command: >-
+    {{ container_runtime }} compose up -d --remove-orphans
+  args:
+    chdir: "{{ vault_temp_dir }}"

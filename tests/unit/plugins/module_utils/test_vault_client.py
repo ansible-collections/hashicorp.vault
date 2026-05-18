@@ -203,3 +203,24 @@ class TestVaultClientMakeRequest:
             client._make_request("GET", path)
         expected_url = "https://vault.example.com:8200/some/path"
         client.session.request.assert_called_once_with("GET", expected_url)
+
+
+@pytest.mark.parametrize(
+    "proxies,expected",
+    [
+        ("http://proxy:8888", {"http": "http://proxy:8888", "https": "http://proxy:8888"}),
+        ('{"http": "http://proxy:8888"}', {"http": "http://proxy:8888"}),
+        (
+            '{"http": "http://10.10.1.10:3128", "https": "https://10.10.1.10:1080"}',
+            {"http": "http://10.10.1.10:3128", "https": "https://10.10.1.10:1080"},
+        ),
+        ('{"http2": "http://127.0.0.1:0011"}', None),
+    ],
+)
+def test_read_proxies(proxies, expected):
+    if expected:
+        assert VaultClient.read_proxies(proxies) == expected
+    else:
+        regex_message = r"Unexpected proxy key 'http2', should be one of \['http', 'https'\]"
+        with pytest.raises(VaultConfigurationError, match=regex_message):
+            VaultClient.read_proxies(proxies)

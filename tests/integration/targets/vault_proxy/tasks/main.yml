@@ -1,0 +1,91 @@
+---
+- name: Run tests for proxies
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ ansible_test_vault_url }}"
+      auth_method: token
+      token: "{{ ansible_test_vault_root_token }}"
+      secret_mount_path: "{{ ansible_test_vault_secret_mount_path }}"
+  vars:
+    secret_data:
+      username: ansible
+      password: pass123
+    secret_name: "secret-{{ vault_resource_suffix }}"
+  block:
+    ### Modules
+    - name: Trying to create a secret (should fail since no proxies provided)
+      hashicorp.vault.kv2_secret:
+        path: "{{ secret_name }}"
+        data: "{{ secret_data }}"
+        state: present
+      register: create_secret
+      failed_when: create_secret is successful
+
+    - name: Create a secret using a proxy configuration as string
+      hashicorp.vault.kv2_secret:
+        path: "{{ secret_name }}"
+        data: "{{ secret_data }}"
+        proxies: "{{ ansible_test_vault_proxy_url }}"
+        state: present
+
+    - name: Update secret using proxy configuration as dictionary
+      hashicorp.vault.kv2_secret:
+        path: "{{ secret_name }}"
+        data: "{{ secret_data | combine(secret_container) }}"
+        proxies:
+          http: "{{ ansible_test_vault_proxy_url }}"
+        state: present
+      vars:
+        secret_container:
+          container: "kv2"
+
+    - name: Update secret once again using proxy configuration as environment variable string
+      hashicorp.vault.kv2_secret:
+        path: "{{ secret_name }}"
+        data: "{{ secret_data | combine(proxy_config) }}"
+        state: present
+      environment:
+        VAULT_PROXIES: "{{ ansible_test_vault_proxy_url }}"
+      vars:
+        proxy_config:
+          environment: "as string"
+
+    - name: Update secret once again using proxy configuration as environment variable dictionary
+      hashicorp.vault.kv2_secret:
+        path: "{{ secret_name }}"
+        data: "{{ secret_data | combine(proxy_config) }}"
+        state: present
+      environment:
+        VAULT_PROXIES: '{"http": "{{ ansible_test_vault_proxy_url }}" }'
+      vars:
+        proxy_config:
+          environment: "as dictionary"
+      when: ansible_version.full is version('2.19', '>=')
+
+    ### Lookup
+    - name: Read secret using proxy configuration as string parameter
+      ansible.builtin.set_fact:
+        secret_content:  >-
+          {{ 
+            lookup('hashicorp.vault.kv2_secret_get',
+                secret=secret_name,
+                url=ansible_test_vault_url,
+                token=ansible_test_vault_root_token,
+                proxies=ansible_test_vault_proxy_url)
+          }}
+
+    - name: Read secret using proxy configuration as dictionary parameter
+      vars:
+        proxies:
+          http: "{{ ansible_test_vault_proxy_url }}"
+      ansible.builtin.set_fact:
+        secret_content:  >-
+          {{ 
+            lookup('hashicorp.vault.kv2_secret_get',
+                secret=secret_name,
+                url=ansible_test_vault_url,
+                token=ansible_test_vault_root_token,
+                proxies=proxies)
+          }}
+
+        

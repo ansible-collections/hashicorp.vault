@@ -59,6 +59,19 @@ EXAMPLES = """
                     role_id='role-123',
                     secret_id='secret-456',
                     url='https://myvault_url:8200') }}"
+
+- name: Read secret from Vault using proxy configuration
+  vars:
+    vault_proxies:
+      https: https://10.10.1.10:1080
+  ansible.builtin.debug:
+    msg: "{{ lookup('hashicorp.vault.kv2_secret_get',
+                    secret='foo',
+                    auth_method='approle',
+                    role_id='role-123',
+                    secret_id='secret-456',
+                    url='https://myvault_url:8200',
+                    proxies=vault_proxies) }}"
 """
 
 RETURN = """
