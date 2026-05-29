@@ -20,3 +20,7 @@
     {{ container_runtime }} compose up -d --remove-orphans
   args:
     chdir: "{{ vault_temp_dir }}"
+  retries: 3
+  delay: 10
+  until: compose_up.rc == 0
+  register: compose_up
