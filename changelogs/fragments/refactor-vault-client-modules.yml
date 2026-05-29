@@ -1,0 +1,2 @@
+minor_changes:
+  - module_utils - split vault_client into separate module files (https://github.com/ansible-collections/hashicorp.vault/pull/130).

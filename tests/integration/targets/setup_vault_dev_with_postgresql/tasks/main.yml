@@ -13,13 +13,39 @@
 
 # Vault server
 - name: Deploy vault dev server
-  ansible.builtin.command: >-
-    {{ container_runtime }} run --name {{ ansible_test_vault_container_name }} -d \
-    --network {{ ansible_test_container_network }} \
-    -e 'SKIP_SETCAP=true' \
-    -e 'VAULT_LOCAL_CONFIG={"disable_mlock": true}' \
-    -p 8200:8200 -e VAULT_DEV_ROOT_TOKEN_ID="{{ ansible_test_vault_root_token }}" \
-    docker.io/hashicorp/vault:latest
+  ansible.builtin.command:
+    argv:
+      - "{{ container_runtime }}"
+      - run
+      - --name
+      - "{{ ansible_test_vault_container_name }}"
+      - -d
+      - --network
+      - "{{ ansible_test_container_network }}"
+      - --cap-add
+      - IPC_LOCK
+      - -e
+      - "SKIP_SETCAP=true"
+      - -e
+      - "VAULT_LOCAL_CONFIG={\"disable_mlock\": true}"
+      - -e
+      - "VAULT_DEV_ROOT_TOKEN_ID={{ ansible_test_vault_root_token }}"
+      - -e
+      - "VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200"
+      - -p
+      - "8200:8200"
+      - docker.io/hashicorp/vault:latest
+  no_log: true
+
+- name: Wait for Vault to be ready
+  ansible.builtin.uri:
+    url: "{{ ansible_test_vault_url }}/v1/sys/health"
+    status_code: [200, 429, 472, 473, 501, 503]
+    use_proxy: false
+  register: vault_health
+  until: vault_health is succeeded
+  retries: 30
+  delay: 2
 
 - name: Vault enable databse engine
   vault_http_request:
@@ -33,6 +59,7 @@
   retries: 10
   delay: 3
   until: result is successful
+  no_log: true
 
 
 # PostGreSQL
@@ -41,16 +68,31 @@
     src: init-user.sql.j2
     dest: "{{ ansible_test_tmp_dir.path }}/init-user.sql"
     mode: '0644'
-  
+
 - name: Deploy the PostGreSQL container
-  ansible.builtin.command: >-
-    {{ container_runtime }} run --name {{ ansible_test_postgres_container_name }} -d \
-    --network {{ ansible_test_container_network }} \
-    -p 5432:5432 \
-    -e POSTGRES_USER={{ ansible_test_db_admin_user }} \
-    -e POSTGRES_PASSWORD={{ ansible_test_db_admin_user_password }} \
-    -v {{ ansible_test_tmp_dir.path }}/init-user.sql:/docker-entrypoint-initdb.d/init-user.sql:Z \
-    docker.io/postgres:17-alpine
+  ansible.builtin.command:
+    argv:
+      - "{{ container_runtime }}"
+      - run
+      - --name
+      - "{{ ansible_test_postgres_container_name }}"
+      - -d
+      - --network
+      - "{{ ansible_test_container_network }}"
+      - -p
+      - "5432:5432"
+      - -e
+      - "POSTGRES_USER={{ ansible_test_db_admin_user }}"
+      - -e
+      - "POSTGRES_PASSWORD={{ ansible_test_db_admin_user_password }}"
+      - -v
+      - "{{ ansible_test_tmp_dir.path }}/init-user.sql:/docker-entrypoint-initdb.d/init-user.sql:Z"
+      - docker.io/postgres:17-alpine
+  no_log: true
+
+- name: Wait for PostgreSQL container to initialize
+  ansible.builtin.pause:
+    seconds: 5
 
 - name: Validate connection to PostGreSQL
   postgres_connect:
@@ -61,3 +103,7 @@
       password: "{{ ansible_test_db_admin_user_password }}"
     - user: "{{ ansible_test_db_user }}"
       password: "{{ ansible_test_db_user_password }}"
+  retries: 10
+  delay: 2
+  register: postgres_validation
+  until: postgres_validation is succeeded
