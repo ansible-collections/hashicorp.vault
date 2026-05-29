@@ -161,6 +161,7 @@ class TestKv2SecretGetLookup:
                 vault_namespace="admin",
                 ca_certificate=None,
                 tls_skip_verify=None,
+                proxies=None,
             )
 
             # Verify authentication was called

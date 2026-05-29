@@ -67,6 +67,18 @@ options:
     type: bool
     default: false
     version_added: 1.2.0
+  proxies:
+    description:
+      - URL(s) to the proxies used to access the Vault service.
+      - It can be a string or a dict.
+      - If it's a dict, provide the scheme (eg. C(http) or C(https)) as the key, and the URL as the value.
+      - If it's a string, provide a single URL that will be used as the proxy for both C(http) and C(https) schemes.
+      - A string that can be interpreted as a dictionary will be converted to one (see examples).
+      - You can specify a different proxy for HTTP and HTTPS resources.
+      - If not specified, the value of the E(VAULT_PROXIES) environment variable will be used.
+      - This variable accepts either a simple string or a JSON-formatted string.
+    type: raw
+    version_added: 1.3.0
 notes:
   - Authentication is required for all Vault operations.
   - Token authentication is the default method.
@@ -139,6 +151,18 @@ options:
     env:
       - name: VAULT_SKIP_VERIFY
     version_added: 1.2.0
+  proxies:
+    description:
+      - URL(s) to the proxies used to access the Vault service.
+      - It can be a string or a dict.
+      - If it's a dict, provide the scheme (eg. C(http) or C(https)) as the key, and the URL as the value.
+      - If it's a string, provide a single URL that will be used as the proxy for both C(http) and C(https) schemes.
+      - A string that can be interpreted as a dictionary will be converted to one (see examples).
+      - If not specified, the value of the E(VAULT_PROXIES) environment variable will be used.
+    type: raw
+    env:
+      - name: VAULT_PROXIES
+    version_added: 1.3.0
 notes:
   - Authentication is required for all Vault operations.
 """
