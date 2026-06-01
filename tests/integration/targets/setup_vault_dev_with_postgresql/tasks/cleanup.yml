@@ -5,7 +5,9 @@
   loop:
     - "{{ ansible_test_vault_container_name }}"
     - "{{ ansible_test_postgres_container_name }}"
-  ignore_errors: true
+  register: _stop_containers
+  failed_when: false
+  changed_when: _stop_containers.rc == 0
 
 - name: Remove running containers
   ansible.builtin.command: >-
@@ -13,7 +15,9 @@
   loop:
     - "{{ ansible_test_vault_container_name }}"
     - "{{ ansible_test_postgres_container_name }}"
-  ignore_errors: true
+  register: _remove_containers
+  failed_when: false
+  changed_when: _remove_containers.rc == 0
 
 - name: Delete container network
   ansible.builtin.command: >

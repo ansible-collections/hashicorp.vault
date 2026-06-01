@@ -2,11 +2,13 @@ services:
   # Container running vault dev server
   vault_dev:
     image: docker.io/hashicorp/vault:latest
-    command: server -dev -dev-root-token-id="{{ ansible_test_vault_root_token }}" -dev-listen-address="0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
     environment:
-      VAULT_DEV_ROOT_TOKEN_ID: "{{ ansible_test_vault_root_token }}"
+      SKIP_SETCAP: "true"
       VAULT_LOCAL_CONFIG: '{"disable_mlock": true}'
-      SKIP_SETCAP: true
+      VAULT_DEV_ROOT_TOKEN_ID: "{{ ansible_test_vault_root_token }}"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
     ports:
       - "8200:8200"
     healthcheck:

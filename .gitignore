@@ -171,6 +171,7 @@ cython_debug/
 
 # Ansible
 .ansible/
+changelogs/.plugin-cache.yaml
 
 # Integration tests
 tests/integration/inventory
