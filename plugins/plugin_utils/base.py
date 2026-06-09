@@ -26,6 +26,7 @@ class VaultLookupBase(LookupBase):
     def _authenticate(self) -> None:
 
         auth_method = self.get_option("auth_method")
+        timeout = self.get_option("timeout")
 
         try:
             if auth_method == "token":
@@ -41,6 +42,8 @@ class VaultLookupBase(LookupBase):
                 vault_approle_path = self.get_option("vault_approle_path")
                 if vault_approle_path is not None:
                     params.update({"approle_path": vault_approle_path})
+                if timeout is not None:
+                    params.update({"timeout": timeout})
 
                 AppRoleAuthenticator().authenticate(self.client, **params)
         except VaultError as e:
@@ -55,11 +58,15 @@ class VaultLookupBase(LookupBase):
         ca_cert = self.get_option("ca_cert")
         tls_skip_verify = self.get_option("tls_skip_verify")
         proxies = self.get_option("proxies")
+        timeout = self.get_option("timeout")
+        retries = self.get_option("retries")
         self.client = VaultClient(
             vault_address=vault_address,
             vault_namespace=vault_namespace,
             ca_certificate=ca_cert,
             tls_skip_verify=tls_skip_verify,
             proxies=proxies,
+            timeout=timeout,
+            retries=retries,
         )
         self._authenticate()

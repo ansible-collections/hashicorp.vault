@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - database_role - add ``connection_name`` alias for ``db_name`` parameter to align
+    with ``database_connection`` module
+    (https://github.com/ansible-collections/hashicorp.vault/pull/133).

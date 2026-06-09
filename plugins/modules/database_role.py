@@ -35,6 +35,7 @@ options:
       - Name of the database connection to use.
       - Required when O(state=present).
     type: str
+    aliases: [connection_name]
   creation_statements:
     description:
       - SQL statements to execute when creating database credentials.
@@ -238,7 +239,7 @@ def main():
             # Role parameters
             mount_path=dict(type='str', default='database'),
             role_name=dict(type='str', required=True),
-            db_name=dict(type='str'),
+            db_name=dict(type='str', aliases=['connection_name']),
             creation_statements=dict(type='list', elements='str'),
             default_ttl=dict(type='int'),
             max_ttl=dict(type='int'),

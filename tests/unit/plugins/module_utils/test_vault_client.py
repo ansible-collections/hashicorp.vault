@@ -24,6 +24,9 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions i
     VaultSecretNotFoundError,
 )
 
+MOCK_HTTP_ADAPTER = 'ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.HTTPAdapter'
+MOCK_RETRY = 'ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.Retry'
+
 MOCK_REQUESTS_SESSION = "ansible_collections.hashicorp.vault.plugins.module_utils.vault_client.requests.Session"
 
 
@@ -100,6 +103,111 @@ class TestVaultClient:
         assert mock_session.headers.update.call_count == 3
 
         mock_session.headers.update.assert_called_with({"X-Vault-Token": "hvs.third-token"})
+
+
+class TestVaultClientTimeout:
+    """Test VaultClient timeout configuration."""
+
+    def test_init_with_timeout(self, mock_session_class, mock_session):
+        """Test that timeout is stored on the client instance."""
+        client = VaultClient(
+            vault_address='https://vault.example.com:8200',
+            vault_namespace='test-namespace',
+            timeout=30,
+        )
+        assert client.timeout == 30
+
+    def test_init_without_timeout(self, mock_session_class, mock_session):
+        """Test that timeout defaults to None."""
+        client = VaultClient(
+            vault_address='https://vault.example.com:8200',
+            vault_namespace='test-namespace',
+        )
+        assert client.timeout is None
+
+    def test_init_timeout_string_conversion(self, mock_session_class, mock_session):
+        """Test that string timeout from env var is converted to int."""
+        client = VaultClient(
+            vault_address='https://vault.example.com:8200',
+            vault_namespace='test-namespace',
+            timeout='30',
+        )
+        assert client.timeout == 30
+
+
+class TestVaultClientRetries:
+    """Test VaultClient retry configuration."""
+
+    def test_init_with_retries_int(self, mock_session_class, mock_session):
+        """Test that integer retries mounts an HTTPAdapter on the session."""
+        with patch(MOCK_RETRY) as mock_retry_cls, patch(MOCK_HTTP_ADAPTER) as mock_adapter_cls:
+            mock_retry_instance = Mock()
+            mock_retry_cls.return_value = mock_retry_instance
+            mock_adapter_instance = Mock()
+            mock_adapter_cls.return_value = mock_adapter_instance
+
+            VaultClient(
+                vault_address='https://vault.example.com:8200',
+                vault_namespace='test-namespace',
+                retries=3,
+            )
+
+            mock_retry_cls.assert_called_once_with(total=3)
+            mock_adapter_cls.assert_called_once_with(max_retries=mock_retry_instance)
+            assert mock_session.mount.call_count == 2
+            mock_session.mount.assert_any_call('https://', mock_adapter_instance)
+            mock_session.mount.assert_any_call('http://', mock_adapter_instance)
+
+    def test_init_with_retries_dict(self, mock_session_class, mock_session):
+        """Test that dict retries passes kwargs to Retry."""
+        with patch(MOCK_RETRY) as mock_retry_cls, patch(MOCK_HTTP_ADAPTER):
+            retries_config = {'total': 3, 'backoff_factor': 0.5}
+            VaultClient(
+                vault_address='https://vault.example.com:8200',
+                vault_namespace='test-namespace',
+                retries=retries_config,
+            )
+
+            mock_retry_cls.assert_called_once_with(total=3, backoff_factor=0.5)
+
+    def test_init_with_retries_string_int(self, mock_session_class, mock_session):
+        """Test that string integer retries from env var is parsed correctly."""
+        with patch(MOCK_RETRY) as mock_retry_cls, patch(MOCK_HTTP_ADAPTER):
+            VaultClient(
+                vault_address='https://vault.example.com:8200',
+                vault_namespace='test-namespace',
+                retries='3',
+            )
+
+            mock_retry_cls.assert_called_once_with(total=3)
+
+    def test_init_with_retries_string_json(self, mock_session_class, mock_session):
+        """Test that JSON string retries from env var is parsed correctly."""
+        with patch(MOCK_RETRY) as mock_retry_cls, patch(MOCK_HTTP_ADAPTER):
+            VaultClient(
+                vault_address='https://vault.example.com:8200',
+                vault_namespace='test-namespace',
+                retries='{"total": 3}',
+            )
+
+            mock_retry_cls.assert_called_once_with(total=3)
+
+    def test_init_with_retries_invalid_string(self, mock_session_class, mock_session):
+        """Test that invalid string retries raises VaultConfigurationError."""
+        with pytest.raises(VaultConfigurationError, match='retries must be an integer or a JSON dictionary string'):
+            VaultClient(
+                vault_address='https://vault.example.com:8200',
+                vault_namespace='test-namespace',
+                retries='invalid',
+            )
+
+    def test_init_without_retries(self, mock_session_class, mock_session):
+        """Test that no adapter is mounted when retries is None."""
+        VaultClient(
+            vault_address='https://vault.example.com:8200',
+            vault_namespace='test-namespace',
+        )
+        mock_session.mount.assert_not_called()
 
 
 class TestVaultClientIntegrationWithAuthenticators:
@@ -179,6 +287,47 @@ class TestVaultClientMakeRequest:
         expected_url = "https://vault.example.com:8200/some/path"
         client.session.request.assert_called_once_with("GET", expected_url)
 
+    def test_make_request_with_timeout(self, mock_session_class, mock_session):
+        """Test _make_request() injects timeout when set on client."""
+        client = VaultClient(
+            vault_address='https://vault.example.com:8200',
+            vault_namespace='test-namespace',
+            timeout=30,
+        )
+        response = MagicMock()
+        mock_session.request = MagicMock()
+        mock_session.request.return_value = response
+        client._make_request('GET', 'some/path')
+        expected_url = 'https://vault.example.com:8200/some/path'
+        client.session.request.assert_called_once_with('GET', expected_url, timeout=30)
+
+    def test_make_request_without_timeout(self, mock_session_class, mock_session):
+        """Test _make_request() does not inject timeout when not set."""
+        client = VaultClient(
+            vault_address='https://vault.example.com:8200',
+            vault_namespace='test-namespace',
+        )
+        response = MagicMock()
+        mock_session.request = MagicMock()
+        mock_session.request.return_value = response
+        client._make_request('GET', 'some/path')
+        expected_url = 'https://vault.example.com:8200/some/path'
+        client.session.request.assert_called_once_with('GET', expected_url)
+
+    def test_make_request_explicit_timeout_not_overridden(self, mock_session_class, mock_session):
+        """Test that explicit per-call timeout is not overridden by client timeout."""
+        client = VaultClient(
+            vault_address='https://vault.example.com:8200',
+            vault_namespace='test-namespace',
+            timeout=30,
+        )
+        response = MagicMock()
+        mock_session.request = MagicMock()
+        mock_session.request.return_value = response
+        client._make_request('GET', 'some/path', timeout=60)
+        expected_url = 'https://vault.example.com:8200/some/path'
+        client.session.request.assert_called_once_with('GET', expected_url, timeout=60)
+
     @pytest.mark.parametrize(
         "status_code,expected_exception",
         [
@@ -224,3 +373,41 @@ def test_read_proxies(proxies, expected):
         regex_message = r"Unexpected proxy key 'http2', should be one of \['http', 'https'\]"
         with pytest.raises(VaultConfigurationError, match=regex_message):
             VaultClient.read_proxies(proxies)
+
+
+class TestBuildRetry:
+    """Test VaultClient._build_retry() static method."""
+
+    def test_build_retry_with_int(self):
+        """Test _build_retry with integer input."""
+        with patch(MOCK_RETRY) as mock_retry_cls:
+            VaultClient._build_retry(3)
+            mock_retry_cls.assert_called_once_with(total=3)
+
+    def test_build_retry_with_dict(self):
+        """Test _build_retry with dict input."""
+        with patch(MOCK_RETRY) as mock_retry_cls:
+            VaultClient._build_retry({'total': 3, 'backoff_factor': 0.5})
+            mock_retry_cls.assert_called_once_with(total=3, backoff_factor=0.5)
+
+    def test_build_retry_with_string_int(self):
+        """Test _build_retry with string integer input."""
+        with patch(MOCK_RETRY) as mock_retry_cls:
+            VaultClient._build_retry('3')
+            mock_retry_cls.assert_called_once_with(total=3)
+
+    def test_build_retry_with_string_json(self):
+        """Test _build_retry with JSON string input."""
+        with patch(MOCK_RETRY) as mock_retry_cls:
+            VaultClient._build_retry('{"total": 5}')
+            mock_retry_cls.assert_called_once_with(total=5)
+
+    def test_build_retry_with_invalid_string(self):
+        """Test _build_retry with invalid string raises error."""
+        with pytest.raises(VaultConfigurationError, match='retries must be an integer or a JSON dictionary string'):
+            VaultClient._build_retry('invalid')
+
+    def test_build_retry_with_invalid_type(self):
+        """Test _build_retry with unsupported type raises error."""
+        with pytest.raises(VaultConfigurationError, match='retries must be an integer or a dictionary'):
+            VaultClient._build_retry([1, 2, 3])

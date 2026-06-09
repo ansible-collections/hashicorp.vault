@@ -77,6 +77,7 @@ class AppRoleAuthenticator(Authenticator):
         secret_id,
         vault_namespace=None,
         approle_path="approle",
+        timeout=None,
     ):
         """
         Authenticate the client using AppRole credentials.
@@ -101,10 +102,14 @@ class AppRoleAuthenticator(Authenticator):
         if not role_id or not secret_id:
             raise VaultCredentialsError("role_id and secret_id are required for AppRole authentication.")
 
-        token = self._login_with_approle(vault_address, role_id, secret_id, vault_namespace, approle_path)
+        token = self._login_with_approle(
+            vault_address, role_id, secret_id, vault_namespace, approle_path, timeout=timeout
+        )
         client.set_token(token)
 
-    def _login_with_approle(self, vault_address, role_id, secret_id, vault_namespace=None, approle_path="approle"):
+    def _login_with_approle(
+        self, vault_address, role_id, secret_id, vault_namespace=None, approle_path="approle", timeout=None
+    ):
         """
         Login to Vault using AppRole credentials.
 
@@ -130,7 +135,7 @@ class AppRoleAuthenticator(Authenticator):
             headers["X-Vault-Namespace"] = vault_namespace
 
         try:
-            response = requests.post(login_url, json=payload, headers=headers, timeout=90)
+            response = requests.post(login_url, json=payload, headers=headers, timeout=timeout or 90)
 
             response.raise_for_status()
 
@@ -183,6 +188,7 @@ class VaultLogin:
         auth_method: str,
         vault_namespace: Optional[str] = None,
         mount_path: Optional[str] = None,
+        timeout: Optional[int] = None,
     ) -> None:
         """
         Initializes the Vault Login API client.
@@ -192,6 +198,7 @@ class VaultLogin:
             auth_method (str): The auth method (e.g., approle, alicloud, aws, azure, etc).
             vault_namespace (str, optional): Vault namespace for Enterprise
             custom_mount_path: Custom path for the auth method. If omitted, the auth method name is used as the mount point
+            timeout (int, optional): Request timeout in seconds.
 
         Returns:
           None
@@ -203,6 +210,7 @@ class VaultLogin:
         self._auth_method = auth_method.lower()
         self._namespace = vault_namespace
         self._mount_path = mount_path if mount_path is not None else auth_method
+        self._timeout = timeout
 
     def validate_login_params(self, **kwargs: Any) -> None:
         """
@@ -258,7 +266,7 @@ class VaultLogin:
             headers["X-Vault-Namespace"] = self._namespace
 
         try:
-            response = requests.post(login_url, json=kwargs, headers=headers, timeout=90)
+            response = requests.post(login_url, json=kwargs, headers=headers, timeout=self._timeout or 90)
             response.raise_for_status()
             raw_response = response.json()
 
