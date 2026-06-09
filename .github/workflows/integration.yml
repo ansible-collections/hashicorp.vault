@@ -23,6 +23,16 @@ jobs:
           - devel
         python-version:
           - "3.12"
+          - "3.13"
+        exclude:
+          # Python 3.13 is not needed for stable versions (tested with 3.12)
+          - ansible-version: stable-2.19
+            python-version: "3.13"
+          - ansible-version: stable-2.18
+            python-version: "3.13"
+          # Python 3.12 cannot run ansible devel (requires Python 3.13+)
+          - ansible-version: devel
+            python-version: "3.12"
     steps:
       - uses: actions/checkout@v4
         with:

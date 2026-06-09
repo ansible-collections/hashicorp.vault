@@ -17,11 +17,12 @@ The following tests run on every pull request:
 | [tests.yml](.github/workflows/tests.yml) | unit-galaxy | Executes unit tests via ansible-test and tox-ansible | 3.10, 3.11, 3.12 | 2.16 |
 | [tests.yml](.github/workflows/tests.yml) | unit-source | Executes pytest unit tests from source | 3.10-3.14 (see exclusions) | 2.16-2.20, devel |
 | [linters.yml](.github/workflows/linters.yml) | linters | Runs `black`, `flake8`, and `isort` via tox | 3.11 | N/A |
-| [integration.yml](.github/workflows/integration.yml) | run-integration-tests | Executes integration test suites against live Vault | 3.12 | devel, stable-2.18, stable-2.19 |
+| [integration.yml](.github/workflows/integration.yml) | run-integration-tests | Executes integration test suites against live Vault | 3.12, 3.13 (see matrix) | devel, stable-2.18, stable-2.19 |
 
 **Notes:**
 - Integration tests require a live HashiCorp Vault instance. The workflow uses GitHub secrets (`VAULT_ADDR`, `VAULT_APPROLE_ROLE_ID`, `VAULT_APPROLE_SECRET_ID`) and targets the `admin/hashicorp-vault-integration-tests` namespace.
 - The collection's [tox.ini](tox.ini) file defines linting environments only. Unit and integration tests are run via ansible-test in GitHub Actions workflows, not through tox.
+- The integration workflow uses matrix exclusions: stable versions test with Python 3.12 only, while `devel` requires Python 3.13+ (as of ansible-core 2.19+).
 
 ### Python Version Compatibility by ansible-core Version
 
@@ -45,7 +46,7 @@ These are defined in the GitHub Actions workflow matrix configurations, not in t
 **Integration Tests**:
 | ansible-core Version | Python Versions |
 | -------------------- | --------------- |
-| devel | 3.12 |
+| devel | 3.13 |
 | stable-2.18 | 3.12 |
 | stable-2.19 | 3.12 |
 
