@@ -17,7 +17,7 @@ The following tests run on every pull request:
 | [tests.yml](.github/workflows/tests.yml) | unit-galaxy | Executes unit tests via ansible-test and tox-ansible | Per ansible-core support matrix | All supported ansible-core versions (2.16+) |
 | [tests.yml](.github/workflows/tests.yml) | unit-source | Executes pytest unit tests from source | 3.10-3.14 (see exclusions) | 2.16-2.20, devel |
 | [linters.yml](.github/workflows/linters.yml) | linters | Runs `black`, `flake8`, and `isort` via tox | 3.11 | N/A |
-| [integration.yml](.github/workflows/integration.yml) | run-integration-tests | Executes integration test suites against live Vault | 3.13 | milestone |
+| [integration.yml](.github/workflows/integration.yml) | run-integration-tests | Executes integration test suites against live Vault | 3.12 | milestone |
 
 **Notes:**
 - Integration tests require a live HashiCorp Vault instance. The workflow uses GitHub secrets (`VAULT_ADDR`, `VAULT_APPROLE_ROLE_ID`, `VAULT_APPROLE_SECRET_ID`) and targets the `admin/hashicorp-vault-integration-tests` namespace.
@@ -50,7 +50,7 @@ This ensures testing against all currently supported ansible-core versions (2.16
 **Integration Tests**:
 | ansible-core Version | Python Versions |
 | -------------------- | --------------- |
-| milestone | 3.13 |
+| milestone | 3.12 |
 
 **Notes:**
 - The `unit-source` workflow uses reusable workflows from `ansible-network/github_actions` which tests against a comprehensive matrix (2.16-2.21, milestone)
