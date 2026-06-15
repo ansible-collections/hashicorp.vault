@@ -21,9 +21,15 @@ jobs:
   ansible-lint:
     uses: ansible/ansible-content-actions/.github/workflows/ansible_lint.yaml@main
   sanity:
-    uses: ansible/ansible-content-actions/.github/workflows/sanity.yaml@main
+    uses: ansible-network/github_actions/.github/workflows/sanity.yml@main
+    with:
+      collection_pre_install: >-
+        git+https://github.com/ansible-collections/ansible.utils.git
   unit-galaxy:
-    uses: ansible/ansible-content-actions/.github/workflows/unit.yaml@main
+    uses: ansible-network/github_actions/.github/workflows/unit_galaxy.yml@main
+    with:
+      collection_pre_install: >-
+        git+https://github.com/ansible-collections/ansible.utils.git
   unit-source:
     uses: ansible-network/github_actions/.github/workflows/unit_source.yml@main
     with:
