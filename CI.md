@@ -55,9 +55,13 @@ This ensures testing against all currently supported ansible-core versions (2.16
 **Notes:**
 - The `sanity` and `unit-galaxy` workflows use reusable workflows from [`ansible/ansible-content-actions`](https://github.com/ansible/ansible-content-actions) which:
   - Auto-generate test matrices using `tox-ansible` based on `requires_ansible` and ansible-core Python support matrix
+  - Run `ansible-test sanity` and `ansible-test units` respectively
   - Ensure comprehensive coverage across all supported ansible-core versions (2.16+)
   - Automatically adapt as new ansible-core versions are released
-- The `unit-source` workflow uses [`ansible/ansible-content-actions`](https://github.com/ansible/ansible-content-actions) unit testing with comprehensive matrix
+- The `unit-source` workflow uses [`ansible-network/github_actions`](https://github.com/ansible-network/github_actions) which:
+  - Runs pytest directly against source code (not via ansible-test)
+  - Uses a comprehensive hardcoded matrix covering ansible-core 2.16-2.21, milestone, and devel
+  - Tests with Python versions appropriate for each ansible-core version
 - Integration tests use a custom workflow due to HashiCorp Vault-specific requirements (secrets, environment configuration)
 - Version combinations follow ansible-core's official Python support matrix
 - The `tox-ansible.ini` skip list excludes incompatible combinations (e.g., Python 3.12 with devel which requires Python 3.13+)
