@@ -109,7 +109,8 @@ notes:
   - Token authentication is the default method.
   - For AppRole authentication, both O(role_id) and O(secret_id) are required.
   - Module parameters take precedence over environment variables when both are provided.
-  - Supported environment variables include E(VAULT_TOKEN), E(VAULT_NAMESPACE), E(VAULT_AUTH_METHOD), E(VAULT_APPROLE_ROLE_ID), E(VAULT_APPROLE_SECRET_ID), E(VAULT_CACERT), E(VAULT_SKIP_VERIFY), E(VAULT_PROXIES), E(VAULT_TIMEOUT), and E(VAULT_RETRIES).
+  - Supported environment variables include E(VAULT_TOKEN), E(VAULT_NAMESPACE), E(VAULT_AUTH_METHOD), E(VAULT_APPROLE_ROLE_ID),
+    E(VAULT_APPROLE_SECRET_ID), E(VAULT_CACERT), E(VAULT_SKIP_VERIFY), E(VAULT_PROXIES), E(VAULT_TIMEOUT), and E(VAULT_RETRIES).
 """
 
     # Common Vault authentication options
@@ -215,5 +216,7 @@ notes:
   - Token authentication is the default method.
   - For AppRole authentication, both O(role_id) and O(secret_id) are required.
   - Plugin parameters take precedence over environment variables when both are provided.
-  - Supported environment variables include E(VAULT_ADDR), E(VAULT_TOKEN), E(VAULT_NAMESPACE), E(VAULT_AUTH_METHOD), E(VAULT_APPROLE_ROLE_ID), E(VAULT_APPROLE_SECRET_ID), E(VAULT_APPROLE_PATH), E(VAULT_CACERT), E(VAULT_SKIP_VERIFY), E(VAULT_PROXIES), E(VAULT_TIMEOUT), and E(VAULT_RETRIES).
+  - Supported environment variables include E(VAULT_ADDR), E(VAULT_TOKEN), E(VAULT_NAMESPACE), E(VAULT_AUTH_METHOD),
+    E(VAULT_APPROLE_ROLE_ID), E(VAULT_APPROLE_SECRET_ID), E(VAULT_APPROLE_PATH), E(VAULT_CACERT), E(VAULT_SKIP_VERIFY), E(VAULT_PROXIES),
+    E(VAULT_TIMEOUT), and E(VAULT_RETRIES).
 """
