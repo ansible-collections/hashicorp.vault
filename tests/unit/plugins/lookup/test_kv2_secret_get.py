@@ -162,6 +162,8 @@ class TestKv2SecretGetLookup:
                 ca_certificate=None,
                 tls_skip_verify=None,
                 proxies=None,
+                timeout=None,
+                retries=None,
             )
 
             # Verify authentication was called

@@ -37,6 +37,7 @@ def authenticate_module(module, client):
         VaultCredentialsError: If required authentication parameters are missing
     """
     auth_method = module.params["auth_method"]
+    timeout = module.params["timeout"]
 
     if auth_method == "token":
         token = module.params["token"]
@@ -64,6 +65,8 @@ def authenticate_module(module, client):
         vault_approle_path = module.params["vault_approle_path"]
         if vault_approle_path is not None:
             params.update({"approle_path": vault_approle_path})
+        if timeout is not None:
+            params.update({"timeout": timeout})
 
         AppRoleAuthenticator().authenticate(client, **params)
 
@@ -92,6 +95,8 @@ def get_authenticated_client(module):
     ca_cert = module.params["ca_cert"]
     tls_skip_verify = module.params["tls_skip_verify"]
     proxies = module.params["proxies"]
+    timeout = module.params["timeout"]
+    retries = module.params["retries"]
 
     try:
         # Create client
@@ -101,6 +106,8 @@ def get_authenticated_client(module):
             ca_certificate=ca_cert,
             tls_skip_verify=tls_skip_verify,
             proxies=proxies,
+            timeout=timeout,
+            retries=retries,
         )
 
         # Authenticate using module parameters

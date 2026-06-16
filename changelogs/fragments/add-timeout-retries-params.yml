@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - Add ``timeout`` and ``retries`` parameters to modules and lookup plugins to configure
+    request timeouts and automatic retry logic for Vault API calls
+    (https://github.com/ansible-collections/hashicorp.vault/pull/133).

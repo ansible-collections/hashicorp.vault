@@ -41,4 +41,12 @@ AUTH_ARG_SPEC = {
         "type": "raw",
         "fallback": (env_fallback, ["VAULT_PROXIES"]),
     },
+    "timeout": {
+        "type": "int",
+        "fallback": (env_fallback, ["VAULT_TIMEOUT"]),
+    },
+    "retries": {
+        "type": "raw",
+        "fallback": (env_fallback, ["VAULT_RETRIES"]),
+    },
 }

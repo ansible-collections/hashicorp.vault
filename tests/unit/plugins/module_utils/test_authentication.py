@@ -188,3 +188,29 @@ class TestAppRoleAuthenticator:
 
         with pytest.raises(VaultAppRoleLoginError, match="Invalid response format from Vault"):
             authenticator.authenticate(mock_client, **auth_params)
+
+    @patch("requests.post")
+    def test_authenticate_with_custom_timeout(
+        self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
+    ):
+        """Test AppRole authentication uses custom timeout when provided."""
+        successful_mock_response.json.return_value = {"auth": {"client_token": "hvs.timeout"}}
+        mock_post.return_value = successful_mock_response
+
+        authenticator.authenticate(mock_client, **auth_params, timeout=30)
+
+        args, kwargs = mock_post.call_args
+        assert kwargs['timeout'] == 30
+
+    @patch("requests.post")
+    def test_authenticate_default_timeout(
+        self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
+    ):
+        """Test AppRole authentication uses 90s default timeout when not specified."""
+        successful_mock_response.json.return_value = {"auth": {"client_token": "hvs.default"}}
+        mock_post.return_value = successful_mock_response
+
+        authenticator.authenticate(mock_client, **auth_params)
+
+        args, kwargs = mock_post.call_args
+        assert kwargs['timeout'] == 90

@@ -13,6 +13,8 @@ from typing import Dict, Optional, Union
 
 try:
     import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
 except ImportError as imp_exc:
     REQUESTS_IMPORT_ERROR = imp_exc
 else:
@@ -93,6 +95,8 @@ class VaultClient:
         ca_certificate: Optional[str] = None,
         tls_skip_verify: bool = None,
         proxies: Optional[Union[str, Dict[str, str]]] = None,
+        timeout: Optional[int] = None,
+        retries: Optional[Union[int, str, Dict]] = None,
     ) -> None:
         """
         Initialize the Vault client.
@@ -105,6 +109,8 @@ class VaultClient:
             vault_namespace (str): Vault Enterprise namespace (use "root" for OSS Vault)
             ca_certificate (str): Path to an optional custom CA certificate file.
             tls_skip_verify (bool): When set to true, skip tls verification.
+            timeout (int): Request timeout in seconds.
+            retries: Retry configuration (int, dict, or string).
 
         Raises:
             VaultConfigurationError: If vault_address or vault_namespace are empty/None
@@ -120,10 +126,17 @@ class VaultClient:
         self.vault_address = vault_address
         self.vault_namespace = vault_namespace
         self.vault_token = None
+        self.timeout = int(timeout) if timeout is not None else None
 
         # Set up HTTP session with namespace header
         self.session = requests.Session()
         self.session.headers.update({"X-Vault-Namespace": vault_namespace})
+
+        if retries is not None:
+            retry_config = self._build_retry(retries)
+            adapter = HTTPAdapter(max_retries=retry_config)
+            self.session.mount('https://', adapter)
+            self.session.mount('http://', adapter)
 
         logger.info("Initialized VaultClient for %s", vault_address)
         self.secrets = Secrets(self)
@@ -193,6 +206,28 @@ class VaultClient:
                 }
             return proxies
 
+    @staticmethod
+    def _build_retry(retries):
+        if isinstance(retries, str):
+            try:
+                retries = int(retries)
+            except ValueError:
+                try:
+                    retries = json.loads(retries)
+                except json.JSONDecodeError:
+                    raise VaultConfigurationError(
+                        f'retries must be an integer or a JSON dictionary string, got: {retries!r}'
+                    )
+        if isinstance(retries, int):
+            return Retry(total=retries)
+        elif isinstance(retries, dict):
+            try:
+                return Retry(**retries)
+            except TypeError as e:
+                raise VaultConfigurationError(f'Invalid retries configuration: {e}') from e
+        else:
+            raise VaultConfigurationError(f'retries must be an integer or a dictionary, got {type(retries).__name__}')
+
     @property
     def token(self) -> Optional[str]:
         """
@@ -224,6 +259,8 @@ class VaultClient:
 
         url = f"{self.vault_address}/{path}"
         logger.debug("Making %s request to %s with params: %s", method, url, kwargs.get("params"))
+        if self.timeout is not None and 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
         try:
             response = self.session.request(method, url, **kwargs)
             response.raise_for_status()
