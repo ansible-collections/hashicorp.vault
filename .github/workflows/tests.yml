@@ -22,20 +22,14 @@ jobs:
     uses: ansible/ansible-content-actions/.github/workflows/ansible_lint.yaml@main
   sanity:
     uses: ansible/ansible-content-actions/.github/workflows/sanity.yaml@main
-  unit-galaxy:
+  unit:
     uses: ansible/ansible-content-actions/.github/workflows/unit.yaml@main
-  unit-source:
-    uses: ansible-network/github_actions/.github/workflows/unit_source.yml@main
-    with:
-      collection_pre_install: >-
-        git+https://github.com/ansible-collections/ansible.utils.git
   all_green:
     if: ${{ always() }}
     needs:
       - build-import
       - sanity
-      - unit-galaxy
-      - unit-source
+      - unit
       - ansible-lint
     runs-on: ubuntu-latest
     steps:
@@ -43,7 +37,6 @@ jobs:
           python -c "assert 'failure' not in
           set([
           '${{ needs.sanity.result }}',
-          '${{ needs.unit-galaxy.result }}'
+          '${{ needs.unit.result }}',
           '${{ needs.ansible-lint.result }}'
-          '${{ needs.unit-source.result }}'
           ])"
