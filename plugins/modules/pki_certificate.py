@@ -147,7 +147,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, NoReturn, Optional, Union
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import AnsibleModule, env_fallback
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.args_common import AUTH_ARG_SPEC
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils import (
@@ -315,7 +315,7 @@ def main():
     argument_spec.update(
         dict(
             state=dict(type="str", choices=["issued", "signed", "revoked"], default="issued"),
-            engine_mount_point=dict(type="str", default="pki"),
+            engine_mount_point=dict(type="str", default="pki", fallback=(env_fallback, ["VAULT_ENGINE_MOUNT_POINT"])),
             role_name=dict(type="str", required=False, aliases=["role"]),
             common_name=dict(type="str", required=False),
             csr=dict(type="str", required=False),

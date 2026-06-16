@@ -17,7 +17,9 @@ description:
   - Read secrets in HashiCorp Vault KV version 2 secrets engine.
 options:
   engine_mount_point:
-    description: KV secrets engine mount point.
+    description: 
+      - KV secrets engine mount point.
+      - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used.
     default: secret
     type: str
     aliases: [secret_mount_path]
@@ -61,7 +63,7 @@ secret:
 
 import copy
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import AnsibleModule, env_fallback
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.args_common import AUTH_ARG_SPEC
 
@@ -86,7 +88,7 @@ def main():
     argument_spec.update(
         dict(
             # Secret parameters
-            engine_mount_point=dict(type="str", default="secret", aliases=["secret_mount_path"]),
+            engine_mount_point=dict(type="str", default="secret", aliases=["secret_mount_path"], fallback=(env_fallback, ["VAULT_ENGINE_MOUNT_POINT"])),
             path=dict(type="str", required=True, aliases=["secret_path"]),
             version=dict(type="int"),
         )

@@ -35,6 +35,43 @@
         that:
           - secret_response == secret_data
 
+    - name: Test environment variable support for lookup plugins
+      block:
+        - name: Read secret using environment variables only
+          environment:
+            VAULT_NAMESPACE: "{{ vault_namespace }}"
+            VAULT_AUTH_METHOD: "token"
+            VAULT_ENGINE_MOUNT_POINT: "{{ secret_mount_path }}"
+            VAULT_TOKEN: "{{ vault_token_from_setup_auth_token }}"
+            VAULT_ADDR: "{{ vault_url }}"
+          ansible.builtin.set_fact:
+            secret_from_env: "{{ lookup('hashicorp.vault.kv1_secret_get',
+              secret=test_secret_path) }}"
+
+        - name: Verify secret was retrieved using only env vars
+          ansible.builtin.assert:
+            that:
+              - secret_from_env == secret_data
+
+        - name: Test explicit parameters override environment variables
+          environment:
+            VAULT_ENGINE_MOUNT_POINT: "wrong-mount"
+            VAULT_NAMESPACE: "wrong-namespace"
+            VAULT_AUTH_METHOD: "approle"
+          ansible.builtin.set_fact:
+            secret_explicit: "{{ lookup('hashicorp.vault.kv1_secret_get',
+              auth_method='token',
+              token=vault_token_from_setup_auth_token,
+              secret=test_secret_path,
+              engine_mount_point=secret_mount_path,
+              namespace=vault_namespace,
+              url=vault_url) }}"
+
+        - name: Verify explicit params took precedence over env vars
+          ansible.builtin.assert:
+            that:
+              - secret_explicit == secret_data
+
   always:
     - name: Delete test secret
       hashicorp.vault.kv1_secret:
