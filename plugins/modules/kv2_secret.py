@@ -235,7 +235,12 @@ def main():
     argument_spec.update(
         dict(
             # Secret parameters
-            engine_mount_point=dict(type="str", default="secret", aliases=["secret_mount_path"], fallback=(env_fallback, ["VAULT_ENGINE_MOUNT_POINT"])),
+            engine_mount_point=dict(
+                type="str",
+                default="secret",
+                aliases=["secret_mount_path"],
+                fallback=(env_fallback, ["VAULT_ENGINE_MOUNT_POINT"]),
+            ),
             path=dict(type="str", required=True, aliases=["secret_path"]),
             data=dict(type="dict", no_log=True),
             cas=dict(type="int"),

@@ -17,7 +17,7 @@ description:
   - Read secrets in HashiCorp Vault KV version 2 secrets engine.
 options:
   engine_mount_point:
-    description: 
+    description:
       - KV secrets engine mount point.
       - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used.
     default: secret
@@ -88,7 +88,12 @@ def main():
     argument_spec.update(
         dict(
             # Secret parameters
-            engine_mount_point=dict(type="str", default="secret", aliases=["secret_mount_path"], fallback=(env_fallback, ["VAULT_ENGINE_MOUNT_POINT"])),
+            engine_mount_point=dict(
+                type="str",
+                default="secret",
+                aliases=["secret_mount_path"],
+                fallback=(env_fallback, ["VAULT_ENGINE_MOUNT_POINT"]),
+            ),
             path=dict(type="str", required=True, aliases=["secret_path"]),
             version=dict(type="int"),
         )
