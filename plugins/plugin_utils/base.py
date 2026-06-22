@@ -72,11 +72,13 @@ class VaultLookupBase(LookupBase):
         vault_address = self.get_option("url") or os.getenv("VAULT_ADDR")
         ca_cert = self.get_option("ca_cert") or os.getenv("VAULT_CACERT")
         tls_skip_verify_opt = self.get_option("tls_skip_verify")
-        tls_skip_verify = (
-            tls_skip_verify_opt
-            if tls_skip_verify_opt is not None
-            else (os.getenv("VAULT_SKIP_VERIFY", "").lower() in ("true", "1", "yes"))
-        )
+        tls_skip_verify_env = os.getenv("VAULT_SKIP_VERIFY")
+        if tls_skip_verify_opt is not None:
+            tls_skip_verify = tls_skip_verify_opt
+        elif tls_skip_verify_env is not None:
+            tls_skip_verify = tls_skip_verify_env.lower() in ("true", "1", "yes")
+        else:
+            tls_skip_verify = None
         proxies = self.get_option("proxies") or os.getenv("VAULT_PROXIES")
         timeout_opt = self.get_option("timeout")
         timeout = (
