@@ -15,7 +15,11 @@ AUTH_ARG_SPEC = {
         "required": True,
         "aliases": ["vault_address"],
     },
-    "namespace": {"default": "admin", "aliases": ["vault_namespace"], "fallback": (env_fallback, ["VAULT_NAMESPACE"])},
+    "namespace": {
+        "default": "admin",
+        "aliases": ["vault_namespace"],
+        "fallback": (env_fallback, ["VAULT_NAMESPACE"]),
+    },
     "auth_method": {
         "choices": ["token", "approle"],
         "default": "token",

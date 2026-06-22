@@ -24,23 +24,36 @@ class VaultLookupBase(LookupBase):
         raise AnsibleLookupError(message)
 
     def _authenticate(self) -> None:
+        import os
 
-        auth_method = self.get_option("auth_method")
-        timeout = self.get_option("timeout")
+        # Get authentication options with environment variable fallback
+        auth_method = self.get_option("auth_method") or os.getenv("VAULT_AUTH_METHOD", "token")
+        timeout_opt = self.get_option("timeout")
+        timeout = (
+            timeout_opt
+            if timeout_opt is not None
+            else (int(os.getenv("VAULT_TIMEOUT")) if os.getenv("VAULT_TIMEOUT") else None)
+        )
 
         try:
             if auth_method == "token":
-                TokenAuthenticator().authenticate(self.client, token=self.get_option("token"))
+                token = self.get_option("token") or os.getenv("VAULT_TOKEN")
+                TokenAuthenticator().authenticate(self.client, token=token)
             else:
+                vault_address = self.get_option("url") or os.getenv("VAULT_ADDR")
+                role_id = self.get_option("role_id") or os.getenv("VAULT_APPROLE_ROLE_ID")
+                secret_id = self.get_option("secret_id") or os.getenv("VAULT_APPROLE_SECRET_ID")
+                vault_namespace = self.get_option("namespace") or os.getenv("VAULT_NAMESPACE", "admin")
+
                 params = {
-                    "vault_address": self.get_option("url"),
-                    "role_id": self.get_option("role_id"),
-                    "secret_id": self.get_option("secret_id"),
-                    "vault_namespace": self.get_option("namespace"),
+                    "vault_address": vault_address,
+                    "role_id": role_id,
+                    "secret_id": secret_id,
+                    "vault_namespace": vault_namespace,
                 }
 
-                vault_approle_path = self.get_option("vault_approle_path")
-                if vault_approle_path is not None:
+                vault_approle_path = self.get_option("vault_approle_path") or os.getenv("VAULT_APPROLE_PATH", "approle")
+                if vault_approle_path:
                     params.update({"approle_path": vault_approle_path})
                 if timeout is not None:
                     params.update({"timeout": timeout})
@@ -50,16 +63,28 @@ class VaultLookupBase(LookupBase):
             raise AnsibleLookupError(f"Vault lookup exception: {to_text(e)}")
 
     def run(self, terms, variables=None, **kwargs):
+        import os
 
         self.set_options(var_options=variables, direct=kwargs)
 
-        vault_namespace = self.get_option("namespace")
-        vault_address = self.get_option("url")
-        ca_cert = self.get_option("ca_cert")
-        tls_skip_verify = self.get_option("tls_skip_verify")
-        proxies = self.get_option("proxies")
-        timeout = self.get_option("timeout")
-        retries = self.get_option("retries")
+        # Get options with environment variable fallback
+        vault_namespace = self.get_option("namespace") or os.getenv("VAULT_NAMESPACE", "admin")
+        vault_address = self.get_option("url") or os.getenv("VAULT_ADDR")
+        ca_cert = self.get_option("ca_cert") or os.getenv("VAULT_CACERT")
+        tls_skip_verify_opt = self.get_option("tls_skip_verify")
+        tls_skip_verify = (
+            tls_skip_verify_opt
+            if tls_skip_verify_opt is not None
+            else (os.getenv("VAULT_SKIP_VERIFY", "").lower() in ("true", "1", "yes"))
+        )
+        proxies = self.get_option("proxies") or os.getenv("VAULT_PROXIES")
+        timeout_opt = self.get_option("timeout")
+        timeout = (
+            timeout_opt
+            if timeout_opt is not None
+            else (int(os.getenv("VAULT_TIMEOUT")) if os.getenv("VAULT_TIMEOUT") else None)
+        )
+        retries = self.get_option("retries") or os.getenv("VAULT_RETRIES")
         self.client = VaultClient(
             vault_address=vault_address,
             vault_namespace=vault_namespace,
