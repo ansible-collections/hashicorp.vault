@@ -25,7 +25,10 @@ AUTH_ARG_SPEC = {
         "default": "token",
         "fallback": (env_fallback, ["VAULT_AUTH_METHOD"]),
     },
-    "token": {"no_log": True, "fallback": (env_fallback, ["VAULT_TOKEN"])},
+    "token": {
+        "no_log": True,
+        "fallback": (env_fallback, ["VAULT_TOKEN"]),
+    },
     "role_id": {
         "aliases": ["approle_role_id"],
         "fallback": (env_fallback, ["VAULT_APPROLE_ROLE_ID"]),
@@ -35,7 +38,10 @@ AUTH_ARG_SPEC = {
         "aliases": ["approle_secret_id"],
         "fallback": (env_fallback, ["VAULT_APPROLE_SECRET_ID"]),
     },
-    "vault_approle_path": {"default": "approle", "fallback": (env_fallback, ["VAULT_APPROLE_PATH"])},
+    "vault_approle_path": {
+        "default": "approle",
+        "fallback": (env_fallback, ["VAULT_APPROLE_PATH"]),
+    },
     "ca_cert": {
         "aliases": ["cacert", "ssl_ca_cert"],
         "fallback": (env_fallback, ["VAULT_CACERT"]),
