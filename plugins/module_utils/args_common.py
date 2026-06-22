@@ -14,6 +14,7 @@ AUTH_ARG_SPEC = {
     "url": {
         "required": True,
         "aliases": ["vault_address"],
+        "fallback": (env_fallback, ["VAULT_ADDR"])
     },
     "namespace": {
         "default": "admin",
