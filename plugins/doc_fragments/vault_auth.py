@@ -119,7 +119,6 @@ notes:
 options:
   url:
     description: Vault server URL.
-    required: true
     type: str
     aliases: [vault_address]
     env:

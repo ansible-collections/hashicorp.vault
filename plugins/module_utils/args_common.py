@@ -31,7 +31,7 @@ AUTH_ARG_SPEC = {
         "aliases": ["approle_secret_id"],
         "fallback": (env_fallback, ["VAULT_APPROLE_SECRET_ID"]),
     },
-    "vault_approle_path": {"default": "approle"},
+    "vault_approle_path": {"default": "approle", "fallback": (env_fallback, ["VAULT_APPROLE_PATH"])},
     "ca_cert": {
         "aliases": ["cacert", "ssl_ca_cert"],
         "fallback": (env_fallback, ["VAULT_CACERT"]),
