@@ -96,7 +96,8 @@ def get_authenticated_client(module):
     if vault_namespace == "admin":
         module.deprecate(
             "The default value for the 'namespace' parameter will change from 'admin' to 'root' in version 2.0.0. "
-            "To prepare for this change, explicitly set 'namespace' to either 'admin' (to keep current behavior) or 'root' (to adopt the new default early).",
+            "To prepare for this change, explicitly set 'namespace' to either 'admin' (to keep current behavior) "
+            "or 'root' (to adopt the new default early).",
             version="2.0.0",
             collection_name="hashicorp.vault",
         )
