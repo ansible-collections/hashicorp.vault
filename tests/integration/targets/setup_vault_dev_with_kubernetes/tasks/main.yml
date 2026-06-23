@@ -200,7 +200,7 @@
   retries: 10
   delay: 3
   until: configure_kubernetes_role.status in [200, 204]
-  # no_log: true
+  no_log: true
 
 - name: Create ACL policy for Kubernetes token integration fixture
   hashicorp.vault.acl_policy:

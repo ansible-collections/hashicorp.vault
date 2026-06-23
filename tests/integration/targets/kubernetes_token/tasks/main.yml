@@ -83,7 +83,7 @@
         audience: "{{ test_kubernetes_audience }}"
         ttl: "{{ test_kubernetes_ttl }}"
       register: approle_auth_result
-      # no_log: true
+      no_log: true
       when:
         - ansible_test_kubernetes_fixture_enabled
         - vault_approle_role_id is defined

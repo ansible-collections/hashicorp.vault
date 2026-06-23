@@ -22,5 +22,3 @@
       - pods_list_result.json.kind == "PodList"
     fail_msg: "{{ test_name }} generated Kubernetes token failed to access the API"
     success_msg: "{{ test_name }} generated Kubernetes token successfully accessed the API"
-
-# Made with Bob
