@@ -1,0 +1,78 @@
+---
+- name: Run kubernetes_token tests
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: token
+      token: "{{ vault_token_from_setup_auth_token }}"
+      vault_approle_path: "{{ ansible_test_vault_mount_path }}"
+  vars:
+    test_kubernetes_mount_path: "{{ ansible_test_kubernetes_mount_path }}"
+    test_kubernetes_role_name: "{{ ansible_test_kubernetes_role_name }}"
+    test_kubernetes_namespace: "{{ ansible_test_kubernetes_namespace }}"
+    test_kubernetes_audience: "{{ ansible_test_kubernetes_audience }}"
+    test_kubernetes_ttl: "{{ ansible_test_kubernetes_ttl }}"
+  block:
+    - name: Skip integration test when Kubernetes secrets engine test fixture is not configured
+      ansible.builtin.debug:
+        msg:
+          - "Skipping kubernetes_token integration coverage."
+          - "This target requires a Vault environment with the Kubernetes secrets engine configured."
+          - "Expected fixture inputs include mount path {{ test_kubernetes_mount_path }} and role {{ test_kubernetes_role_name }}."
+      changed_when: false
+      when: not ansible_test_kubernetes_fixture_enabled
+
+    - name: Generate Kubernetes token using Vault token authentication
+      hashicorp.vault.kubernetes_token:
+        kubernetes_mount_path: "{{ test_kubernetes_mount_path }}"
+        name: "{{ test_kubernetes_role_name }}"
+        kubernetes_namespace: "{{ test_kubernetes_namespace }}"
+        audience: "{{ test_kubernetes_audience }}"
+        ttl: "{{ test_kubernetes_ttl }}"
+      register: token_auth_result
+      no_log: true
+      when: ansible_test_kubernetes_fixture_enabled
+
+    - name: Validate Kubernetes token generated using Vault token authentication
+      ansible.builtin.assert:
+        that:
+          - token_auth_result is changed
+          - token_auth_result.kubernetes_token is defined
+          - token_auth_result.kubernetes_token.service_account_token is defined
+          - token_auth_result.kubernetes_token.lease_id is defined
+          - token_auth_result.kubernetes_token.lease_duration is defined
+          - token_auth_result.kubernetes_token.renewable is defined
+      when: ansible_test_kubernetes_fixture_enabled
+
+    - name: Generate Kubernetes token using AppRole authentication
+      hashicorp.vault.kubernetes_token:
+        auth_method: approle
+        role_id: "{{ vault_approle_role_id }}"
+        secret_id: "{{ vault_approle_secret_id }}"
+        vault_approle_path: "{{ ansible_test_vault_mount_path }}"
+        kubernetes_mount_path: "{{ test_kubernetes_mount_path }}"
+        name: "{{ test_kubernetes_role_name }}"
+        kubernetes_namespace: "{{ test_kubernetes_namespace }}"
+        audience: "{{ test_kubernetes_audience }}"
+        ttl: "{{ test_kubernetes_ttl }}"
+      register: approle_auth_result
+      no_log: true
+      when:
+        - ansible_test_kubernetes_fixture_enabled
+        - vault_approle_role_id is defined
+        - vault_approle_secret_id is defined
+
+    - name: Validate Kubernetes token generated using AppRole authentication
+      ansible.builtin.assert:
+        that:
+          - approle_auth_result is changed
+          - approle_auth_result.kubernetes_token is defined
+          - approle_auth_result.kubernetes_token.service_account_token is defined
+          - approle_auth_result.kubernetes_token.lease_id is defined
+          - approle_auth_result.kubernetes_token.lease_duration is defined
+          - approle_auth_result.kubernetes_token.renewable is defined
+      when:
+        - ansible_test_kubernetes_fixture_enabled
+        - vault_approle_role_id is defined
+        - vault_approle_secret_id is defined

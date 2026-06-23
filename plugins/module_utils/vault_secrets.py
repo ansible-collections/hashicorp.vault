@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_kubernetes import VaultKubernetes
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_kv1_secrets import VaultKv1Secrets
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_kv2_secrets import VaultKv2Secrets
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_pki import VaultPki
@@ -18,12 +19,14 @@ class Secrets:
     """A container class for different secrets engine clients.
 
     Attributes:
+        kubernetes: Kubernetes secrets engine
         kv1: Key-Value version 1 secrets engine
         kv2: Key-Value version 2 secrets engine
         pki: PKI (Public Key Infrastructure) secrets engine
     """
 
     def __init__(self, client):
+        self.kubernetes = VaultKubernetes(client)
         self.kv2 = VaultKv2Secrets(client)
         self.kv1 = VaultKv1Secrets(client)
         self.pki = VaultPki(client)
