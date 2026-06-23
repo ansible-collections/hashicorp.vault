@@ -25,6 +25,10 @@
 
     - name: Generate Kubernetes token using Vault token authentication
       hashicorp.vault.kubernetes_token:
+        url: "{{ vault_url }}"
+        namespace: "{{ vault_namespace }}"
+        auth_method: token
+        token: "{{ vault_token_from_setup_auth_token }}"
         kubernetes_mount_path: "{{ test_kubernetes_mount_path }}"
         name: "{{ test_kubernetes_role_name }}"
         kubernetes_namespace: "{{ test_kubernetes_namespace }}"
@@ -45,8 +49,30 @@
           - token_auth_result.kubernetes_token.renewable is defined
       when: ansible_test_kubernetes_fixture_enabled
 
+    - name: Validate token authentication result by calling Kubernetes API
+      ansible.builtin.include_tasks: validate_token.yml
+      vars:
+        token_result: "{{ token_auth_result }}"
+        test_name: "token auth"
+      when: ansible_test_kubernetes_fixture_enabled
+
+    - name: Delete ClusterRole created by first test to allow second test to succeed
+      ansible.builtin.command:
+        argv:
+          - "{{ ansible_test_kubectl_binary }}"
+          - --kubeconfig
+          - "{{ ansible_test_kind_effective_kubeconfig_path }}"
+          - delete
+          - clusterrole
+          - "{{ test_kubernetes_role_name }}"
+          - --ignore-not-found
+      changed_when: true
+      when: ansible_test_kubernetes_fixture_enabled
+
     - name: Generate Kubernetes token using AppRole authentication
       hashicorp.vault.kubernetes_token:
+        url: "{{ vault_url }}"
+        namespace: "{{ vault_namespace }}"
         auth_method: approle
         role_id: "{{ vault_approle_role_id }}"
         secret_id: "{{ vault_approle_secret_id }}"
@@ -57,7 +83,7 @@
         audience: "{{ test_kubernetes_audience }}"
         ttl: "{{ test_kubernetes_ttl }}"
       register: approle_auth_result
-      no_log: true
+      # no_log: true
       when:
         - ansible_test_kubernetes_fixture_enabled
         - vault_approle_role_id is defined
@@ -72,6 +98,16 @@
           - approle_auth_result.kubernetes_token.lease_id is defined
           - approle_auth_result.kubernetes_token.lease_duration is defined
           - approle_auth_result.kubernetes_token.renewable is defined
+      when:
+        - ansible_test_kubernetes_fixture_enabled
+        - vault_approle_role_id is defined
+        - vault_approle_secret_id is defined
+
+    - name: Validate AppRole authentication result by calling Kubernetes API
+      ansible.builtin.include_tasks: validate_token.yml
+      vars:
+        token_result: "{{ approle_auth_result }}"
+        test_name: "AppRole auth"
       when:
         - ansible_test_kubernetes_fixture_enabled
         - vault_approle_role_id is defined

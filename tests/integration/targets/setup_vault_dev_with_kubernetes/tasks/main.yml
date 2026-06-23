@@ -1,0 +1,223 @@
+---
+- name: Create temporary file for kind configuration
+  ansible.builtin.tempfile:
+    suffix: .kind
+    state: directory
+  register: ansible_test_tmp_dir
+  notify: 'Clean resources'
+
+- name: Set kubeconfig path fact
+  ansible.builtin.set_fact:
+    ansible_test_kind_effective_kubeconfig_path: >-
+      {{
+        ansible_test_kind_kubeconfig_path
+        if ansible_test_kind_kubeconfig_path | length > 0
+        else ansible_test_tmp_dir.path ~ '/kubeconfig'
+      }}
+
+- name: Create kind cluster
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_test_kind_binary }}"
+      - create
+      - cluster
+      - --name
+      - "{{ ansible_test_kind_cluster_name }}"
+      - --kubeconfig
+      - "{{ ansible_test_kind_effective_kubeconfig_path }}"
+  environment:
+    KIND_EXPERIMENTAL_PROVIDER: "{{ container_runtime }}"
+  register: create_kind_cluster
+
+- name: Wait for Kubernetes API server to be ready
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_test_kubectl_binary }}"
+      - --kubeconfig
+      - "{{ ansible_test_kind_effective_kubeconfig_path }}"
+      - cluster-info
+  register: kubectl_cluster_info
+  retries: 30
+  delay: 5
+  until: kubectl_cluster_info.rc == 0
+  changed_when: false
+
+- name: Ensure reviewer service account exists
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_test_kubectl_binary }}"
+      - --kubeconfig
+      - "{{ ansible_test_kind_effective_kubeconfig_path }}"
+      - create
+      - serviceaccount
+      - "{{ ansible_test_kubernetes_reviewer_service_account }}"
+      - --namespace
+      - "{{ ansible_test_kubernetes_namespace }}"
+  register: create_reviewer_service_account
+  failed_when:
+    - create_reviewer_service_account.rc != 0
+    - "'already exists' not in create_reviewer_service_account.stderr"
+  changed_when: create_reviewer_service_account.rc == 0
+
+- name: Ensure reviewer cluster role binding for auth-delegator exists
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_test_kubectl_binary }}"
+      - --kubeconfig
+      - "{{ ansible_test_kind_effective_kubeconfig_path }}"
+      - create
+      - clusterrolebinding
+      - "{{ ansible_test_kubernetes_reviewer_cluster_role_binding }}"
+      - --clusterrole=system:auth-delegator
+      - "--serviceaccount={{ ansible_test_kubernetes_namespace }}:{{ ansible_test_kubernetes_reviewer_service_account }}"
+  register: create_reviewer_cluster_role_binding
+  failed_when:
+    - create_reviewer_cluster_role_binding.rc != 0
+    - "'already exists' not in create_reviewer_cluster_role_binding.stderr"
+  changed_when: create_reviewer_cluster_role_binding.rc == 0
+
+- name: Ensure reviewer has permissions to manage roles and service accounts
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_test_kubectl_binary }}"
+      - --kubeconfig
+      - "{{ ansible_test_kind_effective_kubeconfig_path }}"
+      - create
+      - clusterrolebinding
+      - "{{ ansible_test_kubernetes_reviewer_cluster_role_binding }}-admin"
+      - --clusterrole=cluster-admin
+      - "--serviceaccount={{ ansible_test_kubernetes_namespace }}:{{ ansible_test_kubernetes_reviewer_service_account }}"
+  register: create_reviewer_admin_binding
+  failed_when:
+    - create_reviewer_admin_binding.rc != 0
+    - "'already exists' not in create_reviewer_admin_binding.stderr"
+  changed_when: create_reviewer_admin_binding.rc == 0
+
+- name: Get Kubernetes API server URL
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_test_kubectl_binary }}"
+      - --kubeconfig
+      - "{{ ansible_test_kind_effective_kubeconfig_path }}"
+      - config
+      - view
+      - --minify
+      - -o
+      - jsonpath={.clusters[0].cluster.server}
+  register: kubernetes_host
+  changed_when: false
+
+- name: Get Kubernetes CA certificate
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_test_kubectl_binary }}"
+      - --kubeconfig
+      - "{{ ansible_test_kind_effective_kubeconfig_path }}"
+      - config
+      - view
+      - --raw
+      - --minify
+      - -o
+      - jsonpath={.clusters[0].cluster.certificate-authority-data}
+  register: kubernetes_ca_cert_b64
+  changed_when: false
+
+- name: Get reviewer JWT
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_test_kubectl_binary }}"
+      - --kubeconfig
+      - "{{ ansible_test_kind_effective_kubeconfig_path }}"
+      - create
+      - token
+      - "{{ ansible_test_kubernetes_reviewer_service_account }}"
+      - --namespace
+      - "{{ ansible_test_kubernetes_namespace }}"
+  register: kubernetes_reviewer_jwt
+  changed_when: false
+
+- name: Enable Kubernetes secrets engine
+  ansible.builtin.uri:
+    url: "{{ ansible_test_vault_url }}/v1/sys/mounts/{{ ansible_test_kubernetes_mount_path }}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ ansible_test_vault_root_token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      type: "kubernetes"
+      description: "Kubernetes secrets engine for integration tests"
+    status_code: [200, 204, 400]
+    use_proxy: false
+  register: enable_kubernetes_engine
+  retries: 10
+  delay: 3
+  until: enable_kubernetes_engine.status in [200, 204, 400]
+  no_log: true
+
+- name: Configure Kubernetes secrets engine
+  ansible.builtin.uri:
+    url: "{{ ansible_test_vault_url }}/v1/{{ ansible_test_kubernetes_mount_path }}/config"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ ansible_test_vault_root_token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      kubernetes_host: "{{ kubernetes_host.stdout }}"
+      kubernetes_ca_cert: "{{ kubernetes_ca_cert_b64.stdout | b64decode }}"
+      service_account_jwt: "{{ kubernetes_reviewer_jwt.stdout }}"
+    status_code: [200, 204]
+    use_proxy: false
+  register: configure_kubernetes_engine
+  retries: 10
+  delay: 3
+  until: configure_kubernetes_engine.status in [200, 204]
+  no_log: true
+
+- name: Configure Kubernetes role
+  ansible.builtin.uri:
+    url: "{{ ansible_test_vault_url }}/v1/{{ ansible_test_kubernetes_mount_path }}/roles/{{ ansible_test_kubernetes_role_name }}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      allowed_kubernetes_namespaces: "{{ ansible_test_kubernetes_bound_service_account_namespaces | join(',') }}"
+      kubernetes_role_type: "ClusterRole"
+      generated_role_rules: |
+        rules:
+        - apiGroups: [""]
+          resources: ["pods"]
+          verbs: ["get", "list"]
+      token_default_ttl: "{{ ansible_test_kubernetes_token_default_ttl }}"
+      token_max_ttl: "{{ ansible_test_kubernetes_token_max_ttl }}"
+      name_template: "{{ ansible_test_kubernetes_role_name }}"
+    status_code: [200, 204]
+    use_proxy: false
+  register: configure_kubernetes_role
+  retries: 10
+  delay: 3
+  until: configure_kubernetes_role.status in [200, 204]
+  # no_log: true
+
+- name: Create ACL policy for Kubernetes token integration fixture
+  hashicorp.vault.acl_policy:
+    url: "{{ vault_url }}"
+    namespace: "{{ vault_namespace }}"
+    auth_method: token
+    token: "{{ vault_root_token }}"
+    name: "kubernetes-token-integration-{{ vault_resource_suffix }}"
+    policy: |
+      path "{{ ansible_test_kubernetes_mount_path }}/creds/{{ ansible_test_kubernetes_role_name }}" {
+        capabilities = ["create", "update", "read", "delete"]
+      }
+  when:
+    - vault_root_token is defined
+  no_log: true
+
+- name: Enable kubernetes fixture for downstream targets
+  ansible.builtin.set_fact:
+    ansible_test_kubernetes_fixture_enabled: true
+

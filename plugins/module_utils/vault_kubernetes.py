@@ -63,7 +63,12 @@ class VaultKubernetes:
         }
         payload = {key: value for key, value in params.items() if value is not None}
 
-        response_data = self._client._make_request("POST", path, json=payload)
+        # Only send json parameter if we have data to send
+        # Some Vault endpoints reject empty JSON bodies
+        if payload:
+            response_data = self._client._make_request("POST", path, json=payload)
+        else:
+            response_data = self._client._make_request("POST", path)
         out = dict(response_data.get("data", {}))
         for key in ("lease_id", "lease_duration", "renewable"):
             if key in response_data:

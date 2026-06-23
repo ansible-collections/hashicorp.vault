@@ -14,7 +14,7 @@
           secret_id: "{{ lookup('ansible.builtin.env', 'VAULT_APPROLE_SECRET_ID') | default(vault_approle_secret_id, true) }}"
         return_content: true
       register: vault_login
-      no_log: true
+      # no_log: true
       when: vault_approle_role_id is defined and vault_approle_secret_id is defined
 
     - name: Save Vault token for use in tests
