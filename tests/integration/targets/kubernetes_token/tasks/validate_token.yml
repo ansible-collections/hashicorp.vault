@@ -3,6 +3,7 @@
 # Parameters:
 #   - token_result: The result from kubernetes_token module containing the token
 #   - test_name: A descriptive name for the test (e.g., "token auth" or "AppRole auth")
+#   - ansible_test_kubernetes_validate_certs: Whether to validate TLS certificates (default: false for test environments)
 
 - name: "Use {{ test_name }} generated token to list pods in {{ test_kubernetes_namespace }} namespace"
   ansible.builtin.uri:
@@ -10,9 +11,11 @@
     method: GET
     headers:
       Authorization: "Bearer {{ token_result.kubernetes_token.service_account_token }}"
-    validate_certs: false
+    validate_certs: "{{ ansible_test_kubernetes_validate_certs | default(false) }}"
     status_code: 200
   register: pods_list_result
+  # Note: validate_certs should be true in production environments.
+  # For local kind/minikube clusters with self-signed certificates, it may need to be false.
 
 - name: "Validate that {{ test_name }} token can access Kubernetes API"
   ansible.builtin.assert:

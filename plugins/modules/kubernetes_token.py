@@ -5,6 +5,8 @@
 
 from __future__ import absolute_import, annotations, division, print_function
 
+__metaclass__ = type  # pylint: disable=C0103
+
 DOCUMENTATION = """
 ---
 module: kubernetes_token
@@ -43,7 +45,7 @@ options:
 extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
 notes:
-  - For security reasons, this module should be used with B(no_log=true) and C(register).
+  - This module should be used with B(no_log=true) and C(register) to prevent sensitive token data from being logged to console or log files, as the generated Kubernetes bearer token provides authentication credentials.
   - This module is NOT idempotent - each call generates a new token with a new lease.
   - This module returns a Kubernetes bearer token from the Vault Kubernetes secrets engine, not a Vault auth token.
 """
@@ -97,9 +99,6 @@ kubernetes_token:
     }
 """
 
-
-__metaclass__ = type  # pylint: disable=C0103
-
 import copy
 
 from ansible.module_utils.basic import AnsibleModule  # type: ignore
@@ -131,8 +130,11 @@ def main() -> None:
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
-        supports_check_mode=False,
+        supports_check_mode=True,
     )
+
+    if module.check_mode:
+        module.exit_json(changed=True, kubernetes_token={})
 
     client = get_authenticated_client(module)
 

@@ -109,9 +109,15 @@ class TestVaultKubernetes:
         authenticated_client._make_request.assert_called_once_with(
             "POST",
             expected_path,
-            json={},
         )
-        assert token["service_account_name"] == "vault-secrets-superuser"
+        assert token == {
+            "service_account_name": "vault-secrets-superuser",
+            "service_account_namespace": "kube-system",
+            "service_account_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9...",
+            "lease_id": "kubernetes/creds/superuser/abc123",
+            "lease_duration": 3600,
+            "renewable": False,
+        }
 
     def test_generate_token_omits_none_values(self, authenticated_client, mock_generate_token_response):
         authenticated_client._make_request.return_value = mock_generate_token_response
@@ -132,3 +138,18 @@ class TestVaultKubernetes:
         kubernetes = VaultKubernetes(authenticated_client)
         with pytest.raises(VaultApiError):
             kubernetes.generate_token(TEST_ROLE_NAME)
+
+    def test_generate_token_empty_name_raises_error(self, authenticated_client):
+        kubernetes = VaultKubernetes(authenticated_client)
+        with pytest.raises(ValueError, match="Role name cannot be empty"):
+            kubernetes.generate_token("")
+
+    def test_generate_token_none_name_raises_error(self, authenticated_client):
+        kubernetes = VaultKubernetes(authenticated_client)
+        with pytest.raises(ValueError, match="Role name cannot be empty"):
+            kubernetes.generate_token(None)
+
+    def test_generate_token_whitespace_name_raises_error(self, authenticated_client):
+        kubernetes = VaultKubernetes(authenticated_client)
+        with pytest.raises(ValueError, match="Role name cannot be empty"):
+            kubernetes.generate_token("   ")

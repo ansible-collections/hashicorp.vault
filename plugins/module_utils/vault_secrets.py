@@ -25,8 +25,15 @@ class Secrets:
         pki: PKI (Public Key Infrastructure) secrets engine
     """
 
-    def __init__(self, client):
-        self.kubernetes = VaultKubernetes(client)
+    def __init__(self, client, kubernetes_mount_path="kubernetes"):
+        """
+        Initialize the Secrets container.
+
+        Args:
+            client: An authenticated Vault client.
+            kubernetes_mount_path: Mount path for Kubernetes secrets engine (default: "kubernetes").
+        """
+        self.kubernetes = VaultKubernetes(client, mount_path=kubernetes_mount_path)
         self.kv2 = VaultKv2Secrets(client)
         self.kv1 = VaultKv1Secrets(client)
         self.pki = VaultPki(client)

@@ -9,6 +9,8 @@ __metaclass__ = type
 
 from typing import Any, Dict, Optional
 
+__all__ = ['VaultKubernetes']
+
 
 class VaultKubernetes:
     """
@@ -25,7 +27,7 @@ class VaultKubernetes:
                 Defaults to "kubernetes".
         """
         self._client = client
-        self._mount_path = (mount_path or "kubernetes").strip().strip("/")
+        self._mount_path = (mount_path or "kubernetes").strip("/").strip()
 
     def generate_token(
         self,
@@ -47,6 +49,9 @@ class VaultKubernetes:
         Returns:
             Dict[str, Any]: The generated token data merged with lease metadata.
 
+        Raises:
+            ValueError: If name is empty or None.
+
         Example:
             token = kube.generate_token(
                 "superuser",
@@ -55,6 +60,9 @@ class VaultKubernetes:
                 audience="openshift",
             )
         """
+        if not name or not name.strip():
+            raise ValueError("Role name cannot be empty")
+
         path = f"v1/{self._mount_path}/creds/{name}"
         params = {
             "kubernetes_namespace": kubernetes_namespace,

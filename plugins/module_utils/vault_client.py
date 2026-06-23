@@ -261,7 +261,10 @@ class VaultClient:
         logger.debug("Making %s request to %s", method, url)
         logger.debug("Request params: %s", kwargs.get("params"))
         logger.debug("Request json body: %s", kwargs.get("json"))
-        logger.debug("Request headers: %s", dict(self.session.headers))
+        try:
+            logger.debug("Request headers: %s", dict(self.session.headers))
+        except (TypeError, AttributeError):
+            logger.debug("Request headers: %s", self.session.headers)
         if self.timeout is not None and 'timeout' not in kwargs:
             kwargs['timeout'] = self.timeout
         try:

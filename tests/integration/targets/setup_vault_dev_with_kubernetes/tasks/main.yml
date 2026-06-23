@@ -28,6 +28,9 @@
   environment:
     KIND_EXPERIMENTAL_PROVIDER: "{{ container_runtime }}"
   register: create_kind_cluster
+  timeout: 300
+  async: 300
+  poll: 5
 
 - name: Wait for Kubernetes API server to be ready
   ansible.builtin.command:
@@ -180,7 +183,7 @@
     url: "{{ ansible_test_vault_url }}/v1/{{ ansible_test_kubernetes_mount_path }}/roles/{{ ansible_test_kubernetes_role_name }}"
     method: POST
     headers:
-      X-Vault-Token: "{{ vault_root_token }}"
+      X-Vault-Token: "{{ ansible_test_vault_root_token }}"
       Content-Type: "application/json"
     body_format: json
     body:

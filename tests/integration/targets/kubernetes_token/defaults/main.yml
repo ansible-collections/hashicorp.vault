@@ -6,3 +6,4 @@ ansible_test_kubernetes_role_name: "superuser"
 ansible_test_kubernetes_namespace: "kube-system"
 ansible_test_kubernetes_audience: ""
 ansible_test_kubernetes_ttl: "1h"
+ansible_test_kubernetes_validate_certs: false
