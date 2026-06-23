@@ -54,6 +54,16 @@ class VaultLookupBase(LookupBase):
         self.set_options(var_options=variables, direct=kwargs)
 
         vault_namespace = self.get_option("namespace")
+
+        # Deprecation warning for namespace default value change
+        if vault_namespace == "admin":
+            self.display.deprecated(
+                "The default value for the 'namespace' parameter will change from 'admin' to 'root' in version 2.0.0. "
+                "To prepare for this change, explicitly set 'namespace' to either 'admin' (to keep current behavior) or 'root' (to adopt the new default early).",
+                version="2.0.0",
+                collection_name="hashicorp.vault",
+            )
+
         vault_address = self.get_option("url")
         ca_cert = self.get_option("ca_cert")
         tls_skip_verify = self.get_option("tls_skip_verify")

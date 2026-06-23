@@ -91,6 +91,16 @@ def get_authenticated_client(module):
     from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import VaultClient
 
     vault_namespace = module.params["namespace"]
+
+    # Deprecation warning for namespace default value change
+    if vault_namespace == "admin":
+        module.deprecate(
+            "The default value for the 'namespace' parameter will change from 'admin' to 'root' in version 2.0.0. "
+            "To prepare for this change, explicitly set 'namespace' to either 'admin' (to keep current behavior) or 'root' (to adopt the new default early).",
+            version="2.0.0",
+            collection_name="hashicorp.vault",
+        )
+
     vault_address = module.params["url"]
     ca_cert = module.params["ca_cert"]
     tls_skip_verify = module.params["tls_skip_verify"]
