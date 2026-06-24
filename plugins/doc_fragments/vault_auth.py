@@ -15,11 +15,11 @@ class ModuleDocFragment:
     MODULES = r"""
 options:
   url:
-    description: Vault server URL.
     description:
       - Vault server URL.
       - If not specified, the value of the E(VAULT_ADDR) environment variable will be used.
     type: str
+    required: true
     aliases: [vault_address]
   namespace:
     description:
@@ -52,9 +52,6 @@ options:
       - AppRole O(secret_id) can be provided as parameters or as environment variables E(VAULT_APPROLE_SECRET_ID).
     type: str
     aliases: [approle_secret_id]
-  vault_approle_path:
-    description: AppRole auth method mount path.
-    default: approle
   vault_approle_path:
     description:
       - AppRole auth method mount path.
