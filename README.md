@@ -161,6 +161,8 @@ The following environment variable is supported by KV and PKI modules/plugins on
 |---------------------|-----------|-------------|---------|
 | `VAULT_ENGINE_MOUNT_POINT` | `engine_mount_point` | Secrets engine mount point | "secret" (KV), "pki" (PKI) |
 
+> **Note:** `VAULT_ENGINE_MOUNT_POINT` is shared by KV and PKI modules/lookups, but each module type has a different default mount path (`secret` vs `pki`). Setting this variable globally works only when all tasks target the same engine mount. For playbooks that mix KV and PKI operations, set `engine_mount_point` (or `secret_mount_path`) on individual tasks instead of using a single global environment variable.
+
 ### Parameter Precedence
 
 When both environment variables and module/plugin parameters are provided, **explicit parameters take precedence**:
