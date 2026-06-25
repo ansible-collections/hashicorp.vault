@@ -24,14 +24,14 @@ options:
   namespace:
     description:
       - Vault namespace.
-      - If not specified, the value of the E(VAULT_NAMESPACE) environment variable will be used.
+      - If not specified, the value of the E(VAULT_NAMESPACE) environment variable will be used. Added in version C(1.3.0).
     default: admin
     type: str
     aliases: [vault_namespace]
   auth_method:
     description:
       - Authentication method to use.
-      - If not specified, the value of the E(VAULT_AUTH_METHOD) environment variable will be used.
+      - If not specified, the value of the E(VAULT_AUTH_METHOD) environment variable will be used. Added in version C(1.3.0).
     choices: ['token', 'approle']
     default: token
     type: str

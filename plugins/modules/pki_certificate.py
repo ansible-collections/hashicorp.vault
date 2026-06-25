@@ -33,6 +33,7 @@ options:
   engine_mount_point:
     description:
       - PKI secrets engine mount path.
+      - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used. Added in version C(1.3.0).
     type: str
     default: pki
   role_name:
