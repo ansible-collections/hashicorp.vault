@@ -16,9 +16,12 @@ options:
   engine_mount_point:
     description:
       - The KV secrets engine mount point.
+      - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used. Added in version 1.3.0.
     default: secret
     type: str
     aliases: ['mount_point', 'secret_mount_path']
+    env:
+      - name: VAULT_ENGINE_MOUNT_POINT
   secret:
     description:
       - The Vault path to the secret being requested.
@@ -46,6 +49,16 @@ EXAMPLES = """
                     secret='hello',
                     url='https://myvault_url:8200',
                     proxies=vault_proxies) }}"
+
+- name: Return secret using environment variables
+  environment:
+    VAULT_ADDR: "https://myvault_url:8200"
+    VAULT_TOKEN: "hvs.abc123..."
+    VAULT_NAMESPACE: "admin"
+    VAULT_AUTH_METHOD: "token"
+    VAULT_ENGINE_MOUNT_POINT: "secret"
+  ansible.builtin.debug:
+    msg: "{{ lookup('hashicorp.vault.kv1_secret_get', secret='hello') }}"
 """
 
 RETURN = """
