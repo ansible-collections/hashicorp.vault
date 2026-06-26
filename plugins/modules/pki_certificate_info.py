@@ -22,7 +22,9 @@ extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
 options:
   engine_mount_point:
-    description: PKI secrets engine mount path.
+    description:
+      - PKI secrets engine mount path.
+      - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used. Added in version 1.3.0.
     type: str
     default: pki
   serial_number:
@@ -67,7 +69,7 @@ raw:
 
 import copy
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import AnsibleModule, env_fallback
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.args_common import AUTH_ARG_SPEC
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils import (
@@ -85,7 +87,7 @@ def main():
     argument_spec = copy.deepcopy(AUTH_ARG_SPEC)
     argument_spec.update(
         dict(
-            engine_mount_point=dict(type="str", default="pki"),
+            engine_mount_point=dict(type="str", default="pki", fallback=(env_fallback, ["VAULT_ENGINE_MOUNT_POINT"])),
             serial_number=dict(type="str", required=False),
         )
     )

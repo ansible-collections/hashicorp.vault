@@ -22,7 +22,9 @@ extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
 options:
   engine_mount_point:
-    description: KV secrets engine mount point.
+    description:
+      - KV secrets engine mount point.
+      - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used. Added in version 1.3.0.
     default: secret
     type: str
     aliases: [secret_mount_path]
@@ -79,7 +81,7 @@ data:
 
 import copy
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import AnsibleModule, env_fallback
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.args_common import AUTH_ARG_SPEC
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_utils import (
@@ -152,7 +154,11 @@ def main():
             "path": {"required": True, "aliases": ["secret_path"]},
             "data": {"type": "dict"},
             "state": {"choices": ["present", "absent"], "default": "present"},
-            "engine_mount_point": {"default": "secret", "aliases": ["secret_mount_path"]},
+            "engine_mount_point": {
+                "default": "secret",
+                "aliases": ["secret_mount_path"],
+                "fallback": (env_fallback, ["VAULT_ENGINE_MOUNT_POINT"]),
+            },
         }
     )
 
