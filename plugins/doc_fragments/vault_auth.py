@@ -15,17 +15,23 @@ class ModuleDocFragment:
     MODULES = r"""
 options:
   url:
-    description: Vault server URL.
-    required: true
+    description:
+      - Vault server URL.
+      - If not specified, the value of the E(VAULT_ADDR) environment variable will be used.
     type: str
+    required: true
     aliases: [vault_address]
   namespace:
-    description: Vault namespace.
+    description:
+      - Vault namespace.
+      - If not specified, the value of the E(VAULT_NAMESPACE) environment variable will be used. Added in version 1.3.0.
     default: admin
     type: str
     aliases: [vault_namespace]
   auth_method:
-    description: Authentication method to use.
+    description:
+      - Authentication method to use.
+      - If not specified, the value of the E(VAULT_AUTH_METHOD) environment variable will be used. Added in version 1.3.0.
     choices: ['token', 'approle']
     default: token
     type: str
@@ -47,7 +53,9 @@ options:
     type: str
     aliases: [approle_secret_id]
   vault_approle_path:
-    description: AppRole auth method mount path.
+    description:
+      - AppRole auth method mount path.
+      - If not specified, the value of the E(VAULT_APPROLE_PATH) environment variable will be used.
     default: approle
     type: str
   ca_cert:
@@ -105,6 +113,9 @@ notes:
   - Token authentication is the default method.
   - For AppRole authentication, both O(role_id) and O(secret_id) are required.
   - Module parameters take precedence over environment variables when both are provided.
+  - Supported environment variables include E(VAULT_ADDR), E(VAULT_TOKEN), E(VAULT_NAMESPACE), E(VAULT_AUTH_METHOD),
+    E(VAULT_APPROLE_ROLE_ID), E(VAULT_APPROLE_SECRET_ID), E(VAULT_APPROLE_PATH), E(VAULT_CACERT), E(VAULT_SKIP_VERIFY),
+    E(VAULT_PROXIES), E(VAULT_TIMEOUT), and E(VAULT_RETRIES).
 """
 
     # Common Vault authentication options
@@ -113,7 +124,6 @@ notes:
 options:
   url:
     description: Vault server URL.
-    required: true
     type: str
     aliases: [vault_address]
     env:
@@ -123,11 +133,15 @@ options:
     default: admin
     type: str
     aliases: [vault_namespace]
+    env:
+      - name: VAULT_NAMESPACE
   auth_method:
     description: Authentication method to use.
     choices: ['token', 'approle']
     default: token
     type: str
+    env:
+      - name: VAULT_AUTH_METHOD
   token:
     description:
       - Vault token for authentication.
@@ -203,4 +217,10 @@ options:
     version_added: 1.3.0
 notes:
   - Authentication is required for all Vault operations.
+  - Token authentication is the default method.
+  - For AppRole authentication, both O(role_id) and O(secret_id) are required.
+  - Plugin parameters take precedence over environment variables when both are provided.
+  - Supported environment variables include E(VAULT_ADDR), E(VAULT_TOKEN), E(VAULT_NAMESPACE), E(VAULT_AUTH_METHOD),
+    E(VAULT_APPROLE_ROLE_ID), E(VAULT_APPROLE_SECRET_ID), E(VAULT_APPROLE_PATH), E(VAULT_CACERT), E(VAULT_SKIP_VERIFY), E(VAULT_PROXIES),
+    E(VAULT_TIMEOUT), and E(VAULT_RETRIES).
 """
