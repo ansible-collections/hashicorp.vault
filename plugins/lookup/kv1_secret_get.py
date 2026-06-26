@@ -16,7 +16,7 @@ options:
   engine_mount_point:
     description:
       - The KV secrets engine mount point.
-      - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used.
+      - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used. Added in version 1.3.0.
     default: secret
     type: str
     aliases: ['mount_point', 'secret_mount_path']

@@ -17,7 +17,7 @@ options:
     description:
       - The mount path of the KV2 secrets engine.
       - Secret paths are relative to this mount point.
-      - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used.
+      - If not specified, the value of the E(VAULT_ENGINE_MOUNT_POINT) environment variable will be used. Added in version 1.3.0.
     type: str
     default: secret
     aliases: ['mount_point', 'secret_mount_path']
