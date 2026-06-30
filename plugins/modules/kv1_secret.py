@@ -150,16 +150,17 @@ def main():
 
     argument_spec = copy.deepcopy(AUTH_ARG_SPEC)
     argument_spec.update(
-        {
-            "path": {"required": True, "aliases": ["secret_path"]},
-            "data": {"type": "dict"},
-            "state": {"choices": ["present", "absent"], "default": "present"},
-            "engine_mount_point": {
-                "default": "secret",
-                "aliases": ["secret_mount_path"],
-                "fallback": (env_fallback, ["VAULT_ENGINE_MOUNT_POINT"]),
-            },
-        }
+        dict(
+            path=dict(type="str", required=True, aliases=["secret_path"]),
+            data=dict(type="dict", no_log=True),
+            state=dict(type="str", choices=["present", "absent"], default="present"),
+            engine_mount_point=dict(
+                type="str",
+                default="secret",
+                aliases=["secret_mount_path"],
+                fallback=(env_fallback, ["VAULT_ENGINE_MOUNT_POINT"]),
+            ),
+        )
     )
 
     required_if = [

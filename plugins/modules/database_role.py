@@ -161,7 +161,7 @@ except ImportError as e:
 
 def ensure_role_present(module: AnsibleModule, db_roles: VaultDatabaseDynamicRoles) -> None:
     """Ensure the dynamic role exists with the specified configuration by creating or updating it."""
-    role_name = module.params['role_name']
+    role_name = module.params["role_name"]
 
     # Build configuration dict from module parameters
     # Note: db_name and creation_statements are required (enforced by required_if),
@@ -210,7 +210,7 @@ def ensure_role_present(module: AnsibleModule, db_roles: VaultDatabaseDynamicRol
 
 def ensure_role_absent(module: AnsibleModule, db_roles: VaultDatabaseDynamicRoles) -> None:
     """Ensure the dynamic role is deleted."""
-    role_name = module.params['role_name']
+    role_name = module.params["role_name"]
 
     # Check if the role exists
     existing_role = get_existing_role_or_none(db_roles, role_name, 'read_dynamic_role')
@@ -237,24 +237,24 @@ def main():
     argument_spec.update(
         dict(
             # Role parameters
-            mount_path=dict(type='str', default='database'),
-            role_name=dict(type='str', required=True),
-            db_name=dict(type='str', aliases=['connection_name']),
-            creation_statements=dict(type='list', elements='str'),
-            default_ttl=dict(type='int'),
-            max_ttl=dict(type='int'),
-            revocation_statements=dict(type='list', elements='str'),
-            rollback_statements=dict(type='list', elements='str'),
-            renew_statements=dict(type='list', elements='str'),
-            credential_type=dict(type='str', choices=['password', 'rsa_private_key', 'client_certificate']),
-            credential_config=dict(type='dict', no_log=True),
+            mount_path=dict(type="str", default="database"),
+            role_name=dict(type="str", required=True),
+            db_name=dict(type="str", aliases=["connection_name"]),
+            creation_statements=dict(type="list", elements="str"),
+            default_ttl=dict(type="int"),
+            max_ttl=dict(type="int"),
+            revocation_statements=dict(type="list", elements="str"),
+            rollback_statements=dict(type="list", elements="str"),
+            renew_statements=dict(type="list", elements="str"),
+            credential_type=dict(type="str", choices=["password", "rsa_private_key", "client_certificate"]),
+            credential_config=dict(type="dict", no_log=True),
             # Other parameters
-            state=dict(type='str', choices=['present', 'absent'], default='present'),
+            state=dict(type="str", choices=["present", "absent"], default="present"),
         )
     )
 
     required_if = [
-        ('state', 'present', ['db_name', 'creation_statements']),
+        ("state", "present", ["db_name", "creation_statements"]),
     ]
 
     module = AnsibleModule(
@@ -266,12 +266,12 @@ def main():
     # Get authenticated client
     client = get_authenticated_client(module)
 
-    state = module.params['state']
-    mount_path = module.params['mount_path']
+    state = module.params["state"]
+    mount_path = module.params["mount_path"]
 
     try:
         db_roles = VaultDatabaseDynamicRoles(client, mount_path)
-        if state == 'present':
+        if state == "present":
             ensure_role_present(module, db_roles)
         elif state == 'absent':
             ensure_role_absent(module, db_roles)

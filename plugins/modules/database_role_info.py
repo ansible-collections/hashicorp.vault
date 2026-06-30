@@ -124,8 +124,8 @@ def main():
     # Get authenticated client
     client = get_authenticated_client(module)
 
-    mount_path = module.params['mount_path']
-    role_name = module.params['role_name']
+    mount_path = module.params["mount_path"]
+    role_name = module.params["role_name"]
 
     try:
         db_roles = VaultDatabaseDynamicRoles(client, mount_path)
