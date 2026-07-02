@@ -188,19 +188,19 @@ def ensure_role_present(module: AnsibleModule, db_roles: VaultDatabaseDynamicRol
             # Role already exists with the same configuration - no changes needed
             module.exit_json(
                 changed=False,
-                msg='Role already exists with the same configuration',
+                msg="Role already exists with the same configuration",
             )
         # Configuration is different, proceed with update
-        action = 'update'
-        action_msg = 'Role updated successfully'
+        action = "update"
+        action_msg = "Role updated successfully"
     else:
         # Role doesn't exist, proceed with creation
-        action = 'create'
-        action_msg = 'Role created successfully'
+        action = "create"
+        action_msg = "Role created successfully"
 
     # If in check mode, exit here with what would happen
     if module.check_mode:
-        module.exit_json(changed=True, msg=f'Would have {action}d the role if not in check_mode.')
+        module.exit_json(changed=True, msg=f"Would have {action}d the role if not in check_mode.")
 
     # Create or update the role
     result = db_roles.create_or_update_dynamic_role(role_name, config)
@@ -213,22 +213,22 @@ def ensure_role_absent(module: AnsibleModule, db_roles: VaultDatabaseDynamicRole
     role_name = module.params["role_name"]
 
     # Check if the role exists
-    existing_role = get_existing_role_or_none(db_roles, role_name, 'read_dynamic_role')
+    existing_role = get_existing_role_or_none(db_roles, role_name, "read_dynamic_role")
 
     if not existing_role:
         # Role doesn't exist, already in desired state
-        module.exit_json(changed=False, msg='Role already absent')
+        module.exit_json(changed=False, msg="Role already absent")
 
     # Role exists, needs to be deleted
     changed = True
 
     # If in check mode, exit here with what would happen
     if module.check_mode:
-        module.exit_json(changed=changed, msg='Would have deleted the role if not in check_mode.')
+        module.exit_json(changed=changed, msg="Would have deleted the role if not in check_mode.")
 
     # Delete the role
     db_roles.delete_dynamic_role(role_name)
-    module.exit_json(changed=changed, msg='Role deleted successfully', data={})
+    module.exit_json(changed=changed, msg="Role deleted successfully", data={})
 
 
 def main():
@@ -273,16 +273,16 @@ def main():
         db_roles = VaultDatabaseDynamicRoles(client, mount_path)
         if state == "present":
             ensure_role_present(module, db_roles)
-        elif state == 'absent':
+        elif state == "absent":
             ensure_role_absent(module, db_roles)
 
     except VaultPermissionError as e:
-        module.fail_json(msg=f'Permission denied: {e}')
+        module.fail_json(msg=f"Permission denied: {e}")
     except VaultApiError as e:
-        module.fail_json(msg=f'Vault API error: {e}')
+        module.fail_json(msg=f"Vault API error: {e}")
     except Exception as e:
-        module.fail_json(msg=f'Operation failed: {e}')
+        module.fail_json(msg=f"Operation failed: {e}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -34,13 +34,13 @@ class VaultPki:
     def _require_str(param: str, value: Any) -> None:
         """Raise TypeError if value is not a str (strict runtime check for API path/body inputs)."""
         if not isinstance(value, str):
-            raise TypeError(f'{param} must be a str')
+            raise TypeError(f"{param} must be a str")
 
     @staticmethod
     def _require_optional_dict(param: str, value: Any) -> None:
         """Raise TypeError if value is provided and not a dict."""
         if value is not None and not isinstance(value, dict):
-            raise TypeError(f'{param} must be a dict')
+            raise TypeError(f"{param} must be a dict")
 
     @staticmethod
     def _require_pki_role_name(param: str, value: Any) -> None:
@@ -52,11 +52,11 @@ class VaultPki:
         """
         VaultPki._require_str(param, value)
         if value != value.strip():
-            raise ValueError(f'{param} must not have leading or trailing whitespace')
+            raise ValueError(f"{param} must not have leading or trailing whitespace")
         if not value:
-            raise ValueError(f'{param} must be non-empty')
+            raise ValueError(f"{param} must be non-empty")
         if "/" in value:
-            raise ValueError(f'{param} must not contain \'/\'')
+            raise ValueError(f"{param} must not contain '/'")
 
     def __init__(self, client, mount_path: str = "pki") -> None:
         """

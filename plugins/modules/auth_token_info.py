@@ -141,5 +141,5 @@ def main():
         module.fail_json(msg=f"Operation failed: {e}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
