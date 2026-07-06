@@ -237,7 +237,7 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
         if module.check_mode:
             changed = True
             operation = "updated" if existing else "created"
-            result['msg'] = f"Would have {operation} database connection '{name}' if not in check mode"
+            result["msg"] = f"Would have {operation} database connection '{name}' if not in check mode"
             return changed, result
 
         # Create/update database connection
@@ -247,12 +247,12 @@ def perform_action(module: AnsibleModule) -> tuple[bool, dict]:
         result["raw"] = read_connection(db_conn, name)
 
         # check idempotency to ensure change
-        changed = not (result['raw'] == existing)
+        changed = not (result["raw"] == existing)
         if not changed:
-            result['msg'] = "The database connection with these settings is already configured."
+            result["msg"] = "The database connection with these settings is already configured."
         else:
             action = "updated" if existing else "created"
-            result['msg'] = f"The database connection has been successfully {action}."
+            result["msg"] = f"The database connection has been successfully {action}."
 
     elif state == "reset":
         # state == 'reset' reset the connection if it exists

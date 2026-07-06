@@ -124,8 +124,8 @@ def main():
     # Get authenticated client
     client = get_authenticated_client(module)
 
-    mount_path = module.params['mount_path']
-    role_name = module.params['role_name']
+    mount_path = module.params["mount_path"]
+    role_name = module.params["role_name"]
 
     try:
         db_roles = VaultDatabaseDynamicRoles(client, mount_path)
@@ -140,12 +140,12 @@ def main():
         module.exit_json(roles=roles)
 
     except VaultPermissionError as e:
-        module.fail_json(msg=f'Permission denied: {e}')
+        module.fail_json(msg=f"Permission denied: {e}")
     except VaultApiError as e:
-        module.fail_json(msg=f'Vault API error: {e}')
+        module.fail_json(msg=f"Vault API error: {e}")
     except Exception as e:
-        module.fail_json(msg=f'Operation failed: {e}')
+        module.fail_json(msg=f"Operation failed: {e}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
