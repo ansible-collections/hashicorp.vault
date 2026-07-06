@@ -115,7 +115,7 @@ def main():
     except VaultSecretNotFoundError as e:
         if serial_number:
             module.exit_json(changed=False, certificate_info={}, raw={})
-        module.fail_json(msg="Could not list PKI certificates (mount missing or permission denied): {0}".format(e))
+        module.fail_json(msg=f"Could not list PKI certificates (mount missing or permission denied): {e}")
     except VaultPermissionError as e:
         module.fail_json(msg=f"Permission denied: {e}")
     except VaultApiError as e:

@@ -332,7 +332,7 @@ def main():
     )
 
     module = AnsibleModule(
-        argument_spec=argument_spec, required_if=[('state', 'absent', ['token_id'])], supports_check_mode=True
+        argument_spec=argument_spec, required_if=[("state", "absent", ["token_id"])], supports_check_mode=True
     )
 
     state = module.params.get("state")
@@ -354,5 +354,5 @@ def main():
         module.fail_json(msg=f"Operation failed: {e}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
