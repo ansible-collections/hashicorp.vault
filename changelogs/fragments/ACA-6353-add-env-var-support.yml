@@ -1,4 +1,0 @@
----
-minor_changes:
-  - Add environment variable support for ``VAULT_NAMESPACE``, ``VAULT_AUTH_METHOD``, and ``VAULT_ENGINE_MOUNT_POINT``
-    (https://github.com/ansible-collections/hashicorp.vault/pull/138).
