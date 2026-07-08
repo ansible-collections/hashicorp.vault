@@ -374,10 +374,10 @@ def ensure_present(module: AnsibleModule, db_static_role_client: VaultDatabaseSt
 
     # Normalize duration fields in config to match Vault's format (integer seconds)
     # This allows accurate comparison and avoids false positives like "24h" != 86400
-    if 'rotation_period' in config:
-        config['rotation_period'] = _normalize_duration_to_seconds(config['rotation_period'])
-    if 'rotation_window' in config:
-        config['rotation_window'] = _normalize_duration_to_seconds(config['rotation_window'])
+    if "rotation_period" in config:
+        config["rotation_period"] = _normalize_duration_to_seconds(config["rotation_period"])
+    if "rotation_window" in config:
+        config["rotation_window"] = _normalize_duration_to_seconds(config["rotation_window"])
 
     # Read existing role configuration from Vault for comparison
     existing = get_static_role(db_static_role_client, name)
