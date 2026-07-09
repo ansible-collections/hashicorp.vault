@@ -1,5 +1,5 @@
 ---
-container_runtime: "podman"
+container_runtime: "docker"
 ansible_test_kind_binary: "kind"
 ansible_test_kubectl_binary: "kubectl"
 ansible_test_kind_cluster_name: "vault-ansible-test"
