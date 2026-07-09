@@ -120,13 +120,13 @@ def main() -> None:
     """Entry point for module execution"""
     argument_spec = copy.deepcopy(AUTH_ARG_SPEC)
     argument_spec.update(
-        dict(
-            kubernetes_mount_path=dict(type="str", default="kubernetes", aliases=["path"]),
-            name=dict(type="str", required=True, aliases=["role"]),
-            kubernetes_namespace=dict(type="str"),
-            ttl=dict(type="str"),
-            audience=dict(type="str"),
-        )
+        {
+            "kubernetes_mount_path": {"type": "str", "default": "kubernetes", "aliases": ["path"]},
+            "name": {"type": "str", "required": True, "aliases": ["role"]},
+            "kubernetes_namespace": {"type": "str"},
+            "ttl": {"type": "str"},
+            "audience": {"type": "str"},
+        }
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
