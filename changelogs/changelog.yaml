@@ -230,4 +230,4 @@ releases:
     - add-timeout-retries-params.yml
     - deprecate-namespace-admin-default.yml
     - refactor-vault-client-modules.yml
-    release_date: '2026-07-08'
+    release_date: '2026-07-09'
