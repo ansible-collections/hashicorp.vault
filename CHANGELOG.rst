@@ -4,6 +4,31 @@ Hashicorp.Vault Release Notes
 
 .. contents:: Topics
 
+v1.3.0
+======
+
+Release Summary
+---------------
+
+This is a minor release of the ``hashicorp.vault`` collection.
+This changelog contains all changes to the modules and plugins in this collection that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- Add ``timeout`` and ``retries`` parameters to modules and lookup plugins to configure request timeouts and automatic retry logic for Vault API calls (https://github.com/ansible-collections/hashicorp.vault/pull/133).
+- Add an action group for the collection modules ``kv1_secret``, ``kv1_secret_info``, ``kv2_secret``, ``kv2_secret_info`` (https://github.com/ansible-collections/hashicorp.vault/pull/23).
+- Add environment variable support for ``VAULT_NAMESPACE``, ``VAULT_AUTH_METHOD``, and ``VAULT_ENGINE_MOUNT_POINT`` (https://github.com/ansible-collections/hashicorp.vault/pull/138).
+- Add proxies parameter to modules and lookup plugins to enable access to Vault servers via a proxy (https://github.com/ansible-collections/hashicorp.vault/pull/128).
+- database_role - add ``connection_name`` alias for ``db_name`` parameter to align with ``database_connection`` module (https://github.com/ansible-collections/hashicorp.vault/pull/133).
+- kv2_secret_info - module will not fail when the requested secret does not exists instead returns an empty response (https://github.com/ansible-collections/hashicorp.vault/pull/23).
+- module_utils - split vault_client into separate module files (https://github.com/ansible-collections/hashicorp.vault/pull/130).
+
+Deprecated Features
+-------------------
+
+- All modules and lookup plugins - the default value for the ``namespace`` parameter will change from ``admin`` to ``root`` in version 2.0.0. Users should explicitly set ``namespace`` to either ``admin`` (to preserve current behavior) or ``root`` (to adopt the new default early) (https://github.com/ansible-collections/hashicorp.vault/pull/141).
+
 v1.2.0
 ======
 
