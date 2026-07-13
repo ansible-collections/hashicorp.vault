@@ -64,11 +64,6 @@ releases:
       minor_changes:
       - module_utils/vault_client.py - add ACL policy management on the Vault client
         (list, read, create/update, delete) (https://github.com/ansible-collections/hashicorp.vault/pull/45).
-      - module_utils/vault_client.py - add custom CA certificate verification via the
-        ``ca_cert`` parameter or the ``VAULT_CACERT`` environment variable (https://github.com/ansible-collections/hashicorp.vault/pull/109).
-      - module_utils/vault_client.py - add optional TLS verification bypass via the
-        ``tls_skip_verify`` parameter or the ``VAULT_SKIP_VERIFY`` environment variable
-        (https://github.com/ansible-collections/hashicorp.vault/pull/109).
       - module_utils/vault_client.py - add ``Database`` container class to organize
         database-related clients (connections and static_roles) for a specific mount
         path (https://github.com/ansible-collections/hashicorp.vault/pull/81).
@@ -77,40 +72,43 @@ releases:
         ``create_or_update_static_role()``, ``delete_static_role()``, and ``get_static_role_credentials()``
         (https://github.com/ansible-collections/hashicorp.vault/pull/81).
       - module_utils/vault_client.py - add ``VaultPki`` with ``generate_certificate()``,
-        ``sign_certificate()``, ``revoke_certificate()``,
-        ``read_certificate()``, and ``list_certificates()`` for managing PKI certificate
-        lifecycle (https://github.com/ansible-collections/hashicorp.vault/pull/78).
-      - module_utils/vault_client.py - implement ``create_or_update_connection()`` in
-        ``VaultDatabaseConnection`` (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
-      - module_utils/vault_client.py - implement ``delete_connection()`` in ``VaultDatabaseConnection``
-        (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
-      - module_utils/vault_client.py - implement ``reset_connection()`` in ``VaultDatabaseConnection``
-        (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
+        ``sign_certificate()``, ``revoke_certificate()``, ``read_certificate()``,
+        and ``list_certificates()`` for managing PKI certificate lifecycle (https://github.com/ansible-collections/hashicorp.vault/pull/78).
       - module_utils/vault_client.py - add ``mount_path`` parameter to support database
         engines mounted at custom paths (https://github.com/hashicorp/hashicorp.vault/pull/34).
+      - module_utils/vault_client.py - add custom CA certificate verification via
+        the ``ca_cert`` parameter or the ``VAULT_CACERT`` environment variable (https://github.com/ansible-collections/hashicorp.vault/pull/109).
+      - module_utils/vault_client.py - add optional TLS verification bypass via the
+        ``tls_skip_verify`` parameter or the ``VAULT_SKIP_VERIFY`` environment variable
+        (https://github.com/ansible-collections/hashicorp.vault/pull/109).
       - module_utils/vault_client.py - extend ``VaultNamespaces`` with ``create_namespace()``,
         ``patch_namespace()``, ``delete_namespace()``, ``lock_namespace()``, and ``unlock_namespace()``
         for managing namespace lifecycle and API locks (https://github.com/ansible-collections/hashicorp.vault/pull/55).
       - module_utils/vault_client.py - implement ``VaultNamespaces`` with ``list_namespaces()``
         and ``read_namespace()`` for listing and reading namespace configuration (https://github.com/ansible-collections/hashicorp.vault/pull/51).
+      - module_utils/vault_client.py - implement ``create_or_update_connection()``
+        in ``VaultDatabaseConnection`` (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
+      - module_utils/vault_client.py - implement ``delete_connection()`` in ``VaultDatabaseConnection``
+        (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
       - module_utils/vault_client.py - implement ``list_connections()`` to list all
-        configured database connections in the Database Secrets Engine
-        (https://github.com/hashicorp/hashicorp.vault/pull/34).
+        configured database connections in the Database Secrets Engine (https://github.com/hashicorp/hashicorp.vault/pull/34).
       - module_utils/vault_client.py - implement ``read_connection()`` to read configuration
         details for a specific database connection (https://github.com/hashicorp/hashicorp.vault/pull/34).
+      - module_utils/vault_client.py - implement ``reset_connection()`` in ``VaultDatabaseConnection``
+        (https://github.com/ansible-automation-platform/hashicorp.vault/pull/36).
       - module_utils/vault_database.py - add ``VaultDatabaseDynamicRoles`` class for
         managing database dynamic roles with ``list_dynamic_roles()``, ``read_dynamic_role()``,
         ``create_or_update_dynamic_role()``, and ``delete_dynamic_role()`` (https://github.com/ansible-collections/hashicorp.vault/pull/91).
       - module_utils/vault_database.py - add ``VaultDatabaseParent`` base class to
         eliminate code duplication across database client classes (https://github.com/ansible-collections/hashicorp.vault/pull/91).
+      - module_utils/vault_database.py - add ``generate_dynamic_role_credentials()``
+        to ``VaultDatabaseDynamicRoles`` (https://github.com/ansible-collections/hashicorp.vault/pull/116).
       - module_utils/vault_database.py - refactor database secrets engine classes
         into a dedicated module. Move ``VaultDatabaseConnection``, ``VaultDatabaseStaticRoles``,
         ``VaultDatabaseDynamicRoles``, and ``Database`` classes from ``vault_client.py``
         to ``vault_database.py`` for better code organization (https://github.com/ansible-collections/hashicorp.vault/pull/91).
       - module_utils/vault_database.py - update ``Database`` container class to include
         ``dynamic_roles`` client for managing dynamic database roles (https://github.com/ansible-collections/hashicorp.vault/pull/91).
-      - module_utils/vault_database.py - add ``generate_dynamic_role_credentials()`` to
-        ``VaultDatabaseDynamicRoles`` (https://github.com/ansible-collections/hashicorp.vault/pull/116).
       release_summary: 'This release significantly expands the hashicorp.vault collection
         with new modules.
 
@@ -198,3 +196,38 @@ releases:
       name: vault_namespace_info
       namespace: ''
     release_date: '2026-04-28'
+  1.3.0:
+    changes:
+      deprecated_features:
+      - All modules and lookup plugins - the default value for the ``namespace`` parameter
+        will change from ``admin`` to ``root`` in version 2.0.0. Users should explicitly
+        set ``namespace`` to either ``admin`` (to preserve current behavior) or ``root``
+        (to adopt the new default early) (https://github.com/ansible-collections/hashicorp.vault/pull/141).
+      minor_changes:
+      - Add ``timeout`` and ``retries`` parameters to modules and lookup plugins to
+        configure request timeouts and automatic retry logic for Vault API calls (https://github.com/ansible-collections/hashicorp.vault/pull/133).
+      - Add an action group for the collection modules ``kv1_secret``, ``kv1_secret_info``,
+        ``kv2_secret``, ``kv2_secret_info`` (https://github.com/ansible-collections/hashicorp.vault/pull/23).
+      - Add environment variable support for ``VAULT_NAMESPACE``, ``VAULT_AUTH_METHOD``,
+        and ``VAULT_ENGINE_MOUNT_POINT`` (https://github.com/ansible-collections/hashicorp.vault/pull/138).
+      - Add proxies parameter to modules and lookup plugins to enable access to Vault
+        servers via a proxy (https://github.com/ansible-collections/hashicorp.vault/pull/128).
+      - database_role - add ``connection_name`` alias for ``db_name`` parameter to
+        align with ``database_connection`` module (https://github.com/ansible-collections/hashicorp.vault/pull/133).
+      - kv2_secret_info - module will not fail when the requested secret does not
+        exists instead returns an empty response (https://github.com/ansible-collections/hashicorp.vault/pull/23).
+      - module_utils - split vault_client into separate module files (https://github.com/ansible-collections/hashicorp.vault/pull/130).
+      release_summary: 'This is a minor release of the ``hashicorp.vault`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+        that have been made after the previous release.'
+    fragments:
+    - 1.3.0.yml
+    - 20251007-add-action-group.yaml
+    - 20260505-add-support-for-proxies.yml
+    - ACA-6353-add-env-var-support.yml
+    - add-connection-name-alias-database-role.yml
+    - add-timeout-retries-params.yml
+    - deprecate-namespace-admin-default.yml
+    - refactor-vault-client-modules.yml
+    release_date: '2026-07-09'
