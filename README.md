@@ -132,6 +132,62 @@ Currently the collection supports:
 - Managing PKI certificates (issue, sign, revoke, read)
 - Managing Vault Enterprise namespaces
 
+## Environment Variables
+
+The collection supports environment variables for common connection and authentication parameters. This allows you to configure site-wide defaults and reduce repetition in playbooks.
+
+### Supported Environment Variables
+
+The following environment variables are supported across all modules and plugins:
+
+| Environment Variable | Parameter | Description | Default |
+|---------------------|-----------|-------------|---------|
+| `VAULT_ADDR` | `url` | Vault server URL | (required) |
+| `VAULT_TOKEN` | `token` | Authentication token | None |
+| `VAULT_NAMESPACE` | `namespace` | Vault namespace | "admin" |
+| `VAULT_AUTH_METHOD` | `auth_method` | Authentication method (token/approle) | "token" |
+| `VAULT_APPROLE_ROLE_ID` | `role_id` | AppRole role ID | None |
+| `VAULT_APPROLE_SECRET_ID` | `secret_id` | AppRole secret ID | None |
+| `VAULT_APPROLE_PATH` | `vault_approle_path` | AppRole mount path | "approle" |
+| `VAULT_CACERT` | `ca_cert` | CA certificate path | None |
+| `VAULT_SKIP_VERIFY` | `tls_skip_verify` | Skip TLS verification | false |
+| `VAULT_PROXIES` | `proxies` | Proxy configuration | None |
+| `VAULT_TIMEOUT` | `timeout` | Request timeout (seconds) | None |
+| `VAULT_RETRIES` | `retries` | Retry configuration | None |
+
+The following environment variable is supported by KV and PKI modules/plugins only:
+
+| Environment Variable | Parameter | Description | Default |
+|---------------------|-----------|-------------|---------|
+| `VAULT_ENGINE_MOUNT_POINT` | `engine_mount_point` | Secrets engine mount point | "secret" (KV), "pki" (PKI) |
+
+> **Note:** `VAULT_ENGINE_MOUNT_POINT` is shared by KV and PKI modules/lookups, but each module type has a different default mount path (`secret` vs `pki`). Setting this variable globally works only when all tasks target the same engine mount. For playbooks that mix KV and PKI operations, set `engine_mount_point` (or `secret_mount_path`) on individual tasks instead of using a single global environment variable.
+
+### Parameter Precedence
+
+When both environment variables and module/plugin parameters are provided, **explicit parameters take precedence**:
+
+1. Explicit module/plugin parameters (highest priority)
+2. Environment variables
+3. Default values (lowest priority)
+
+### Example Usage
+
+```yaml
+# Set environment variables once
+environment:
+  VAULT_ADDR: "https://vault.example.com:8200"
+  VAULT_TOKEN: "{{ vault_token }}"
+  VAULT_NAMESPACE: "admin"
+  VAULT_AUTH_METHOD: "token"
+  VAULT_ENGINE_MOUNT_POINT: "secret"
+
+# Use lookup with minimal parameters
+- name: Read secret
+  ansible.builtin.debug:
+    msg: "{{ lookup('hashicorp.vault.kv2_secret_get', secret='myapp/config') }}"
+```
+
 ## Testing
 
 GitHub Actions workflows run tests for this collection. The CI uses a two-tier approach:

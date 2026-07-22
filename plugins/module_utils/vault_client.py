@@ -216,7 +216,7 @@ class VaultClient:
                     retries = json.loads(retries)
                 except json.JSONDecodeError:
                     raise VaultConfigurationError(
-                        f'retries must be an integer or a JSON dictionary string, got: {retries!r}'
+                        f"retries must be an integer or a JSON dictionary string, got: {retries!r}"
                     )
         if isinstance(retries, int):
             return Retry(total=retries)
@@ -224,9 +224,9 @@ class VaultClient:
             try:
                 return Retry(**retries)
             except TypeError as e:
-                raise VaultConfigurationError(f'Invalid retries configuration: {e}') from e
+                raise VaultConfigurationError(f"Invalid retries configuration: {e}") from e
         else:
-            raise VaultConfigurationError(f'retries must be an integer or a dictionary, got {type(retries).__name__}')
+            raise VaultConfigurationError(f"retries must be an integer or a dictionary, got {type(retries).__name__}")
 
     @property
     def token(self) -> Optional[str]:
