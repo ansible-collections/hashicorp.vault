@@ -11,7 +11,7 @@ DOCUMENTATION = """
 ---
 module: kubernetes_token
 author: Joshua Beha (@Joshua-Beha)
-version_added: "1.3.0"
+version_added: "1.4.0"
 short_description: Generate a Kubernetes bearer token from the Kubernetes secrets engine.
 description:
     - Generates a short-lived Kubernetes bearer token for a Vault Kubernetes secrets engine role.
@@ -45,7 +45,9 @@ options:
 extends_documentation_fragment:
   - hashicorp.vault.vault_auth.modules
 notes:
-  - This module should be used with B(no_log=true) and C(register) to prevent sensitive token data from being logged to console or log files, as the generated Kubernetes bearer token provides authentication credentials.
+  - The C(service_account_token) field in the return value is a sensitive bearer token.
+    Always use B(no_log=true) at the task level to prevent it from appearing in Ansible
+    output, logs, and callback plugins.
   - This module is NOT idempotent - each call generates a new token with a new lease.
   - This module returns a Kubernetes bearer token from the Vault Kubernetes secrets engine, not a Vault auth token.
 """
@@ -88,6 +90,30 @@ kubernetes_token:
   description: The generated Kubernetes token data and lease information.
   type: dict
   returned: always
+  no_log: true
+  contains:
+    service_account_token:
+      description:
+        - The Kubernetes bearer token.
+        - This value is sensitive. Always use B(no_log=true) at the task level to
+          prevent exposure in Ansible output and logs.
+      type: str
+      no_log: true
+    service_account_name:
+      description: The name of the service account the token was issued for.
+      type: str
+    service_account_namespace:
+      description: The Kubernetes namespace of the service account.
+      type: str
+    lease_id:
+      description: The Vault lease ID for this token.
+      type: str
+    lease_duration:
+      description: The duration of the lease in seconds.
+      type: int
+    renewable:
+      description: Whether the lease can be renewed.
+      type: bool
   sample:
     {
         "service_account_name": "vault-secrets-superuser",

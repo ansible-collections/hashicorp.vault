@@ -1,4 +1,4 @@
 ---
 dependencies:
-  - setup_auth_token
   - setup_vault_dev_with_kubernetes
+  - setup_auth_token

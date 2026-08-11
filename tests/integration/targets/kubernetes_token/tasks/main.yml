@@ -47,6 +47,7 @@
           - token_auth_result.kubernetes_token.lease_id is defined
           - token_auth_result.kubernetes_token.lease_duration is defined
           - token_auth_result.kubernetes_token.renewable is defined
+      no_log: true
       when: ansible_test_kubernetes_fixture_enabled
 
     - name: Validate token authentication result by calling Kubernetes API
@@ -56,7 +57,7 @@
         test_name: "token auth"
       when: ansible_test_kubernetes_fixture_enabled
 
-    - name: Clean up ClusterRole from previous test to ensure test independence
+    - name: Clean up ClusterRole before AppRole test to ensure test independence
       ansible.builtin.command:
         argv:
           - "{{ ansible_test_kubectl_binary }}"
@@ -99,6 +100,7 @@
           - approle_auth_result.kubernetes_token.lease_id is defined
           - approle_auth_result.kubernetes_token.lease_duration is defined
           - approle_auth_result.kubernetes_token.renewable is defined
+      no_log: true
       when:
         - ansible_test_kubernetes_fixture_enabled
         - vault_approle_role_id is defined

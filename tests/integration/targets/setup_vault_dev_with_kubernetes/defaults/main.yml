@@ -1,6 +1,7 @@
 ---
 container_runtime: "docker"
 ansible_test_kind_binary: "kind"
+ansible_test_vault_mount_path: "approle-integration-tests"
 ansible_test_kubectl_binary: "kubectl"
 ansible_test_kind_cluster_name: "vault-ansible-test"
 ansible_test_kind_kubeconfig_path: ""
@@ -19,4 +20,7 @@ ansible_test_kubernetes_bound_service_account_namespaces:
   - "*"
 ansible_test_kubernetes_token_default_ttl: "1h"
 ansible_test_kubernetes_token_max_ttl: "24h"
+# kind clusters require tokens scoped to the Kubernetes API server audience.
+# This must match the --api-audiences flag of the kube-apiserver (default for kind).
+ansible_test_kubernetes_token_audiences: "https://kubernetes.default.svc.cluster.local"
 

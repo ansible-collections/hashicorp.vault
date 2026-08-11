@@ -1,4 +1,24 @@
 ---
+- name: Force-revoke all Kubernetes secrets engine leases (prevents unmount failure if cluster is gone)
+  ansible.builtin.uri:
+    url: "{{ ansible_test_vault_url }}/v1/sys/leases/revoke-force/{{ ansible_test_kubernetes_mount_path }}"
+    method: PUT
+    headers:
+      X-Vault-Token: "{{ ansible_test_vault_root_token }}"
+    status_code: [200, 204, 400, 404]
+    use_proxy: false
+  failed_when: false
+
+- name: Unmount Kubernetes secrets engine if already configured (ensures clean state)
+  ansible.builtin.uri:
+    url: "{{ ansible_test_vault_url }}/v1/sys/mounts/{{ ansible_test_kubernetes_mount_path }}"
+    method: DELETE
+    headers:
+      X-Vault-Token: "{{ ansible_test_vault_root_token }}"
+    status_code: [200, 204, 400, 404]
+    use_proxy: false
+  failed_when: false
+
 - name: Create temporary file for kind configuration
   ansible.builtin.tempfile:
     suffix: .kind
@@ -196,6 +216,7 @@
           verbs: ["get", "list"]
       token_default_ttl: "{{ ansible_test_kubernetes_token_default_ttl }}"
       token_max_ttl: "{{ ansible_test_kubernetes_token_max_ttl }}"
+      token_default_audiences: "{{ ansible_test_kubernetes_token_audiences }}"
       name_template: "{{ ansible_test_kubernetes_role_name }}"
     status_code: [200, 204]
     use_proxy: false
@@ -216,6 +237,24 @@
       path "{{ ansible_test_kubernetes_mount_path }}/creds/{{ ansible_test_kubernetes_role_name }}" {
         capabilities = ["create", "update", "read", "delete"]
       }
+  when:
+    - vault_root_token is defined
+  no_log: true
+
+- name: Attach Kubernetes token policy to AppRole role
+  ansible.builtin.uri:
+    url: "{{ vault_url }}/v1/auth/{{ ansible_test_vault_mount_path }}/role/ansible-test"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+      X-Vault-Namespace: "{{ vault_namespace }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      token_policies:
+        - "kubernetes-token-integration-{{ vault_resource_suffix }}"
+    status_code: [200, 204]
+    use_proxy: false
   when:
     - vault_root_token is defined
   no_log: true

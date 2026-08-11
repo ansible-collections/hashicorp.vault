@@ -14,8 +14,7 @@
     validate_certs: "{{ ansible_test_kubernetes_validate_certs | default(false) }}"
     status_code: 200
   register: pods_list_result
-  # Note: validate_certs should be true in production environments.
-  # For local kind/minikube clusters with self-signed certificates, it may need to be false.
+  no_log: true
 
 - name: "Validate that {{ test_name }} token can access Kubernetes API"
   ansible.builtin.assert:
@@ -23,5 +22,5 @@
       - pods_list_result.status == 200
       - pods_list_result.json is defined
       - pods_list_result.json.kind == "PodList"
-    fail_msg: "{{ test_name }} generated Kubernetes token failed to access the API"
-    success_msg: "{{ test_name }} generated Kubernetes token successfully accessed the API"
+    fail_msg: "{{ test_name }} generated Kubernetes token failed to access the Kubernetes API"
+    success_msg: "{{ test_name }} generated Kubernetes token successfully accessed the Kubernetes API"
