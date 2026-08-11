@@ -1,0 +1,4 @@
+---
+- name: Clean resources
+  ansible.builtin.include_tasks: cleanup.yml
+

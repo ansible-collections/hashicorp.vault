@@ -1,0 +1,26 @@
+---
+# Reusable task file to validate a generated Kubernetes token
+# Parameters:
+#   - token_result: The result from kubernetes_token module containing the token
+#   - test_name: A descriptive name for the test (e.g., "token auth" or "AppRole auth")
+#   - ansible_test_kubernetes_validate_certs: Whether to validate TLS certificates (default: false for test environments)
+
+- name: "Use {{ test_name }} generated token to list pods in {{ test_kubernetes_namespace }} namespace"
+  ansible.builtin.uri:
+    url: "{{ kubernetes_host.stdout }}/api/v1/namespaces/{{ test_kubernetes_namespace }}/pods"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ token_result.kubernetes_token.service_account_token }}"
+    validate_certs: "{{ ansible_test_kubernetes_validate_certs | default(false) }}"
+    status_code: 200
+  register: pods_list_result
+  no_log: true
+
+- name: "Validate that {{ test_name }} token can access Kubernetes API"
+  ansible.builtin.assert:
+    that:
+      - pods_list_result.status == 200
+      - pods_list_result.json is defined
+      - pods_list_result.json.kind == "PodList"
+    fail_msg: "{{ test_name }} generated Kubernetes token failed to access the Kubernetes API"
+    success_msg: "{{ test_name }} generated Kubernetes token successfully accessed the Kubernetes API"

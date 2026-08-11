@@ -1,0 +1,39 @@
+---
+- name: Delete kind cluster
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_test_kind_binary }}"
+      - delete
+      - cluster
+      - --name
+      - "{{ ansible_test_kind_cluster_name }}"
+  register: _delete_kind_cluster
+  failed_when: false
+  changed_when: _delete_kind_cluster.rc == 0
+
+- name: Delete temporary directory created for kind configuration
+  ansible.builtin.file:
+    state: absent
+    path: "{{ ansible_test_tmp_dir.path }}"
+  ignore_errors: true
+
+- name: Force-revoke all Kubernetes secrets engine leases (prevents unmount failure if cluster is gone)
+  ansible.builtin.uri:
+    url: "{{ ansible_test_vault_url }}/v1/sys/leases/revoke-force/{{ ansible_test_kubernetes_mount_path }}"
+    method: PUT
+    headers:
+      X-Vault-Token: "{{ ansible_test_vault_root_token }}"
+    status_code: [200, 204, 400, 404]
+    use_proxy: false
+  failed_when: false
+
+- name: Unmount Kubernetes secrets engine from Vault
+  ansible.builtin.uri:
+    url: "{{ ansible_test_vault_url }}/v1/sys/mounts/{{ ansible_test_kubernetes_mount_path }}"
+    method: DELETE
+    headers:
+      X-Vault-Token: "{{ ansible_test_vault_root_token }}"
+    status_code: [200, 204, 400, 404]
+    use_proxy: false
+  failed_when: false
+

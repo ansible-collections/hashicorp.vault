@@ -1,0 +1,2 @@
+minor_changes:
+  - modules - add the new `kubernetes_token` module to generate Kubernetes bearer tokens from the Vault Kubernetes secrets engine. This module enables automated retrieval of short-lived Kubernetes service account tokens for secure, dynamic authentication to Kubernetes clusters managed by Vault.
