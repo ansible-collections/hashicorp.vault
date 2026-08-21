@@ -1,4 +1,5 @@
 bugfixes:
   - module_utils/vault_auth_utils.py - correct the deprecation target for the
     ``namespace`` default value change from ``2.0.0`` to ``3.0.0``, because the
-    change cannot ship in the same release the deprecation notice is introduced in.
+    change cannot ship in the same release the deprecation notice is introduced in
+    (https://github.com/ansible-collections/hashicorp.vault/pull/152).
