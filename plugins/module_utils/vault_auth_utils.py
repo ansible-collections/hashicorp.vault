@@ -95,9 +95,9 @@ def get_authenticated_client(module):
     # Deprecation warning for namespace default value change
     if vault_namespace == "admin":
         module.deprecate(
-            "The default value for 'namespace' will change from 'admin' to 'root' in version 2.0.0. "
+            "The default value for 'namespace' will change from 'admin' to 'root' in version 3.0.0. "
             "To avoid potential issues, explicitly set 'namespace' in your playbooks if you rely on the current default.",
-            version="2.0.0",
+            version="3.0.0",
             collection_name="hashicorp.vault",
         )
 
