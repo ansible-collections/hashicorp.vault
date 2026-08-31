@@ -1,0 +1,6 @@
+breaking_changes:
+  - All modules and lookup plugins - the default value for the ``namespace`` parameter has changed from ``admin`` to ``root`` as announced in version 1.3.0.
+    Users who relied on the default value must now explicitly set ``namespace=admin`` to preserve previous behavior (https://github.com/ansible-collections/hashicorp.vault/pull/XXX).
+removed_features:
+  - All modules and lookup plugins - removed the deprecation warning for the ``namespace`` parameter default value change.
+    The change is now complete and ``namespace`` defaults to ``root`` (https://github.com/ansible-collections/hashicorp.vault/pull/XXX).
