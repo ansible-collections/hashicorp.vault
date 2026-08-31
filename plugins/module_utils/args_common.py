@@ -17,7 +17,7 @@ AUTH_ARG_SPEC = {
         "fallback": (env_fallback, ["VAULT_ADDR"]),
     },
     "namespace": {
-        "default": "admin",
+        "default": "root",
         "aliases": ["vault_namespace"],
         "fallback": (env_fallback, ["VAULT_NAMESPACE"]),
     },
