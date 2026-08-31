@@ -62,7 +62,7 @@ class VaultLookupBase(LookupBase):
             "vault_address": self._get_option_with_env("url", "VAULT_ADDR"),
             "role_id": self._get_option_with_env("role_id", "VAULT_APPROLE_ROLE_ID"),
             "secret_id": self._get_option_with_env("secret_id", "VAULT_APPROLE_SECRET_ID"),
-            "vault_namespace": self._get_option_with_env("namespace", "VAULT_NAMESPACE", "admin"),
+            "vault_namespace": self._get_option_with_env("namespace", "VAULT_NAMESPACE", "root"),
         }
 
         vault_approle_path = self._get_option_with_env("vault_approle_path", "VAULT_APPROLE_PATH", "approle")
@@ -94,7 +94,7 @@ class VaultLookupBase(LookupBase):
 
         self.client = VaultClient(
             vault_address=vault_address,
-            vault_namespace=self._get_option_with_env("namespace", "VAULT_NAMESPACE", "admin"),
+            vault_namespace=self._get_option_with_env("namespace", "VAULT_NAMESPACE", "root"),
             ca_certificate=self._get_option_with_env("ca_cert", "VAULT_CACERT"),
             tls_skip_verify=self._get_tls_skip_verify(),
             proxies=self._get_option_with_env("proxies", "VAULT_PROXIES"),

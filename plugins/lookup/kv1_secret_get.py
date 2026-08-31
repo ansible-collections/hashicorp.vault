@@ -54,7 +54,7 @@ EXAMPLES = """
   environment:
     VAULT_ADDR: "https://myvault_url:8200"
     VAULT_TOKEN: "hvs.abc123..."
-    VAULT_NAMESPACE: "admin"
+    VAULT_NAMESPACE: "root"
     VAULT_AUTH_METHOD: "token"
     VAULT_ENGINE_MOUNT_POINT: "secret"
   ansible.builtin.debug:

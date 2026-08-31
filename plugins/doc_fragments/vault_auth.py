@@ -25,7 +25,7 @@ options:
     description:
       - Vault namespace.
       - If not specified, the value of the E(VAULT_NAMESPACE) environment variable will be used. Added in version 1.3.0.
-    default: admin
+    default: root
     type: str
     aliases: [vault_namespace]
   auth_method:
@@ -130,7 +130,7 @@ options:
       - name: VAULT_ADDR
   namespace:
     description: Vault namespace.
-    default: admin
+    default: root
     type: str
     aliases: [vault_namespace]
     env:

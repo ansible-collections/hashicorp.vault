@@ -144,7 +144,7 @@ The following environment variables are supported across all modules and plugins
 |---------------------|-----------|-------------|---------|
 | `VAULT_ADDR` | `url` | Vault server URL | (required) |
 | `VAULT_TOKEN` | `token` | Authentication token | None |
-| `VAULT_NAMESPACE` | `namespace` | Vault namespace | "admin" |
+| `VAULT_NAMESPACE` | `namespace` | Vault namespace | "root" |
 | `VAULT_AUTH_METHOD` | `auth_method` | Authentication method (token/approle) | "token" |
 | `VAULT_APPROLE_ROLE_ID` | `role_id` | AppRole role ID | None |
 | `VAULT_APPROLE_SECRET_ID` | `secret_id` | AppRole secret ID | None |
@@ -178,7 +178,7 @@ When both environment variables and module/plugin parameters are provided, **exp
 environment:
   VAULT_ADDR: "https://vault.example.com:8200"
   VAULT_TOKEN: "{{ vault_token }}"
-  VAULT_NAMESPACE: "admin"
+  VAULT_NAMESPACE: "root"
   VAULT_AUTH_METHOD: "token"
   VAULT_ENGINE_MOUNT_POINT: "secret"
 
@@ -221,7 +221,7 @@ cp tests/integration/integration_config.yml.template tests/integration/integrati
 Add your Vault details:
 ```yaml
 vault_url_from_int_config: "<VAULT_URL_HERE>"
-vault_namespace_from_int_config: "<VAULT_NAMESPACE_HERE>" # example: admin/hashicorp-vault-integration-tests
+vault_namespace_from_int_config: "<VAULT_NAMESPACE_HERE>" # example: root/hashicorp-vault-integration-tests
 vault_approle_role_id_from_int_config: "<VAULT_APPROLE_ROLE_ID_HERE>"
 vault_approle_secret_id_from_int_config: "<VAULT_APPROLE_SECRET_ID_HERE>"
 ```
@@ -250,7 +250,7 @@ For running the integration tests locally, you need to:
 ```yaml
 # Example values only — replace with real credentials
 vault_url: "http://localhost:8200"
-vault_namespace: "admin"
+vault_namespace: "root"
 vault_approle_role_id: "xxxxxxxx-60da-6224-d270-xxxxxxxx"
 vault_approle_secret_id: "xxxxxxxx-2458-14b9-b643-xxxxxxxx"
 vault_resource_suffix: ansible-test
