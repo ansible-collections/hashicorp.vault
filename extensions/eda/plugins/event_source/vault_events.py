@@ -196,7 +196,7 @@ import asyncio
 import json
 import logging
 import os
-import random
+import secrets
 import ssl
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence
@@ -404,17 +404,27 @@ def process_vault_event(raw_event: str) -> Optional[Dict[str, Any]]:
     }
 
 
-def _unverified_ssl_context() -> ssl.SSLContext:
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE
+def _verified_ssl_context(ca_cert: Optional[str]) -> ssl.SSLContext:
+    if ca_cert:
+        context = ssl.create_default_context(cafile=ca_cert)
+    else:
+        context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     return context
 
 
-def _verified_ssl_context(ca_cert: Optional[str]) -> ssl.SSLContext:
-    if ca_cert:
-        return ssl.create_default_context(cafile=ca_cert)
-    return ssl.create_default_context()
+def _unverified_ssl_context() -> ssl.SSLContext:
+    """Build a TLS 1.2+ context with verification disabled.
+
+    Used only when the operator sets tls_skip_verify. Default connections verify
+    certificates and hostnames.
+    """
+    logger.warning("TLS certificate and hostname verification are disabled (tls_skip_verify=true)")
+    context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    context.check_hostname = False  # NOSONAR - gated on explicit tls_skip_verify, default verifies
+    context.verify_mode = ssl.CERT_NONE  # NOSONAR - gated on explicit tls_skip_verify, default verifies
+    return context
 
 
 def aiohttp_ssl_argument(tls_skip_verify: bool, ca_cert: Optional[str]) -> Any:
@@ -585,7 +595,8 @@ class ReconnectionManager:
             self.initial_delay * (self.backoff_multiplier**self.current_attempt),
             self.max_delay,
         )
-        jitter = delay * 0.25 * (2 * random.random() - 1)
+        # Non-crypto jitter for reconnect backoff so retries do not thundering-herd.
+        jitter = delay * 0.25 * ((secrets.randbelow(500) / 250.0) - 1.0)
         total_delay = delay + jitter
 
         logger.info(
