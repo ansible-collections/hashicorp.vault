@@ -229,3 +229,10 @@ class TestWebsocketSslArgument:
         ssl_arg = vault_events.websocket_ssl_argument(True, False, None)
 
         assert ssl_arg is True
+
+    def test_verified_context_requires_tls12(self):
+        context = vault_events._verified_ssl_context(None)
+
+        assert context.minimum_version == ssl.TLSVersion.TLSv1_2
+        assert context.verify_mode != ssl.CERT_NONE
+        assert context.check_hostname is True
