@@ -88,9 +88,10 @@ options:
     default: ["*"]
   tls_skip_verify:
     description:
-      - Controls whether the plugin verifies the TLS certificate presented by the Vault server.
-      - If this parameter is not provided, the value of the E(VAULT_SKIP_VERIFY) environment variable is used.
-      - Setting this to V(true) disables certificate validation.
+      - Accepted for consistency with other collection plugins, but must remain V(false).
+      - This event source always verifies TLS certificates and hostnames.
+      - For a private CA, set O(ca_cert) instead of disabling verification.
+      - If not specified, the value of the E(VAULT_SKIP_VERIFY) environment variable is used.
     required: false
     type: bool
     default: false
@@ -98,6 +99,7 @@ options:
     description:
       - Inverse of O(tls_skip_verify). Kept as a compatibility alias from the standalone plugin.
       - Ignored when O(tls_skip_verify) or E(VAULT_SKIP_VERIFY) is set.
+      - Must not disable verification. Use O(ca_cert) for a private CA.
     required: false
     type: bool
   ca_cert:
@@ -156,6 +158,7 @@ notes:
   - Supports automatic reconnection with exponential backoff.
   - Authentication method priority is token, then vault_token_path, then AppRole.
   - Only the first entry in O(event_types) is subscribed to.
+  - TLS certificate and hostname verification cannot be disabled. Use O(ca_cert) for a private CA.
 """
 
 EXAMPLES = r"""
@@ -413,24 +416,17 @@ def _verified_ssl_context(ca_cert: Optional[str]) -> ssl.SSLContext:
     return context
 
 
-def _unverified_ssl_context() -> ssl.SSLContext:
-    """Build a TLS 1.2+ context with verification disabled.
-
-    Used only when the operator sets tls_skip_verify. Default connections verify
-    certificates and hostnames.
-    """
-    logger.warning("TLS certificate and hostname verification are disabled (tls_skip_verify=true)")
-    context = ssl.create_default_context()
-    context.minimum_version = ssl.TLSVersion.TLSv1_2
-    context.check_hostname = False  # NOSONAR - gated on explicit tls_skip_verify, default verifies
-    context.verify_mode = ssl.CERT_NONE  # NOSONAR - gated on explicit tls_skip_verify, default verifies
-    return context
+def _require_tls_verification(tls_skip_verify: bool) -> None:
+    if tls_skip_verify:
+        raise ValueError(
+            "tls_skip_verify is not supported for hashicorp.vault.vault_events. "
+            "Provide ca_cert with a PEM CA bundle that signs the Vault server certificate."
+        )
 
 
 def aiohttp_ssl_argument(tls_skip_verify: bool, ca_cert: Optional[str]) -> Any:
     """Return the ssl argument accepted by aiohttp."""
-    if tls_skip_verify:
-        return False
+    _require_tls_verification(tls_skip_verify)
     if ca_cert:
         return _verified_ssl_context(ca_cert)
     return None
@@ -438,10 +434,9 @@ def aiohttp_ssl_argument(tls_skip_verify: bool, ca_cert: Optional[str]) -> Any:
 
 def websocket_ssl_argument(use_tls: bool, tls_skip_verify: bool, ca_cert: Optional[str]) -> Any:
     """Return the ssl argument accepted by websockets on connect."""
+    _require_tls_verification(tls_skip_verify)
     if not use_tls:
         return None
-    if tls_skip_verify:
-        return _unverified_ssl_context()
     if ca_cert:
         return _verified_ssl_context(ca_cert)
     return True
@@ -621,6 +616,7 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
         )
 
     normalized = normalize_args(args, os.environ)
+    _require_tls_verification(normalized["tls_skip_verify"])
     event_types = normalized["event_types"]
     event_type = event_types[0]
 
