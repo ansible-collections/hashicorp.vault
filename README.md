@@ -150,7 +150,7 @@ pip install -r extensions/eda/requirements.txt
 
 The required packages are `websockets` and `aiohttp`.
 
-Example rulebooks live in `extensions/eda/rulebooks/`. Connection arguments match the rest of the collection (`url`, `token`, `role_id`, `secret_id`, `ca_cert`, `tls_skip_verify`) and also accept the standalone plugin names as aliases (`vault_url`, `vault_token`, and so on). `VAULT_*` environment variables are used when an argument is omitted.
+Example rulebooks live in `extensions/eda/rulebooks/`. Connection arguments match the rest of the collection (`url`, `token`, `role_id`, `secret_id`, `ca_cert`) and also accept the standalone plugin names as aliases (`vault_url`, `vault_token`, and so on). `VAULT_*` environment variables are used when an argument is omitted. TLS verification cannot be disabled; for a private CA set `ca_cert` (or `VAULT_CACERT`).
 
 ```yaml
 sources:
