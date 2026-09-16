@@ -213,12 +213,13 @@ class TestNormalizeArgs:
 
 
 class TestWebsocketSslArgument:
-    def test_skip_verify_returns_unverified_context(self):
-        ssl_arg = vault_events.websocket_ssl_argument(True, True, None)
+    def test_skip_verify_is_rejected(self):
+        with pytest.raises(ValueError, match="tls_skip_verify is not supported"):
+            vault_events.websocket_ssl_argument(True, True, None)
 
-        assert isinstance(ssl_arg, ssl.SSLContext)
-        assert ssl_arg.verify_mode == ssl.CERT_NONE
-        assert ssl_arg.check_hostname is False
+    def test_aiohttp_skip_verify_is_rejected(self):
+        with pytest.raises(ValueError, match="tls_skip_verify is not supported"):
+            vault_events.aiohttp_ssl_argument(True, None)
 
     def test_plain_http_returns_none(self):
         ssl_arg = vault_events.websocket_ssl_argument(False, False, None)
