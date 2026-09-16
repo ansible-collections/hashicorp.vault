@@ -1,0 +1,52 @@
+---
+# Basic example rulebook for HashiCorp Vault events.
+#
+# Usage:
+#   export VAULT_ADDR="https://vault.example.com:8200"
+#   export VAULT_TOKEN="your-vault-token"
+#   ansible-rulebook -i inventory.yml --rulebook basic_rulebook.yml
+
+- name: Handle Vault Events
+  hosts: all
+  sources:
+    - hashicorp.vault.vault_events:
+        url: "{{ VAULT_ADDR }}"
+        token: "{{ VAULT_TOKEN }}"
+        event_types:
+          - "*"
+        tls_skip_verify: false
+        reconnect_enabled: true
+        reconnect_max_attempts: -1
+
+  rules:
+    - name: Log all Vault events
+      condition: event.vault is defined
+      action:
+        debug:
+          msg: |
+            Vault Event Received:
+            - Type: {{ event.vault.event_type }}
+            - Path: {{ event.vault.metadata.path | default('N/A') }}
+            - Operation: {{ event.vault.metadata.operation | default('N/A') }}
+            - Plugin: {{ event.vault.plugin_info.plugin | default('N/A') }}
+            - Mount: {{ event.vault.plugin_info.mount_path | default('N/A') }}
+            - Event ID: {{ event.cloudevents.id }}
+            - Time: {{ event.cloudevents.time }}
+
+    - name: Alert on KV secret write
+      condition: event.vault.event_type == "kv-v2/data-write"
+      action:
+        debug:
+          msg: "SECRET WRITTEN: {{ event.vault.metadata.path }}"
+
+    - name: Alert on KV secret delete
+      condition: event.vault.event_type == "kv-v2/data-delete"
+      action:
+        debug:
+          msg: "SECRET DELETED: {{ event.vault.metadata.path }}"
+
+    - name: Log audit events
+      condition: event.vault.event_type is match("audit/.*")
+      action:
+        debug:
+          msg: "AUDIT EVENT: {{ event.vault.event_type }}"

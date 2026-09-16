@@ -1,0 +1,56 @@
+---
+# AppRole authentication example for HashiCorp Vault events.
+#
+# Usage:
+#   export VAULT_APPROLE_ROLE_ID="your-role-id"
+#   export VAULT_APPROLE_SECRET_ID="your-secret-id"
+#   ansible-rulebook -i inventory.yml --rulebook approle_rulebook.yml
+
+- name: Vault Events with AppRole Authentication
+  hosts: all
+  sources:
+    - hashicorp.vault.vault_events:
+        url: "https://vault.example.com:8200"
+        role_id: "{{ VAULT_APPROLE_ROLE_ID }}"
+        secret_id: "{{ VAULT_APPROLE_SECRET_ID }}"
+        event_types:
+          - "kv-v2/*"
+          - "audit/*"
+        tls_skip_verify: false
+        reconnect_enabled: true
+        reconnect_max_attempts: 10
+        reconnect_initial_delay: 2
+        reconnect_max_delay: 120
+
+  rules:
+    - name: Process KV secret write
+      condition: event.vault.event_type == "kv-v2/data-write"
+      action:
+        debug:
+          msg: "SECRET WRITTEN: {{ event.vault.metadata.path }}"
+
+    - name: Process KV secret delete
+      condition: event.vault.event_type == "kv-v2/data-delete"
+      action:
+        debug:
+          msg: "SECRET DELETED: {{ event.vault.metadata.path }}"
+
+    - name: Process KV metadata changes
+      condition: event.vault.event_type is match("kv-v2/metadata-.*")
+      action:
+        debug:
+          msg: "Metadata operation: {{ event.vault.event_type }} on {{ event.vault.metadata.path }}"
+
+    - name: Log audit events
+      condition: event.vault.event_type is match("audit/.*")
+      action:
+        debug:
+          msg: |
+            Audit Event: {{ event.vault.event_type }}
+            Metadata: {{ event.vault.metadata }}
+
+    - name: Log unhandled events
+      condition: event.vault is defined
+      action:
+        debug:
+          msg: "Unhandled event type: {{ event.vault.event_type }}"
