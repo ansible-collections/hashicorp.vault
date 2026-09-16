@@ -74,6 +74,11 @@ Name | Description
 [hashicorp.vault.vault_namespace](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/vault_namespace.py)|Manage HashiCorp Vault Enterprise namespaces
 [hashicorp.vault.vault_namespace_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/vault_namespace_info.py)|List and read HashiCorp Vault Enterprise namespaces
 
+### Event source plugins (Event-Driven Ansible)
+Name | Description
+--- | ---
+[hashicorp.vault.vault_events](https://github.com/ansible-collections/hashicorp.vault/blob/main/extensions/eda/plugins/event_source/vault_events.py)|Subscribe to HashiCorp Vault events over WebSocket
+
 ## Installation
 
 To install this collection from Automation Hub, the following needs to be added to `ansible.cfg`:
@@ -131,6 +136,40 @@ Currently the collection supports:
 - Rotating database credentials
 - Managing PKI certificates (issue, sign, revoke, read)
 - Managing Vault Enterprise namespaces
+- Subscribing to Vault events with Event-Driven Ansible (Enterprise or HCP)
+
+## Event-Driven Ansible
+
+The `hashicorp.vault.vault_events` event source subscribes to HashiCorp Vault's events API over WebSocket. This API requires Vault 1.16+ Enterprise or HCP Vault Dedicated. It is not available in Community Edition.
+
+Install the event source Python dependencies in the Decision Environment used by `ansible-rulebook`:
+
+```bash
+pip install -r extensions/eda/requirements.txt
+```
+
+The required packages are `websockets` and `aiohttp`.
+
+Example rulebooks live in `extensions/eda/rulebooks/`. Connection arguments match the rest of the collection (`url`, `token`, `role_id`, `secret_id`, `ca_cert`, `tls_skip_verify`) and also accept the standalone plugin names as aliases (`vault_url`, `vault_token`, and so on). `VAULT_*` environment variables are used when an argument is omitted.
+
+```yaml
+sources:
+  - hashicorp.vault.vault_events:
+      url: "https://vault.example.com:8200"
+      token: "{{ VAULT_TOKEN }}"
+      event_types:
+        - "kv-v2/*"
+```
+
+Do not set `namespace` unless you are using Vault Enterprise or HCP. Sending a namespace header to Community Edition causes the subscribe call to fail.
+
+The token used by the event source needs permission to subscribe:
+
+```hcl
+path "sys/events/subscribe/*" {
+  capabilities = ["read"]
+}
+```
 
 ## Environment Variables
 

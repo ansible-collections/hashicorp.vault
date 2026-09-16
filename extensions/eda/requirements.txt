@@ -1,0 +1,4 @@
+# Python dependencies for the vault_events Event-Driven Ansible plugin.
+# Install these in the Decision Environment used by ansible-rulebook.
+websockets>=12.0
+aiohttp>=3.9.0
