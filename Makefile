@@ -1,5 +1,5 @@
 # Default files to check for syntax
-CHECK_SYNTAX_FILES ?= plugins/ tests/
+CHECK_SYNTAX_FILES ?= plugins/ tests/ extensions/
 
 # Help target
 help:
