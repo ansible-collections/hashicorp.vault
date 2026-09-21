@@ -26,8 +26,8 @@ requirements:
 options:
   url:
     description:
-      - Vault server URL.
-      - Must include protocol (C(http://) or C(https://)) and port.
+      - Vault server URL, including hostname and port.
+      - If the protocol is omitted, C(https://) is assumed.
       - If not specified, the value of the E(VAULT_ADDR) environment variable is used.
     required: true
     type: str
@@ -112,12 +112,14 @@ options:
   ping_interval:
     description:
       - WebSocket ping interval in seconds.
+      - Must be greater than V(0).
     required: false
     type: int
     default: 20
   ping_timeout:
     description:
       - WebSocket ping timeout in seconds.
+      - Must be greater than V(0).
     required: false
     type: int
     default: 20
@@ -137,18 +139,21 @@ options:
   reconnect_initial_delay:
     description:
       - Initial reconnection delay in seconds.
+      - Must be greater than or equal to V(0).
     required: false
     type: float
     default: 1.0
   reconnect_max_delay:
     description:
       - Maximum reconnection delay in seconds.
+      - Must be greater than or equal to O(reconnect_initial_delay).
     required: false
     type: float
     default: 60.0
   reconnect_backoff_multiplier:
     description:
       - Backoff multiplier for exponential backoff.
+      - Must be greater than V(0).
     required: false
     type: float
     default: 2.0
@@ -274,18 +279,33 @@ def _as_float(value: Any, fallback: float) -> float:
     return float(value)
 
 
+def _normalize_vault_url(raw: Any) -> str:
+    """Require http(s) scheme and a hostname. Prefix https:// when scheme is missing."""
+    if _is_blank(raw):
+        raise ValueError("url is required (set url or VAULT_ADDR)")
+
+    candidate = str(raw).strip()
+    if not candidate.startswith(("http://", "https://")):
+        candidate = "https://" + candidate
+    candidate = candidate.rstrip("/")
+    parsed = urlparse(candidate)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise ValueError("Invalid vault URL: %s (must include hostname)" % raw)
+    return candidate
+
+
 def normalize_args(args: Mapping[str, Any], environ: Mapping[str, str]) -> Dict[str, Any]:
     """Resolve aliases and VAULT_* environment fallbacks into canonical keys."""
-    url = _coalesce(
-        [
-            args.get("url"),
-            args.get("vault_url"),
-            args.get("vault_address"),
-            environ.get("VAULT_ADDR"),
-        ]
+    url = _normalize_vault_url(
+        _coalesce(
+            [
+                args.get("url"),
+                args.get("vault_url"),
+                args.get("vault_address"),
+                environ.get("VAULT_ADDR"),
+            ]
+        )
     )
-    if _is_blank(url):
-        raise ValueError("url is required (set url or VAULT_ADDR)")
 
     tls_skip_raw = _coalesce(
         [
@@ -310,8 +330,25 @@ def normalize_args(args: Mapping[str, Any], environ: Mapping[str, str]) -> Dict[
     else:
         reconnect_enabled = _parse_bool(reconnect_enabled_raw)
 
+    ping_interval = _as_int(args.get("ping_interval"), 20)
+    ping_timeout = _as_int(args.get("ping_timeout"), 20)
+    reconnect_initial_delay = _as_float(args.get("reconnect_initial_delay"), 1.0)
+    reconnect_max_delay = _as_float(args.get("reconnect_max_delay"), 60.0)
+    reconnect_backoff_multiplier = _as_float(args.get("reconnect_backoff_multiplier"), 2.0)
+
+    if ping_interval <= 0:
+        raise ValueError("ping_interval must be greater than 0")
+    if ping_timeout <= 0:
+        raise ValueError("ping_timeout must be greater than 0")
+    if reconnect_backoff_multiplier <= 0:
+        raise ValueError("reconnect_backoff_multiplier must be greater than 0")
+    if reconnect_initial_delay < 0:
+        raise ValueError("reconnect_initial_delay must be greater than or equal to 0")
+    if reconnect_max_delay < reconnect_initial_delay:
+        raise ValueError("reconnect_max_delay must be greater than or equal to reconnect_initial_delay")
+
     return {
-        "url": str(url).rstrip("/"),
+        "url": url,
         "token": _coalesce(
             [
                 args.get("token"),
@@ -359,13 +396,13 @@ def normalize_args(args: Mapping[str, Any], environ: Mapping[str, str]) -> Dict[
         ),
         "tls_skip_verify": tls_skip_verify,
         "event_types": event_types,
-        "ping_interval": _as_int(args.get("ping_interval"), 20),
-        "ping_timeout": _as_int(args.get("ping_timeout"), 20),
+        "ping_interval": ping_interval,
+        "ping_timeout": ping_timeout,
         "reconnect_enabled": reconnect_enabled,
         "reconnect_max_attempts": _as_int(args.get("reconnect_max_attempts"), -1),
-        "reconnect_initial_delay": _as_float(args.get("reconnect_initial_delay"), 1.0),
-        "reconnect_max_delay": _as_float(args.get("reconnect_max_delay"), 60.0),
-        "reconnect_backoff_multiplier": _as_float(args.get("reconnect_backoff_multiplier"), 2.0),
+        "reconnect_initial_delay": reconnect_initial_delay,
+        "reconnect_max_delay": reconnect_max_delay,
+        "reconnect_backoff_multiplier": reconnect_backoff_multiplier,
     }
 
 
@@ -475,7 +512,7 @@ class VaultAuthenticator:
         if not path.exists():
             raise FileNotFoundError("Token file not found: %s" % token_path)
 
-        token = path.read_text(encoding='utf-8').strip()
+        token = path.read_text(encoding="utf-8").strip()
         if not token:
             raise ValueError("Token file is empty: %s" % token_path)
         return token
@@ -550,10 +587,9 @@ class VaultWebSocketClient:
 
     def _build_ws_url(self, event_type: str) -> str:
         vault_url = self.vault_url
-        # Ensure URL has a scheme for proper parsing
-        if not vault_url.startswith(('http://', 'https://')):
-            vault_url = 'https://' + vault_url
-    
+        if not vault_url.startswith(("http://", "https://")):
+            vault_url = "https://" + vault_url
+
         parsed = urlparse(vault_url)
         if not parsed.netloc:
             raise ValueError("Invalid vault URL: %s (must include hostname)" % self.vault_url)
