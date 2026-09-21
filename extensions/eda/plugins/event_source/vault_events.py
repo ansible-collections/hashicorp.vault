@@ -501,8 +501,8 @@ class VaultAuthenticator:
 
         async with aiohttp.ClientSession() as session:
             async with session.post(login_url, json=payload, headers=headers, ssl=ssl_arg) as response:
-                error_text = await response.text()
                 if response.status != 200:
+                    error_text = await response.text()
                     raise RuntimeError("AppRole login failed with status %s: %s" % (response.status, error_text))
 
                 data = await response.json()
