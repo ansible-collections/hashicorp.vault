@@ -7,10 +7,12 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import asyncio
 import importlib.util
 import json
 import ssl
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -210,6 +212,130 @@ class TestNormalizeArgs:
         )
 
         assert result["event_types"] == ["kv-v2/*"]
+
+    def test_url_without_scheme_gets_https(self):
+        result = vault_events.normalize_args({"url": "vault.example.com:8200"}, {})
+
+        assert result["url"] == "https://vault.example.com:8200"
+
+    def test_http_scheme_is_preserved(self):
+        result = vault_events.normalize_args({"url": "http://vault.example.com:8200/"}, {})
+
+        assert result["url"] == "http://vault.example.com:8200"
+
+    def test_slash_only_url_raises(self):
+        with pytest.raises(ValueError, match="Invalid vault URL"):
+            vault_events.normalize_args({"url": "/"}, {})
+
+    def test_empty_host_url_raises(self):
+        with pytest.raises(ValueError, match="Invalid vault URL"):
+            vault_events.normalize_args({"url": "///"}, {})
+
+    def test_ping_interval_must_be_positive(self):
+        with pytest.raises(ValueError, match="ping_interval must be greater than 0"):
+            vault_events.normalize_args(
+                {"url": "https://vault.example.com:8200", "ping_interval": 0},
+                {},
+            )
+
+    def test_ping_timeout_must_be_positive(self):
+        with pytest.raises(ValueError, match="ping_timeout must be greater than 0"):
+            vault_events.normalize_args(
+                {"url": "https://vault.example.com:8200", "ping_timeout": -1},
+                {},
+            )
+
+    def test_backoff_multiplier_must_be_positive(self):
+        with pytest.raises(ValueError, match="reconnect_backoff_multiplier must be greater than 0"):
+            vault_events.normalize_args(
+                {"url": "https://vault.example.com:8200", "reconnect_backoff_multiplier": 0},
+                {},
+            )
+
+    def test_max_delay_must_be_at_least_initial(self):
+        with pytest.raises(ValueError, match="reconnect_max_delay must be greater than or equal"):
+            vault_events.normalize_args(
+                {
+                    "url": "https://vault.example.com:8200",
+                    "reconnect_initial_delay": 10,
+                    "reconnect_max_delay": 5,
+                },
+                {},
+            )
+
+
+class TestReadTokenFromFile:
+    def test_token_file_is_read_as_utf8(self, tmp_path):
+        token_file = tmp_path / "token"
+        token_file.write_text("s.token\n", encoding="utf-8")
+        auth = vault_events.VaultAuthenticator(
+            vault_events.normalize_args(
+                {
+                    "url": "https://vault.example.com:8200",
+                    "vault_token_path": str(token_file),
+                },
+                {},
+            )
+        )
+
+        token = asyncio.run(auth._read_token_from_file(str(token_file)))
+
+        assert token == "s.token"
+
+
+class TestApproleLogin:
+    def _authenticator(self):
+        return vault_events.VaultAuthenticator(
+            vault_events.normalize_args(
+                {
+                    "url": "https://vault.example.com:8200",
+                    "role_id": "role",
+                    "secret_id": "secret",
+                },
+                {},
+            )
+        )
+
+    def _mock_session(self, response):
+        session = MagicMock()
+        session.post.return_value.__aenter__ = AsyncMock(return_value=response)
+        session.post.return_value.__aexit__ = AsyncMock(return_value=False)
+        client_session = MagicMock()
+        client_session.__aenter__ = AsyncMock(return_value=session)
+        client_session.__aexit__ = AsyncMock(return_value=False)
+        return client_session
+
+    def test_success_reads_json_not_text(self):
+        if vault_events.aiohttp is None:
+            pytest.skip("aiohttp is not installed")
+
+        response = MagicMock()
+        response.status = 200
+        response.json = AsyncMock(return_value={"auth": {"client_token": "s.approle"}})
+        response.text = AsyncMock(return_value="should-not-be-read")
+
+        with patch.object(vault_events.aiohttp, "ClientSession", return_value=self._mock_session(response)):
+            token = asyncio.run(self._authenticator()._approle_login())
+
+        assert token == "s.approle"
+        response.json.assert_awaited_once()
+        response.text.assert_not_awaited()
+
+    def test_error_reads_text_not_json(self):
+        if vault_events.aiohttp is None:
+            pytest.skip("aiohttp is not installed")
+
+        response = MagicMock()
+        response.status = 400
+        response.json = AsyncMock(return_value={"errors": ["denied"]})
+        response.text = AsyncMock(return_value="permission denied")
+
+        with patch.object(vault_events.aiohttp, "ClientSession", return_value=self._mock_session(response)):
+            with pytest.raises(RuntimeError, match="AppRole login failed with status 400"):
+                asyncio.run(self._authenticator()._approle_login())
+
+        response.text.assert_awaited_once()
+        response.json.assert_not_awaited()
 
 
 class TestWebsocketSslArgument:
