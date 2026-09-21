@@ -475,7 +475,7 @@ class VaultAuthenticator:
         if not path.exists():
             raise FileNotFoundError("Token file not found: %s" % token_path)
 
-        token = path.read_text().strip()
+        token = path.read_text(encoding='utf-8').strip()
         if not token:
             raise ValueError("Token file is empty: %s" % token_path)
         return token
