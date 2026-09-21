@@ -549,7 +549,14 @@ class VaultWebSocketClient:
         return websocket
 
     def _build_ws_url(self, event_type: str) -> str:
-        parsed = urlparse(self.vault_url)
+        vault_url = self.vault_url
+        # Ensure URL has a scheme for proper parsing
+        if not vault_url.startswith(('http://', 'https://')):
+            vault_url = 'https://' + vault_url
+    
+        parsed = urlparse(vault_url)
+        if not parsed.netloc:
+            raise ValueError("Invalid vault URL: %s (must include hostname)" % self.vault_url)
         ws_scheme = "wss" if parsed.scheme == "https" else "ws"
         return "%s://%s/v1/sys/events/subscribe/%s?json=true" % (ws_scheme, parsed.netloc, event_type)
 
