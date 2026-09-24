@@ -224,14 +224,13 @@ class TestVaultClientIntegrationWithAuthenticators:
         assert client.vault_namespace == "root"
         mock_session.headers.update.assert_any_call({"X-Vault-Token": "hvs.test-token"})
 
-    @patch("requests.post")
-    def test_approle_authentication_flow(self, mock_post, mock_session_class, mock_session):
+    def test_approle_authentication_flow(self, mock_session_class, mock_session):
         """Test the complete AppRole authentication flow."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"auth": {"client_token": "hvs.approle-token"}}
         mock_response.raise_for_status.return_value = None
-        mock_post.return_value = mock_response
+        mock_session.post.return_value = mock_response
 
         client = VaultClient(vault_address="https://vault.example.com:8200", vault_namespace="root")
 
