@@ -188,7 +188,6 @@ EXAMPLES = r"""
     vault_token_path: /var/run/secrets/vault-token
     event_types:
       - audit/*
-    tls_skip_verify: false
     ca_cert: /etc/ssl/certs/ca-bundle.crt
 
 - name: Subscribe with custom reconnection settings
@@ -543,7 +542,8 @@ class VaultAuthenticator:
                     raise RuntimeError("AppRole login failed with status %s: %s" % (response.status, error_text))
 
                 data = await response.json()
-                token = data.get("auth", {}).get("client_token")
+                auth = data.get("auth") if isinstance(data, dict) else None
+                token = auth.get("client_token") if isinstance(auth, dict) else None
                 if not token:
                     raise ValueError("No token returned from AppRole login")
 
