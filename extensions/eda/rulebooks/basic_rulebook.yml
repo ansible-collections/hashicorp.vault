@@ -1,6 +1,9 @@
 ---
 # Basic example rulebook for HashiCorp Vault events.
 #
+# The plugin reads VAULT_ADDR and VAULT_TOKEN from the environment when
+# url and token are omitted.
+#
 # Usage:
 #   export VAULT_ADDR="https://vault.example.com:8200"
 #   export VAULT_TOKEN="your-vault-token"
@@ -10,11 +13,8 @@
   hosts: all
   sources:
     - hashicorp.vault.vault_events:
-        url: "{{ VAULT_ADDR }}"
-        token: "{{ VAULT_TOKEN }}"
         event_types:
           - "*"
-        tls_skip_verify: false
         reconnect_enabled: true
         reconnect_max_attempts: -1
 

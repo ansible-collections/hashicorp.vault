@@ -337,6 +337,22 @@ class TestApproleLogin:
         response.text.assert_awaited_once()
         response.json.assert_not_awaited()
 
+    def test_null_auth_raises(self):
+        if vault_events.aiohttp is None:
+            pytest.skip("aiohttp is not installed")
+
+        response = MagicMock()
+        response.status = 200
+        response.json = AsyncMock(return_value={"auth": None})
+        response.text = AsyncMock(return_value="should-not-be-read")
+
+        with patch.object(vault_events.aiohttp, "ClientSession", return_value=self._mock_session(response)):
+            with pytest.raises(ValueError, match="No token returned from AppRole login"):
+                asyncio.run(self._authenticator()._approle_login())
+
+        response.json.assert_awaited_once()
+        response.text.assert_not_awaited()
+
 
 class TestWebsocketSslArgument:
     def test_skip_verify_is_rejected(self):

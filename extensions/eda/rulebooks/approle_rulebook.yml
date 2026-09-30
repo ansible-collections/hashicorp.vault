@@ -1,7 +1,13 @@
 ---
 # AppRole authentication example for HashiCorp Vault events.
 #
+# The plugin reads VAULT_ADDR, VAULT_APPROLE_ROLE_ID, and
+# VAULT_APPROLE_SECRET_ID from the environment when those arguments are
+# omitted. Only the first event_types entry is subscribed to, so "*" is
+# required for the KV and audit rules below to all see events.
+#
 # Usage:
+#   export VAULT_ADDR="https://vault.example.com:8200"
 #   export VAULT_APPROLE_ROLE_ID="your-role-id"
 #   export VAULT_APPROLE_SECRET_ID="your-secret-id"
 #   ansible-rulebook -i inventory.yml --rulebook approle_rulebook.yml
@@ -10,13 +16,8 @@
   hosts: all
   sources:
     - hashicorp.vault.vault_events:
-        url: "https://vault.example.com:8200"
-        role_id: "{{ VAULT_APPROLE_ROLE_ID }}"
-        secret_id: "{{ VAULT_APPROLE_SECRET_ID }}"
         event_types:
-          - "kv-v2/*"
-          - "audit/*"
-        tls_skip_verify: false
+          - "*"
         reconnect_enabled: true
         reconnect_max_attempts: 10
         reconnect_initial_delay: 2
