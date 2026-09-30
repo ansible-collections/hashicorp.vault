@@ -156,7 +156,6 @@ Example rulebooks live in `extensions/eda/rulebooks/`. Connection arguments matc
 sources:
   - hashicorp.vault.vault_events:
       url: "https://vault.example.com:8200"
-      token: "{{ VAULT_TOKEN }}"
       event_types:
         - "kv-v2/*"
 ```
