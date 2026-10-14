@@ -632,7 +632,7 @@ class ReconnectionManager:
             self.initial_delay * (self.backoff_multiplier**self.current_attempt),
             self.max_delay,
         )
-        # Non-crypto jitter for reconnect backoff so retries do not thundering-herd.
+        # Randomize reconnect timing (±25%) to distribute retry attempts and prevent thundering herd.
         jitter = delay * 0.25 * ((secrets.randbelow(500) / 250.0) - 1.0)
         total_delay = delay + jitter
 
