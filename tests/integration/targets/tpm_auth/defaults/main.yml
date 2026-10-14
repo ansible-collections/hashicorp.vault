@@ -1,0 +1,15 @@
+---
+tpm_mount: "ansible-tpm-{{ vault_resource_suffix | lower }}"
+tpm_role_name: "ansible-tpm-role-{{ vault_resource_suffix | lower }}"
+tpm_identity_name: "ansible-tpm-host-{{ vault_resource_suffix | lower }}"
+tpm_group_name: "ansible-tpm-group-{{ vault_resource_suffix | lower }}"
+tpm_ek_public_key: |
+  -----BEGIN PUBLIC KEY-----
+  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4P5NnvpX2rAZgVPCXrfC
+  KKpjw/PBQwWIn4fQkZY5N92sS8pfqwNttNv5cMKnwTn+Nv21JFiQ6rACH1Iw/x+M
+  eLrHvOFkMj+c5Tt9l1czft1y+zx64YQt0v8LQ/Onyx2RRgV9HJDyk696onBg+kOW
+  +7G/NPUyQ3gTvt6Q0+xCAD7/PWU4Q7JZhg+ljU1uSs7HrQcVoFlI0gDXas/scAV3
+  zJaC3iIgqIB9EDxUkHXJsWp2BU+UiPFKFhO1fdi6aZ0siZj5Ww4C+z3LZrKQISYb
+  duQ4be4PEqHztFH0gYSlfoyN+jD8oLm4anXoWjTZLzWufEERnoOJkGEdTPmhIomQ
+  rwIDAQAB
+  -----END PUBLIC KEY-----

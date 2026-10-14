@@ -1,0 +1,6 @@
+minor_changes:
+  - auth_method - Enable, tune, and disable Vault auth method mounts. An existing mount of the same type is left in place.
+  - tpm_auth_config - Manage TPM auth backend CA configuration for Vault Enterprise 2.2.0 or later. ``state=absent`` does not clear the configuration or disable the mount.
+  - tpm_role - Manage TPM auth roles, including TPM ids, TPM groups, and token parameters.
+  - identity_tpm - Register and remove TPM identity records. The endorsement key can be supplied as a PEM or read from the local TPM device.
+  - identity_tpm_group - Manage TPM identity groups.

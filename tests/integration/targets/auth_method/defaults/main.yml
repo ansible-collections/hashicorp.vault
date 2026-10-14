@@ -1,0 +1,2 @@
+---
+auth_method_path: "ansible-auth-{{ vault_resource_suffix | lower }}"

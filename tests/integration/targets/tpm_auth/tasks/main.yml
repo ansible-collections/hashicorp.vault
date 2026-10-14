@@ -1,0 +1,205 @@
+---
+- name: Run TPM auth and identity tests
+  collections:
+    - hashicorp.vault
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: token
+      token: "{{ vault_token_from_setup_auth_token }}"
+  block:
+    - name: Probe the TPM auth method
+      hashicorp.vault.auth_method:
+        type: tpm
+        path: "{{ tpm_mount }}"
+      register: tpm_probe
+      failed_when: false
+
+    - name: Skip when this Vault cannot enable TPM auth
+      ansible.builtin.meta: end_host
+      when:
+        - tpm_probe is failed
+        - tpm_probe.msg is search('enterprise|unknown auth|unsupported path|plugin|not supported|invalid backend|invalid auth method', ignorecase=True)
+
+    - name: Surface unexpected TPM enable errors
+      ansible.builtin.fail:
+        msg: "{{ tpm_probe.msg }}"
+      when: tpm_probe is failed
+
+    - name: Enable TPM auth again
+      hashicorp.vault.auth_method:
+        type: tpm
+        path: "{{ tpm_mount }}"
+      register: tpm_enable_again
+
+    - name: Assert the TPM mount is left in place
+      ansible.builtin.assert:
+        that:
+          - tpm_probe is changed
+          - tpm_enable_again is not changed
+
+    - name: Configure the TPM auth backend
+      hashicorp.vault.tpm_auth_config:
+        mount: "{{ tpm_mount }}"
+        ca_lifetime: 315360000
+        ca_soft_expiry: 31536000
+        default_cert_ttl: 2592000
+      register: config_write
+
+    - name: Configure the TPM auth backend again
+      hashicorp.vault.tpm_auth_config:
+        mount: "{{ tpm_mount }}"
+        ca_lifetime: 315360000
+        ca_soft_expiry: 31536000
+        default_cert_ttl: 2592000
+      register: config_again
+
+    - name: Assert config is idempotent
+      ansible.builtin.assert:
+        that:
+          - config_write is changed
+          - config_again is not changed
+          - config_again.data.default_cert_ttl | int == 2592000
+
+    - name: Note that config absent does not remove the mount
+      hashicorp.vault.tpm_auth_config:
+        mount: "{{ tpm_mount }}"
+        state: absent
+      register: config_absent
+
+    - name: Assert config absent is a no-op
+      ansible.builtin.assert:
+        that:
+          - config_absent is not changed
+
+    - name: Enroll a TPM identity from a PEM
+      hashicorp.vault.identity_tpm:
+        name: "{{ tpm_identity_name }}"
+        tpm_ek_public_key: "{{ tpm_ek_public_key }}"
+        metadata:
+          environment: ansible-test
+      register: identity_create
+
+    - name: Enroll the same PEM with different whitespace
+      hashicorp.vault.identity_tpm:
+        name: "{{ tpm_identity_name }}"
+        tpm_ek_public_key: "{{ tpm_ek_public_key | trim }}"
+        metadata:
+          environment: ansible-test
+      register: identity_again
+
+    - name: Assert enrollment is idempotent and returns a TPM id
+      ansible.builtin.assert:
+        that:
+          - identity_create is changed
+          - identity_create.tpm_id | length > 0
+          - identity_again is not changed
+          - identity_again.tpm_id == identity_create.tpm_id
+
+    - name: Create a TPM group
+      hashicorp.vault.identity_tpm_group:
+        name: "{{ tpm_group_name }}"
+        member_tpm_ids:
+          - "{{ identity_create.tpm_id }}"
+        metadata:
+          environment: ansible-test
+      register: group_create
+
+    - name: Create the same TPM group with members reversed
+      hashicorp.vault.identity_tpm_group:
+        name: "{{ tpm_group_name }}"
+        member_tpm_ids:
+          - "{{ identity_create.tpm_id }}"
+      register: group_again
+
+    - name: Assert the group is idempotent
+      ansible.builtin.assert:
+        that:
+          - group_create is changed
+          - group_create.tpm_group_id | length > 0
+          - group_again is not changed
+
+    - name: Create a TPM role
+      hashicorp.vault.tpm_role:
+        mount: "{{ tpm_mount }}"
+        name: "{{ tpm_role_name }}"
+        tpm_ids:
+          - "{{ identity_create.tpm_id }}"
+        tpmgroup_ids:
+          - "{{ group_create.tpm_group_id }}"
+        token_policies:
+          - default
+        token_ttl: 3600
+        cert_ttl: 2592000
+      register: role_create
+
+    - name: Create the same TPM role with ids reordered
+      hashicorp.vault.tpm_role:
+        mount: "{{ tpm_mount }}"
+        name: "{{ tpm_role_name }}"
+        tpm_ids:
+          - "{{ identity_create.tpm_id }}"
+        tpmgroup_ids:
+          - "{{ group_create.tpm_group_id }}"
+        token_policies:
+          - default
+        token_ttl: 3600
+        cert_ttl: 2592000
+      register: role_again
+
+    - name: Assert the role is idempotent
+      ansible.builtin.assert:
+        that:
+          - role_create is changed
+          - role_again is not changed
+
+    - name: Delete the TPM role, group, and identity
+      hashicorp.vault.tpm_role:
+        mount: "{{ tpm_mount }}"
+        name: "{{ tpm_role_name }}"
+        state: absent
+      register: role_delete
+
+    - name: Delete the TPM group
+      hashicorp.vault.identity_tpm_group:
+        name: "{{ tpm_group_name }}"
+        state: absent
+
+    - name: Delete the TPM identity
+      hashicorp.vault.identity_tpm:
+        name: "{{ tpm_identity_name }}"
+        state: absent
+      register: identity_delete
+
+    - name: Assert deletes
+      ansible.builtin.assert:
+        that:
+          - role_delete is changed
+          - identity_delete is changed
+
+  always:
+    - name: Remove TPM test objects
+      hashicorp.vault.tpm_role:
+        mount: "{{ tpm_mount }}"
+        name: "{{ tpm_role_name }}"
+        state: absent
+      failed_when: false
+
+    - name: Remove the TPM test group
+      hashicorp.vault.identity_tpm_group:
+        name: "{{ tpm_group_name }}"
+        state: absent
+      failed_when: false
+
+    - name: Remove the TPM test identity
+      hashicorp.vault.identity_tpm:
+        name: "{{ tpm_identity_name }}"
+        state: absent
+      failed_when: false
+
+    - name: Disable the TPM test mount
+      hashicorp.vault.auth_method:
+        path: "{{ tpm_mount }}"
+        state: absent
+      failed_when: false
