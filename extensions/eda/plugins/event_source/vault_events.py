@@ -252,7 +252,6 @@ def _parse_bool(value: Any) -> bool:
             return True
         if lowered in FALSE_STRINGS:
             return False
-        raise ValueError("Invalid boolean value: %s" % value)
     raise ValueError("Invalid boolean value: %s" % value)
 
 
