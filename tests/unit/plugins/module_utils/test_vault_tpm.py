@@ -12,7 +12,10 @@ from unittest.mock import Mock
 import pytest
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import VaultClient
-from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import VaultSecretNotFoundError
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultApiError,
+    VaultSecretNotFoundError,
+)
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_tpm import (
     VaultTpm,
     decide_config_action,
@@ -132,6 +135,27 @@ def test_delete_role_ignores_404():
     client = Mock()
     client._make_request.side_effect = VaultSecretNotFoundError("gone", 404, [])
     VaultTpm(client).delete_role("tpm", "app")
+
+
+def test_read_config_treats_config_not_set_as_unset():
+    client = Mock()
+    client._make_request.side_effect = VaultApiError(
+        "API request failed: ['config has not been set']",
+        400,
+        ["config has not been set"],
+    )
+    assert VaultTpm(client).read_config("tpm") is None
+
+
+def test_write_config_does_not_ignore_config_not_set():
+    client = Mock()
+    client._make_request.side_effect = VaultApiError(
+        "API request failed: ['config has not been set']",
+        400,
+        ["config has not been set"],
+    )
+    with pytest.raises(VaultApiError, match="config has not been set"):
+        VaultTpm(client).write_config("tpm", {"ca_lifetime": 1})
 
 
 def test_get_404_returns_none_and_post_404_raises():

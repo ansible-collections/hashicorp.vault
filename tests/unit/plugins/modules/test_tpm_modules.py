@@ -11,13 +11,20 @@ from unittest.mock import Mock
 
 import pytest
 
-from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import VaultConfigurationError
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultApiError,
+    VaultConfigurationError,
+)
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_tpm import VaultTpm
 from ansible_collections.hashicorp.vault.plugins.modules.auth_method import (
     ensure_auth_absent,
     ensure_auth_present,
 )
 from ansible_collections.hashicorp.vault.plugins.modules.identity_tpm import ensure_identity_present
-from ansible_collections.hashicorp.vault.plugins.modules.tpm_auth_config import ensure_config_absent
+from ansible_collections.hashicorp.vault.plugins.modules.tpm_auth_config import (
+    ensure_config_absent,
+    ensure_config_present,
+)
 from ansible_collections.hashicorp.vault.plugins.modules.tpm_role import ensure_role_present
 
 PEM = "-----BEGIN PUBLIC KEY-----\nMIIB\n-----END PUBLIC KEY-----\n"
@@ -102,6 +109,37 @@ def test_auth_absent_disables_only_when_the_mount_exists():
         ensure_auth_absent(module, auth)
     assert exc.value.kwargs["changed"] is False
     auth.disable_auth_method.assert_not_called()
+
+
+def test_fresh_mount_writes_config_when_read_reports_config_not_set():
+    module = _module(
+        {
+            "mount": "tpm",
+            "ca_lifetime": 315360000,
+            "ca_soft_expiry": 31536000,
+            "default_cert_ttl": 2592000,
+        }
+    )
+    written = {
+        "ca_lifetime": 315360000,
+        "ca_soft_expiry": 31536000,
+        "default_cert_ttl": 2592000,
+    }
+    client = Mock()
+    client._make_request.side_effect = [
+        VaultApiError("API request failed: ['config has not been set']", 400, ["config has not been set"]),
+        {},
+        {"data": written},
+    ]
+
+    with pytest.raises(ExitJson) as exc:
+        ensure_config_present(module, VaultTpm(client))
+
+    assert exc.value.kwargs["changed"] is True
+    assert exc.value.kwargs["data"] == written
+    assert client._make_request.call_args_list[0].args == ("GET", "v1/auth/tpm/config")
+    assert client._make_request.call_args_list[1].args == ("POST", "v1/auth/tpm/config")
+    assert client._make_request.call_args_list[1].kwargs["json"] == written
 
 
 def test_config_absent_does_not_call_vault():

@@ -13,7 +13,10 @@ import logging
 from typing import Any, Dict, Optional
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_methods import unwrap_data, vault_path
-from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import VaultSecretNotFoundError
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
+    VaultApiError,
+    VaultSecretNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -161,6 +164,20 @@ def omit_none(values: Dict[str, Any]) -> Dict[str, Any]:
     return {key: value for key, value in values.items() if value is not None}
 
 
+# A TPM auth mount that has never been configured answers GET auth/<mount>/config
+# with this error instead of 404.
+_UNSET_CONFIG = "config has not been set"
+
+
+def _is_unset_config_error(exc: VaultApiError) -> bool:
+    if _UNSET_CONFIG in str(exc):
+        return True
+    response_text = exc.response_text
+    if isinstance(response_text, (list, tuple)):
+        return any(_UNSET_CONFIG in str(item) for item in response_text)
+    return response_text is not None and _UNSET_CONFIG in str(response_text)
+
+
 class VaultTpm:
     """HTTP client for TPM auth config, TPM auth roles, and TPM identity records."""
 
@@ -186,7 +203,17 @@ class VaultTpm:
             return
 
     def read_config(self, mount: str) -> Optional[dict]:
-        return self._request("GET", vault_path("auth", mount, "config"))
+        """Read auth/<mount>/config. An unconfigured mount returns None.
+
+        Vault returns API error "config has not been set" for that GET, not 404.
+        The same error on POST is left to the caller.
+        """
+        try:
+            return self._request("GET", vault_path("auth", mount, "config"))
+        except VaultApiError as exc:
+            if _is_unset_config_error(exc):
+                return None
+            raise
 
     def write_config(self, mount: str, body: Dict[str, Any]) -> Optional[dict]:
         logger.debug("POST TPM auth config at %s", mount)
