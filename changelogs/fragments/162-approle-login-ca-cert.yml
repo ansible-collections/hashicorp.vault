@@ -1,0 +1,11 @@
+---
+bugfixes:
+  - module_utils/authentication.py - Issue the AppRole login request on the ``VaultClient`` session so that ``ca_cert`` (and the ``VAULT_CACERT`` environment
+    variable) and ``tls_skip_verify`` are applied to the login as they already were to every subsequent API call. The login previously used a module level
+    ``requests.post()`` call, which builds its own session and falls back to the certifi bundle, so authenticating against a Vault server with a private CA
+    failed with ``CERTIFICATE_VERIFY_FAILED`` unless the undocumented ``REQUESTS_CA_BUNDLE`` variable was set
+    (https://github.com/ansible-collections/hashicorp.vault/issues/126, https://github.com/ansible-collections/hashicorp.vault/pull/162).
+minor_changes:
+  - module_utils/authentication.py - The AppRole login request is now issued on the client session, so the ``proxies`` configuration applies to it. ``retries``
+    still does not apply to the login by default, because urllib3 excludes ``POST`` from its default set of retryable methods
+    (https://github.com/ansible-collections/hashicorp.vault/pull/162).

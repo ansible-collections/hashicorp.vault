@@ -16,6 +16,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.authentication imp
     AppRoleAuthenticator,
     TokenAuthenticator,
 )
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import VaultClient
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultAppRoleLoginError,
     VaultConnectionError,
@@ -65,6 +66,11 @@ class TestAppRoleAuthenticator:
         return Mock()
 
     @pytest.fixture
+    def mock_post(self, mock_client):
+        """Fixture providing the session POST that issues the AppRole login request."""
+        return mock_client.session.post
+
+    @pytest.fixture
     def authenticator(self):
         """Fixture providing an AppRoleAuthenticator instance."""
         return AppRoleAuthenticator()
@@ -87,7 +93,6 @@ class TestAppRoleAuthenticator:
             "vault_namespace": "test-namespace",
         }
 
-    @patch("requests.post")
     def test_authenticate_success(self, mock_post, mock_client, authenticator, successful_mock_response, auth_params):
         """Test successful AppRole authentication."""
         successful_mock_response.json.return_value = {"auth": {"client_token": "hvs.123abc"}}
@@ -97,7 +102,6 @@ class TestAppRoleAuthenticator:
 
         mock_client.set_token.assert_called_once_with("hvs.123abc")
 
-    @patch("requests.post")
     def test_authenticate_custom_path(
         self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
     ):
@@ -114,7 +118,6 @@ class TestAppRoleAuthenticator:
 
         mock_client.set_token.assert_called_once_with("hvs.custom")
 
-    @patch("requests.post")
     def test_authenticate_no_namespace(self, mock_post, mock_client, authenticator, successful_mock_response):
         """Test AppRole authentication without namespace."""
         successful_mock_response.json.return_value = {"auth": {"client_token": "hvs.nonamespace"}}
@@ -153,7 +156,6 @@ class TestAppRoleAuthenticator:
         ):
             authenticator.authenticate(mock_client, **{**auth_params, "role_id": None, "secret_id": None})
 
-    @patch("requests.post")
     def test_authenticate_login_failure(self, mock_post, mock_client, authenticator, auth_params):
         """Test AppRole authentication handles login failures."""
         mock_response = Mock()
@@ -170,7 +172,6 @@ class TestAppRoleAuthenticator:
         with pytest.raises(VaultAppRoleLoginError, match="AppRole login failed: HTTP 401 - permission denied"):
             authenticator.authenticate(mock_client, **auth_params)
 
-    @patch("requests.post")
     def test_authenticate_network_error(self, mock_post, mock_client, authenticator, auth_params):
         """Test AppRole authentication handles network errors."""
         mock_post.side_effect = requests.ConnectionError("Connection timeout")
@@ -178,7 +179,6 @@ class TestAppRoleAuthenticator:
         with pytest.raises(VaultConnectionError, match="Network error during AppRole login: Connection timeout"):
             authenticator.authenticate(mock_client, **auth_params)
 
-    @patch("requests.post")
     def test_authenticate_invalid_response_format(
         self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
     ):
@@ -189,7 +189,6 @@ class TestAppRoleAuthenticator:
         with pytest.raises(VaultAppRoleLoginError, match="Invalid response format from Vault"):
             authenticator.authenticate(mock_client, **auth_params)
 
-    @patch("requests.post")
     def test_authenticate_with_custom_timeout(
         self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
     ):
@@ -202,7 +201,6 @@ class TestAppRoleAuthenticator:
         args, kwargs = mock_post.call_args
         assert kwargs['timeout'] == 30
 
-    @patch("requests.post")
     def test_authenticate_default_timeout(
         self, mock_post, mock_client, authenticator, successful_mock_response, auth_params
     ):
@@ -214,3 +212,39 @@ class TestAppRoleAuthenticator:
 
         args, kwargs = mock_post.call_args
         assert kwargs['timeout'] == 90
+
+    @pytest.mark.parametrize(
+        "client_kwargs,expected_verify",
+        [
+            ({"ca_certificate": "/etc/pki/tls/certs/custom-ca.pem"}, "/etc/pki/tls/certs/custom-ca.pem"),
+            ({"tls_skip_verify": True}, False),
+        ],
+        ids=["ca_cert", "tls_skip_verify"],
+    )
+    def test_login_uses_client_session_so_tls_settings_apply(
+        self, authenticator, auth_params, client_kwargs, expected_verify
+    ):
+        """The AppRole login must be issued on the client session.
+
+        A module level ``requests.post()`` builds its own session, which defaults to the
+        certifi bundle and so ignores ``ca_cert`` and ``tls_skip_verify`` entirely.
+        See https://github.com/ansible-collections/hashicorp.vault/issues/126.
+        """
+        client = VaultClient(
+            vault_address="http://127.0.0.1:8200",
+            vault_namespace="root",
+            **client_kwargs,
+        )
+        assert client.session.verify == expected_verify
+
+        response = Mock(status_code=200)
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"auth": {"client_token": "hvs.tls"}}
+
+        with patch.object(client.session, "post", return_value=response) as session_post:
+            with patch("requests.post") as module_post:
+                authenticator.authenticate(client, **auth_params)
+
+        session_post.assert_called_once()
+        module_post.assert_not_called()
+        assert client.vault_token == "hvs.tls"

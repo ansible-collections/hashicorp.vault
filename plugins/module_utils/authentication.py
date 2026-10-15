@@ -82,6 +82,10 @@ class AppRoleAuthenticator(Authenticator):
         """
         Authenticate the client using AppRole credentials.
 
+        The login request is sent on the client session, so the TLS and proxy settings configured
+        on the client apply to it as well as to subsequent API calls. Retries do not apply by
+        default: urllib3 excludes POST from its default set of retryable methods.
+
         Args:
             client: VaultClient instance to authenticate
             vault_address (str): Vault server address (e.g., "https://vault.example.com:8200")
@@ -103,17 +107,20 @@ class AppRoleAuthenticator(Authenticator):
             raise VaultCredentialsError("role_id and secret_id are required for AppRole authentication.")
 
         token = self._login_with_approle(
-            vault_address, role_id, secret_id, vault_namespace, approle_path, timeout=timeout
+            client.session, vault_address, role_id, secret_id, vault_namespace, approle_path, timeout=timeout
         )
         client.set_token(token)
 
     def _login_with_approle(
-        self, vault_address, role_id, secret_id, vault_namespace=None, approle_path="approle", timeout=None
+        self, session, vault_address, role_id, secret_id, vault_namespace=None, approle_path="approle", timeout=None
     ):
         """
         Login to Vault using AppRole credentials.
 
         Args:
+            session (requests.Session): Session from the VaultClient. Using it means the login
+                request picks up the TLS settings (``ca_cert``, ``tls_skip_verify``) and the proxy
+                configuration that were applied to the client
             vault_address (str): Vault server address
             role_id (str): AppRole role ID
             secret_id (str): AppRole secret ID
@@ -135,7 +142,7 @@ class AppRoleAuthenticator(Authenticator):
             headers["X-Vault-Namespace"] = vault_namespace
 
         try:
-            response = requests.post(login_url, json=payload, headers=headers, timeout=timeout or 90)
+            response = session.post(login_url, json=payload, headers=headers, timeout=timeout or 90)
 
             response.raise_for_status()
 
