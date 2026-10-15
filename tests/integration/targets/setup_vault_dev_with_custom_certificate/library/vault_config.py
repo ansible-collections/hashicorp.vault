@@ -21,6 +21,10 @@ options:
         description: The path where the KV-V2 engine is (or should be) mounted.
         default: secret
         type: str
+    enable_approle:
+        description: Whether to enable the AppRole auth method and create a test role.
+        default: false
+        type: bool
 '''
 
 EXAMPLES = r'''
@@ -38,6 +42,14 @@ RETURN = r'''
 root_token:
     description: The root token generated on server initialization.
     returned: always
+    type: str
+approle_role_id:
+    description: The role_id of the test AppRole role.
+    returned: when O(enable_approle=true)
+    type: str
+approle_secret_id:
+    description: A freshly generated secret_id for the test AppRole role.
+    returned: when O(enable_approle=true)
     type: str
 '''
 
@@ -139,12 +151,35 @@ class VaultConfig:
 
         return changed, msg
 
+    def enable_approle_auth(self):
+        # Enable the AppRole auth method (idempotent).
+        response = self._send_request(endpoint="v1/sys/auth")
+        if "approle/" not in response.json().get("data", {}):
+            self._send_request(method="POST", endpoint="v1/sys/auth/approle", payload={"type": "approle"})
+
+        # Create (or update) a test role.
+        self._send_request(
+            method="POST",
+            endpoint="v1/auth/approle/role/ansible-test-role",
+            payload={"token_policies": "default", "token_ttl": "10m", "token_max_ttl": "30m"},
+        )
+
+        role_id = self._send_request(endpoint="v1/auth/approle/role/ansible-test-role/role-id").json()["data"][
+            "role_id"
+        ]
+        secret_id = self._send_request(
+            method="POST", endpoint="v1/auth/approle/role/ansible-test-role/secret-id"
+        ).json()["data"]["secret_id"]
+
+        return role_id, secret_id
+
 
 def run_module():
     module_args = dict(
         url=dict(type='str', default="https://127.0.0.1:8200"),
         ca_cert=dict(type='str', required=True),
         engine_path=dict(type='str', default='secret'),
+        enable_approle=dict(type='bool', default=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
@@ -160,6 +195,12 @@ def run_module():
     result = {"msg": msg}
     if config.root_token:
         result.update({"root_token": config.root_token})
+
+    if module.params["enable_approle"]:
+        role_id, secret_id = config.enable_approle_auth()
+        result.update({"approle_role_id": role_id, "approle_secret_id": secret_id})
+        changed = True
+
     module.exit_json(changed=changed, **result)
 
 

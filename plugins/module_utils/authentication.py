@@ -18,6 +18,7 @@ else:
     REQUESTS_IMPORT_ERROR = None
 
 
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import resolve_tls_verify
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultAppRoleLoginError,
     VaultConnectionError,
@@ -196,6 +197,8 @@ class VaultLogin:
         vault_namespace: Optional[str] = None,
         mount_path: Optional[str] = None,
         timeout: Optional[int] = None,
+        ca_certificate: Optional[str] = None,
+        tls_skip_verify: Optional[bool] = None,
     ) -> None:
         """
         Initializes the Vault Login API client.
@@ -206,6 +209,8 @@ class VaultLogin:
             vault_namespace (str, optional): Vault namespace for Enterprise
             custom_mount_path: Custom path for the auth method. If omitted, the auth method name is used as the mount point
             timeout (int, optional): Request timeout in seconds.
+            ca_certificate (str, optional): Path to a custom CA certificate file to use for TLS verification.
+            tls_skip_verify (bool, optional): When true, disable TLS verification for the login request.
 
         Returns:
           None
@@ -218,6 +223,14 @@ class VaultLogin:
         self._namespace = vault_namespace
         self._mount_path = mount_path if mount_path is not None else auth_method
         self._timeout = timeout
+
+        # Issue the login on a dedicated session so ca_certificate/tls_skip_verify apply to it.
+        # A module level requests.post() builds its own throwaway session that defaults to the
+        # certifi bundle and ignores these settings entirely.
+        self._session = requests.Session()
+        verify = resolve_tls_verify(ca_certificate, tls_skip_verify)
+        if verify is not None:
+            self._session.verify = verify
 
     def validate_login_params(self, **kwargs: Any) -> None:
         """
@@ -273,7 +286,7 @@ class VaultLogin:
             headers["X-Vault-Namespace"] = self._namespace
 
         try:
-            response = requests.post(login_url, json=kwargs, headers=headers, timeout=self._timeout or 90)
+            response = self._session.post(login_url, json=kwargs, headers=headers, timeout=self._timeout or 90)
             response.raise_for_status()
             raw_response = response.json()
 
@@ -292,6 +305,8 @@ class VaultLogin:
             )
         except (KeyError, ValueError) as e:
             raise VaultLoginError(f"Invalid response format from Vault: {e}")
+        finally:
+            self._session.close()
 
 
 class VaultTokens:

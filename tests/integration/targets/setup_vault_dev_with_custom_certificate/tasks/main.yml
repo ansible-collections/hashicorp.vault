@@ -44,6 +44,7 @@
   vault_config:
     ca_cert: "{{ vault_temp_dir }}/vault.crt"
     engine_path: "{{ ansible_test_engine_mount_path }}"
+    enable_approle: "{{ vault_dev_server_enable_approle }}"
   register: result
 
 - name: Set server variable for later use
@@ -52,3 +53,9 @@
     vault_dev_server_url: "https://127.0.0.1:8200"
     vault_dev_server_root_token: "{{ result.root_token }}"
     vault_dev_server_engine_mount_path: "{{ ansible_test_engine_mount_path }}"
+
+- name: Set AppRole variables for later use
+  ansible.builtin.set_fact:
+    vault_dev_server_approle_role_id: "{{ result.approle_role_id }}"
+    vault_dev_server_approle_secret_id: "{{ result.approle_secret_id }}"
+  when: vault_dev_server_enable_approle | bool

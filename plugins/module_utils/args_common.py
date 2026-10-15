@@ -9,6 +9,20 @@ __metaclass__ = type
 
 from ansible.module_utils.basic import env_fallback
 
+# TLS parameters, shared by modules that build a VaultClient (AUTH_ARG_SPEC) and by auth_login,
+# which does not use AUTH_ARG_SPEC since its authentication model differs (auth_params dict).
+TLS_ARG_SPEC = {
+    "ca_cert": {
+        "aliases": ["cacert", "ssl_ca_cert"],
+        "fallback": (env_fallback, ["VAULT_CACERT"]),
+    },
+    "tls_skip_verify": {
+        "type": "bool",
+        "default": False,
+        "fallback": (env_fallback, ["VAULT_SKIP_VERIFY"]),
+    },
+}
+
 # Authentication parameters
 AUTH_ARG_SPEC = {
     "url": {
@@ -43,15 +57,7 @@ AUTH_ARG_SPEC = {
         "default": "approle",
         "fallback": (env_fallback, ["VAULT_APPROLE_PATH"]),
     },
-    "ca_cert": {
-        "aliases": ["cacert", "ssl_ca_cert"],
-        "fallback": (env_fallback, ["VAULT_CACERT"]),
-    },
-    "tls_skip_verify": {
-        "type": "bool",
-        "default": False,
-        "fallback": (env_fallback, ["VAULT_SKIP_VERIFY"]),
-    },
+    **TLS_ARG_SPEC,
     "proxies": {
         "type": "raw",
         "fallback": (env_fallback, ["VAULT_PROXIES"]),

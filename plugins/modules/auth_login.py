@@ -63,6 +63,23 @@ options:
   auth_params:
     description: Optional login parameters specific to the authentication method.
     type: dict
+  ca_cert:
+    description:
+      - The path to a PEM-encoded CA certificate file to use for TLS verification.
+      - If this parameter is not provided, the value of the E(VAULT_CACERT) environment variable will be used.
+    type: str
+    aliases:
+      - cacert
+      - ssl_ca_cert
+    version_added: 1.4.0
+  tls_skip_verify:
+    description:
+      - Controls whether the module verifies the TLS certificate presented by the Vault server.
+      - If this parameter is not provided, the value of the E(VAULT_SKIP_VERIFY) environment variable will be used.
+      - Setting this to V(true) disables certificate validation.
+    type: bool
+    default: false
+    version_added: 1.4.0
 notes:
   - For security reasons, this module should be used with B(no_log=true) and (register) functionalities.
 '''
@@ -87,6 +104,15 @@ EXAMPLES = r'''
       iam_request_headers: "eyJBdXRob3JpemF0aW9uIj..."
       iam_request_url: "aHR0cHM6L..."
       role: "dev-role"
+
+- name: Login to Vault fronted by a private CA
+  hashicorp.vault.auth_login:
+    url: "https://vault.example.com:8200"
+    auth_method: "approle"
+    ca_cert: "/etc/pki/tls/certs/vault-ca.pem"
+    auth_params:
+      role_id: "{{ vault_role_id }}"
+      secret_id: "{{ vault_secret_id }}"
 '''
 
 RETURN = """
@@ -106,6 +132,7 @@ authentication:
 
 from ansible.module_utils.basic import AnsibleModule
 
+from ansible_collections.hashicorp.vault.plugins.module_utils.args_common import TLS_ARG_SPEC
 from ansible_collections.hashicorp.vault.plugins.module_utils.authentication import VaultLogin
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
@@ -142,6 +169,7 @@ def main():
         auth_method=dict(type="str", default="approle", choices=auth_methods),
         mount_path=dict(),
         auth_params=dict(type="dict", no_log=True),
+        **TLS_ARG_SPEC,
     )
 
     module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
@@ -151,10 +179,17 @@ def main():
     auth_method = module.params.get("auth_method")
     mount_path = module.params.get("mount_path")
     auth_params = module.params.get("auth_params") or {}
+    ca_cert = module.params.get("ca_cert")
+    tls_skip_verify = module.params.get("tls_skip_verify")
 
     try:
         vault_login = VaultLogin(
-            vault_address=url, auth_method=auth_method, vault_namespace=namespace, mount_path=mount_path
+            vault_address=url,
+            auth_method=auth_method,
+            vault_namespace=namespace,
+            mount_path=mount_path,
+            ca_certificate=ca_cert,
+            tls_skip_verify=tls_skip_verify,
         )
         vault_login.validate_login_params(**auth_params)
         if module.check_mode:
