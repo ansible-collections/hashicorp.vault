@@ -140,14 +140,11 @@ class TestVaultLogin:
             ),
         ],
     )
-    @patch("requests.post")
-    def test_login(self, request_post, namespace, response, result):
+    def test_login(self, namespace, response, result):
         """Test the login() method"""
 
         request_response = Mock()
         request_response.json.return_value = response
-
-        request_post.return_value = request_response
 
         login_url = Mock()
         vault_addr = Mock()
@@ -158,10 +155,48 @@ class TestVaultLogin:
         login._build_login_url.return_value = login_url
 
         login_params = {"username": Mock(), "password": Mock()}
-        assert login.login(**login_params) == result
+        with patch.object(login._session, "post", return_value=request_response) as session_post:
+            assert login.login(**login_params) == result
 
         headers = {} if namespace is None else {"X-Vault-Namespace": namespace}
-        request_post.assert_called_once_with(login_url, json=login_params, headers=headers, timeout=90)
+        session_post.assert_called_once_with(login_url, json=login_params, headers=headers, timeout=90)
 
         login._build_login_url.assert_called_once_with(**login_params)
         request_response.raise_for_status.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "login_kwargs,expected_verify",
+        [
+            ({"ca_certificate": "/etc/pki/tls/certs/custom-ca.pem"}, "/etc/pki/tls/certs/custom-ca.pem"),
+            ({"tls_skip_verify": True}, False),
+        ],
+        ids=["ca_cert", "tls_skip_verify"],
+    )
+    def test_login_uses_session_so_tls_settings_apply(self, login_kwargs, expected_verify):
+        """The login request must be issued on a TLS-configured session.
+
+        A module level ``requests.post()`` builds its own session, which defaults to the
+        certifi bundle and so ignores ``ca_cert`` and ``tls_skip_verify`` entirely.
+        See https://github.com/ansible-collections/hashicorp.vault/issues/126.
+        """
+        vault_addr = TestVaultLogin.generate_vault_addr()
+        login = VaultLogin(vault_address=vault_addr, auth_method="approle", **login_kwargs)
+        assert login._session.verify == expected_verify
+
+        response = Mock(status_code=200)
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"auth": {"client_token": "hvs.tls"}}
+
+        with patch.object(login._session, "post", return_value=response) as session_post:
+            with patch("requests.post") as module_post:
+                client_token, auth_data = login.login(role_id="role-123", secret_id="secret-456")
+
+        session_post.assert_called_once()
+        module_post.assert_not_called()
+        assert client_token == "hvs.tls"
+
+    def test_login_default_verify_unset(self):
+        """Without ca_certificate/tls_skip_verify, the session keeps the default certifi verification."""
+        vault_addr = TestVaultLogin.generate_vault_addr()
+        login = VaultLogin(vault_address=vault_addr, auth_method="approle")
+        assert login._session.verify is True

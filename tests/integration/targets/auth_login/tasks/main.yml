@@ -47,3 +47,69 @@
           - approle_login is changed
           - '"token_id" in approle_login'
           - '"authentication" in approle_login'
+
+- name: Run tests for login against a server fronted by a private CA
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_dev_server_url }}"
+      auth_method: approle
+      auth_params:
+        role_id: "{{ vault_dev_server_approle_role_id }}"
+        secret_id: "{{ vault_dev_server_approle_secret_id }}"
+  block:
+    - name: Trying to login without trusting the private CA
+      hashicorp.vault.auth_login:
+      ignore_errors: true
+      register: login_without_cacert
+
+    - name: Ensure module failed to authenticate to vault server
+      ansible.builtin.assert:
+        that:
+          - login_without_cacert is failed
+          - '"failed" in login_without_cacert.msg | lower'
+
+    - name: Login using the ca_cert parameter
+      hashicorp.vault.auth_login:
+        ca_cert: "{{ vault_dev_server_cacert }}"
+      register: login_with_cacert
+
+    - name: Validate that the login succeeded
+      ansible.builtin.assert:
+        that:
+          - login_with_cacert is changed
+          - '"token_id" in login_with_cacert'
+
+    - name: Login using the ca_cert parameter as an environment variable
+      hashicorp.vault.auth_login:
+      environment:
+        VAULT_CACERT: "{{ vault_dev_server_cacert }}"
+      register: login_with_cacert_env
+
+    - name: Validate that the login succeeded
+      ansible.builtin.assert:
+        that:
+          - login_with_cacert_env is changed
+          - '"token_id" in login_with_cacert_env'
+
+    - name: Login using tls_skip_verify
+      hashicorp.vault.auth_login:
+        tls_skip_verify: true
+      register: login_with_skip_verify
+
+    - name: Validate that the login succeeded
+      ansible.builtin.assert:
+        that:
+          - login_with_skip_verify is changed
+          - '"token_id" in login_with_skip_verify'
+
+    - name: Login using tls_skip_verify as an environment variable
+      hashicorp.vault.auth_login:
+      environment:
+        VAULT_SKIP_VERIFY: "true"
+      register: login_with_skip_verify_env
+
+    - name: Validate that the login succeeded
+      ansible.builtin.assert:
+        that:
+          - login_with_skip_verify_env is changed
+          - '"token_id" in login_with_skip_verify_env'

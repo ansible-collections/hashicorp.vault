@@ -1,0 +1,4 @@
+---
+dependencies:
+  - role: setup_vault_dev_with_custom_certificate
+    vault_dev_server_enable_approle: true

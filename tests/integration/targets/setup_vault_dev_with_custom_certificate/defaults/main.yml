@@ -1,3 +1,4 @@
 ---
 container_runtime: "docker"
 ansible_test_engine_mount_path: "secret"
+vault_dev_server_enable_approle: false
