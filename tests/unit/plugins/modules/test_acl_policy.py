@@ -26,7 +26,7 @@ def _module(params, check_mode=False):
     module = Mock()
     module.params = params
     module.check_mode = check_mode
-    module.exit_json.side_effect = lambda **kwargs: (_ for _ in ()).throw(ExitJson(kwargs))
+    module.exit_json.side_effect = lambda **kwargs: (item for item in ()).throw(ExitJson(kwargs))
     return module
 
 
