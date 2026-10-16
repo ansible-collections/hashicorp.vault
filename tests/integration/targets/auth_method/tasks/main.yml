@@ -1,0 +1,119 @@
+---
+- name: Run auth_method tests
+  collections:
+    - hashicorp.vault
+  module_defaults:
+    group/hashicorp.vault.vault:
+      url: "{{ vault_url }}"
+      namespace: "{{ vault_namespace }}"
+      auth_method: token
+      token: "{{ vault_token_from_setup_auth_token }}"
+  block:
+    - name: Remove the test auth mount if a previous run left it
+      hashicorp.vault.auth_method:
+        path: "{{ auth_method_path }}"
+        state: absent
+      failed_when: false
+
+    - name: Enable userpass in check mode
+      hashicorp.vault.auth_method:
+        type: userpass
+        path: "{{ auth_method_path }}"
+        description: ansible auth integration
+      register: enable_check
+      check_mode: true
+
+    - name: Assert check mode would enable the mount
+      ansible.builtin.assert:
+        that:
+          - enable_check is changed
+          - "'Would have enabled' in enable_check.msg"
+
+    - name: Enable userpass
+      hashicorp.vault.auth_method:
+        type: userpass
+        path: "{{ auth_method_path }}"
+        description: ansible auth integration
+      register: enable_result
+
+    - name: Enable the same mount again
+      hashicorp.vault.auth_method:
+        type: userpass
+        path: "{{ auth_method_path }}/"
+        description: ansible auth integration
+      register: enable_again
+
+    - name: Assert enable is idempotent
+      ansible.builtin.assert:
+        that:
+          - enable_result is changed
+          - enable_result.data.type == "userpass"
+          - enable_result.data.path == auth_method_path
+          - enable_result.data.accessor | length > 0
+          - enable_again is not changed
+
+    - name: Reject a different auth type on the same path
+      hashicorp.vault.auth_method:
+        type: approle
+        path: "{{ auth_method_path }}"
+      register: type_conflict
+      failed_when: "'already enabled' not in (type_conflict.msg | default(''))"
+
+    - name: Tune the mount
+      hashicorp.vault.auth_method:
+        type: userpass
+        path: "{{ auth_method_path }}"
+        description: ansible auth integration
+        tune:
+          default_lease_ttl: "1h"
+          listing_visibility: hidden
+      register: tune_result
+
+    - name: Tune the mount again
+      hashicorp.vault.auth_method:
+        type: userpass
+        path: "{{ auth_method_path }}"
+        description: ansible auth integration
+        tune:
+          default_lease_ttl: "3600"
+          listing_visibility: hidden
+      register: tune_again
+
+    - name: Assert tune is idempotent across duration forms
+      ansible.builtin.assert:
+        that:
+          - tune_result is changed
+          - tune_again is not changed
+
+    - name: Disable in check mode
+      hashicorp.vault.auth_method:
+        path: "{{ auth_method_path }}"
+        state: absent
+      register: disable_check
+      check_mode: true
+
+    - name: Disable the mount
+      hashicorp.vault.auth_method:
+        path: "{{ auth_method_path }}"
+        state: absent
+      register: disable_result
+
+    - name: Disable the mount again
+      hashicorp.vault.auth_method:
+        path: "{{ auth_method_path }}"
+        state: absent
+      register: disable_again
+
+    - name: Assert disable
+      ansible.builtin.assert:
+        that:
+          - disable_check is changed
+          - disable_result is changed
+          - disable_again is not changed
+
+  always:
+    - name: Ensure the test auth mount is disabled
+      hashicorp.vault.auth_method:
+        path: "{{ auth_method_path }}"
+        state: absent
+      failed_when: false

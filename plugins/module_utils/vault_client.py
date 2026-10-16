@@ -23,6 +23,7 @@ else:
 from ansible.module_utils.parsing.convert_bool import boolean
 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_acl_policies import VaultAclPolicies
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_auth_methods import VaultAuthMethods
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
     VaultConfigurationError,
@@ -35,6 +36,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_kv2_secrets 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_namespaces import VaultNamespaces
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_pki import VaultPki
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_secrets import Secrets
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_tpm import VaultTpm
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,9 @@ __all__ = [
     'VaultKv1Secrets',
     'VaultPki',
     'VaultAclPolicies',
+    'VaultAuthMethods',
     'VaultNamespaces',
+    'VaultTpm',
     'Secrets',
     'resolve_tls_verify',
 ]
@@ -160,7 +164,9 @@ class VaultClient:
         logger.info("Initialized VaultClient for %s", vault_address)
         self.secrets = Secrets(self)
         self.acl_policies = VaultAclPolicies(self)
+        self.auth_methods = VaultAuthMethods(self)
         self.namespaces = VaultNamespaces(self)
+        self.tpm = VaultTpm(self)
 
         verify = resolve_tls_verify(ca_certificate, tls_skip_verify)
         if verify is not None:

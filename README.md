@@ -38,6 +38,7 @@ Name | Description
 [hashicorp.vault.acl_policy](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/acl_policy.py)|Manage HashiCorp Vault ACL policies
 [hashicorp.vault.acl_policy_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/acl_policy_info.py)|List and read HashiCorp Vault ACL policies
 [hashicorp.vault.auth_login](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/auth_login.py)|Authenticate to HashiCorp Vault
+[hashicorp.vault.auth_method](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/auth_method.py)|Manage HashiCorp Vault auth method mounts
 [hashicorp.vault.auth_token](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/auth_token.py)|Manage HashiCorp Vault tokens
 [hashicorp.vault.auth_token_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/auth_token_info.py)|Retrieve information about a specific HashiCorp Vault token
 
@@ -67,6 +68,14 @@ Name | Description
 --- | ---
 [hashicorp.vault.pki_certificate](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/pki_certificate.py)|Issue, sign, or revoke HashiCorp Vault PKI certificates
 [hashicorp.vault.pki_certificate_info](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/pki_certificate_info.py)|List and read HashiCorp Vault PKI certificates
+
+#### TPM authentication
+Name | Description
+--- | ---
+[hashicorp.vault.identity_tpm](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/identity_tpm.py)|Manage HashiCorp Vault TPM identity records
+[hashicorp.vault.identity_tpm_group](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/identity_tpm_group.py)|Manage HashiCorp Vault TPM identity groups
+[hashicorp.vault.tpm_auth_config](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/tpm_auth_config.py)|Manage HashiCorp Vault TPM auth backend configuration
+[hashicorp.vault.tpm_role](https://github.com/ansible-collections/hashicorp.vault/blob/main/plugins/modules/tpm_role.py)|Manage HashiCorp Vault TPM auth roles
 
 #### Namespaces
 Name | Description
