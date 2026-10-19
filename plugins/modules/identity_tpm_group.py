@@ -177,15 +177,14 @@ def ensure_group_absent(module: AnsibleModule, tpm) -> None:
     label = name or tpm_group_id
     if existing is None:
         module.exit_json(changed=False, msg=f"TPM group {label!r} already absent")
-
-    if module.check_mode:
+    elif module.check_mode:
         module.exit_json(
             changed=True,
             msg=f"Would have deleted TPM group {label!r} if not in check mode.",
         )
-
-    tpm.delete_group(name=existing.get("name") or name, tpm_group_id=existing.get("id") or tpm_group_id)
-    module.exit_json(changed=True, msg=f"TPM group {label!r} deleted successfully")
+    else:
+        tpm.delete_group(name=existing.get("name") or name, tpm_group_id=existing.get("id") or tpm_group_id)
+        module.exit_json(changed=True, msg=f"TPM group {label!r} deleted successfully")
 
 
 def main():

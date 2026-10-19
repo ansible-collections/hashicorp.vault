@@ -20,7 +20,11 @@ from ansible_collections.hashicorp.vault.plugins.modules.auth_method import (
     ensure_auth_absent,
     ensure_auth_present,
 )
-from ansible_collections.hashicorp.vault.plugins.modules.identity_tpm import ensure_identity_present
+from ansible_collections.hashicorp.vault.plugins.modules.identity_tpm import (
+    ensure_identity_absent,
+    ensure_identity_present,
+)
+from ansible_collections.hashicorp.vault.plugins.modules.identity_tpm_group import ensure_group_absent
 from ansible_collections.hashicorp.vault.plugins.modules.tpm_auth_config import (
     ensure_config_absent,
     ensure_config_present,
@@ -270,3 +274,43 @@ def test_identity_check_mode_replace_does_not_delete():
     assert "replaced" in exc.value.kwargs["msg"]
     tpm.delete_identity.assert_not_called()
     tpm.create_identity.assert_not_called()
+
+
+def test_identity_absent_deletes_the_record_it_read():
+    module = _module({"name": "host", "tpm_id": None})
+    tpm = Mock()
+    tpm.read_identity.return_value = {"id": "sha256-1", "name": "host"}
+    with pytest.raises(ExitJson) as exc:
+        ensure_identity_absent(module, tpm)
+    tpm.delete_identity.assert_called_once_with(name="host", tpm_id="sha256-1")
+    assert exc.value.kwargs["changed"] is True
+
+
+def test_missing_identity_is_already_absent():
+    module = _module({"name": "host", "tpm_id": None})
+    tpm = Mock()
+    tpm.read_identity.return_value = None
+    with pytest.raises(ExitJson) as exc:
+        ensure_identity_absent(module, tpm)
+    tpm.delete_identity.assert_not_called()
+    assert exc.value.kwargs["changed"] is False
+
+
+def test_group_absent_deletes_the_record_it_read():
+    module = _module({"name": "servers", "tpm_group_id": None})
+    tpm = Mock()
+    tpm.read_group.return_value = {"id": "group-1", "name": "servers"}
+    with pytest.raises(ExitJson) as exc:
+        ensure_group_absent(module, tpm)
+    tpm.delete_group.assert_called_once_with(name="servers", tpm_group_id="group-1")
+    assert exc.value.kwargs["changed"] is True
+
+
+def test_missing_group_is_already_absent():
+    module = _module({"name": None, "tpm_group_id": "group-1"})
+    tpm = Mock()
+    tpm.read_group.return_value = None
+    with pytest.raises(ExitJson) as exc:
+        ensure_group_absent(module, tpm)
+    tpm.delete_group.assert_not_called()
+    assert exc.value.kwargs["changed"] is False

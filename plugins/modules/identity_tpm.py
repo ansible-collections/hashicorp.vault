@@ -224,15 +224,14 @@ def ensure_identity_absent(module: AnsibleModule, tpm) -> None:
     label = name or tpm_id
     if existing is None:
         module.exit_json(changed=False, msg=f"TPM identity {label!r} already absent")
-
-    if module.check_mode:
+    elif module.check_mode:
         module.exit_json(
             changed=True,
             msg=f"Would have deleted TPM identity {label!r} if not in check mode.",
         )
-
-    tpm.delete_identity(name=existing.get("name") or name, tpm_id=existing.get("id") or tpm_id)
-    module.exit_json(changed=True, msg=f"TPM identity {label!r} deleted successfully")
+    else:
+        tpm.delete_identity(name=existing.get("name") or name, tpm_id=existing.get("id") or tpm_id)
+        module.exit_json(changed=True, msg=f"TPM identity {label!r} deleted successfully")
 
 
 def main():
