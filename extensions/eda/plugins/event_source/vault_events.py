@@ -203,6 +203,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import secrets
 import ssl
 from pathlib import Path
@@ -222,7 +223,7 @@ else:
 logger = logging.getLogger(__name__)
 
 HTTPS_PREFIX = "https://"
-HTTP_PREFIX = "http://"
+SCHEME_PATTERN = re.compile(r"^https?://")
 MISSING_DEP_MSG = "Missing required dependency: %s. Install with: pip install websockets aiohttp"
 TRUE_STRINGS = frozenset({"true", "1", "yes", "y", "t", "on"})
 FALSE_STRINGS = frozenset({"false", "0", "no", "n", "f", "off"})
@@ -282,7 +283,7 @@ def _normalize_vault_url(raw: Any) -> str:
         raise ValueError("url is required (set url or VAULT_ADDR)")
 
     candidate = str(raw).strip()
-    if not candidate.startswith((HTTP_PREFIX, HTTPS_PREFIX)):
+    if not SCHEME_PATTERN.match(candidate):
         candidate = HTTPS_PREFIX + candidate
     candidate = candidate.rstrip("/")
     parsed = urlparse(candidate)
@@ -587,7 +588,7 @@ class VaultWebSocketClient:
 
     def _build_ws_url(self, event_type: str) -> str:
         vault_url = self.vault_url
-        if not vault_url.startswith((HTTP_PREFIX, HTTPS_PREFIX)):
+        if not SCHEME_PATTERN.match(vault_url):
             vault_url = HTTPS_PREFIX + vault_url
 
         parsed = urlparse(vault_url)
@@ -651,6 +652,29 @@ class ReconnectionManager:
         self.current_attempt = 0
 
 
+async def _close_quietly(websocket: Any) -> None:
+    """Close the WebSocket, swallowing secondary errors during teardown."""
+    if websocket:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
+async def _listen(queue: asyncio.Queue, websocket: Any) -> None:
+    """Dispatch Vault events to the rulebook queue until the socket closes."""
+    logger.info("Listening for Vault events")
+    async for message in websocket:
+        try:
+            event = process_vault_event(message)
+            if event:
+                await queue.put(event)
+                await asyncio.sleep(0)
+        except Exception:
+            logger.exception("Error processing event")
+            continue
+
+
 async def main(queue: asyncio.Queue, args: Dict[str, Any]):
     """Entry point called by ansible-rulebook."""
     if EDA_IMPORT_ERROR:
@@ -680,30 +704,16 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
             websocket = await ws_client.connect(event_type)
             reconnection_mgr.reset()
 
-            logger.info("Listening for Vault events")
-            async for message in websocket:
-                try:
-                    event = process_vault_event(message)
-                    if event:
-                        await queue.put(event)
-                        await asyncio.sleep(0)
-                except Exception as exc:
-                    logger.exception("Error processing event")
-                    continue
+            await _listen(queue, websocket)
 
         except asyncio.CancelledError:
             logger.info("Shutdown requested, closing connection")
-            if websocket:
-                await websocket.close()
+            await _close_quietly(websocket)
             raise
 
-        except Exception as exc:
+        except Exception:
             logger.exception("Connection error")
-            if websocket:
-                try:
-                    await websocket.close()
-                except Exception:
-                    pass
+            await _close_quietly(websocket)
 
             if not reconnection_mgr.should_reconnect():
                 logger.error("Reconnection disabled or max attempts reached, exiting")

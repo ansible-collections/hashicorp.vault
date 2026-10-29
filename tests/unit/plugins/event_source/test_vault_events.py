@@ -332,8 +332,9 @@ class TestApproleLogin:
 
         authenticator = self._authenticator()
         with patch.object(vault_events.aiohttp, "ClientSession", return_value=self._mock_session(response)):
+            login = authenticator._approle_login()
             with pytest.raises(RuntimeError, match="AppRole login failed with status 400"):
-                asyncio.run(authenticator._approle_login())
+                asyncio.run(login)
 
         response.text.assert_awaited_once()
         response.json.assert_not_awaited()
@@ -349,8 +350,9 @@ class TestApproleLogin:
 
         authenticator = self._authenticator()
         with patch.object(vault_events.aiohttp, "ClientSession", return_value=self._mock_session(response)):
+            login = authenticator._approle_login()
             with pytest.raises(ValueError, match="No token returned from AppRole login"):
-                asyncio.run(authenticator._approle_login())
+                asyncio.run(login)
 
         response.json.assert_awaited_once()
         response.text.assert_not_awaited()
