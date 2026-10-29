@@ -221,16 +221,15 @@ else:
 
 logger = logging.getLogger(__name__)
 
-TRUE_STRINGS = ("1", "true", "yes", "on")
-FALSE_STRINGS = ("0", "false", "no", "off")
+HTTPS_PREFIX = "https://"
+HTTP_PREFIX = "http://"
+MISSING_DEP_MSG = "Missing required dependency: %s. Install with: pip install websockets aiohttp"
+TRUE_STRINGS = frozenset({"true", "1", "yes", "y", "t", "on"})
+FALSE_STRINGS = frozenset({"false", "0", "no", "n", "f", "off"})
 
 
 def _is_blank(value: Any) -> bool:
-    if value is None:
-        return True
-    if isinstance(value, str) and value.strip() == "":
-        return True
-    return False
+    return value is None or (isinstance(value, str) and not value.strip())
 
 
 def _coalesce(values: Sequence[Any]) -> Any:
@@ -283,8 +282,8 @@ def _normalize_vault_url(raw: Any) -> str:
         raise ValueError("url is required (set url or VAULT_ADDR)")
 
     candidate = str(raw).strip()
-    if not candidate.startswith(("http://", "https://")):
-        candidate = "https://" + candidate
+    if not candidate.startswith((HTTP_PREFIX, HTTPS_PREFIX)):
+        candidate = HTTPS_PREFIX + candidate
     candidate = candidate.rstrip("/")
     parsed = urlparse(candidate)
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
@@ -510,7 +509,8 @@ class VaultAuthenticator:
         if not path.exists():
             raise FileNotFoundError("Token file not found: %s" % token_path)
 
-        token = path.read_text(encoding="utf-8").strip()
+        # Offload to a thread so a slow filesystem cannot block the event loop.
+        token = (await asyncio.to_thread(path.read_text, encoding="utf-8")).strip()
         if not token:
             raise ValueError("Token file is empty: %s" % token_path)
         return token
@@ -518,7 +518,7 @@ class VaultAuthenticator:
     async def _approle_login(self) -> str:
         if EDA_IMPORT_ERROR:
             raise ImportError(
-                "Missing required dependency: %s. Install with: pip install websockets aiohttp" % EDA_IMPORT_ERROR
+                MISSING_DEP_MSG % EDA_IMPORT_ERROR
             )
 
         mount = str(self.args["vault_approle_path"]).strip("/")
@@ -534,20 +534,21 @@ class VaultAuthenticator:
 
         ssl_arg = aiohttp_ssl_argument(self.tls_skip_verify, self.ca_cert)
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(login_url, json=payload, headers=headers, ssl=ssl_arg) as response:
-                if response.status != 200:
-                    error_text = await response.text()
-                    raise RuntimeError("AppRole login failed with status %s: %s" % (response.status, error_text))
+        async with aiohttp.ClientSession() as session, session.post(
+            login_url, json=payload, headers=headers, ssl=ssl_arg
+        ) as response:
+            if response.status != 200:
+                error_text = await response.text()
+                raise RuntimeError("AppRole login failed with status %s: %s" % (response.status, error_text))
 
-                data = await response.json()
-                auth = data.get("auth") if isinstance(data, dict) else None
-                token = auth.get("client_token") if isinstance(auth, dict) else None
-                if not token:
-                    raise ValueError("No token returned from AppRole login")
+            data = await response.json()
+            auth = data.get("auth") if isinstance(data, dict) else None
+            token = auth.get("client_token") if isinstance(auth, dict) else None
+            if not token:
+                raise ValueError("No token returned from AppRole login")
 
-                logger.info("AppRole authentication successful")
-                return token
+            logger.info("AppRole authentication successful")
+            return token
 
 
 class VaultWebSocketClient:
@@ -565,7 +566,7 @@ class VaultWebSocketClient:
     async def connect(self, event_type: str):
         if EDA_IMPORT_ERROR:
             raise ImportError(
-                "Missing required dependency: %s. Install with: pip install websockets aiohttp" % EDA_IMPORT_ERROR
+                MISSING_DEP_MSG % EDA_IMPORT_ERROR
             )
 
         ws_url = self._build_ws_url(event_type)
@@ -586,8 +587,8 @@ class VaultWebSocketClient:
 
     def _build_ws_url(self, event_type: str) -> str:
         vault_url = self.vault_url
-        if not vault_url.startswith(("http://", "https://")):
-            vault_url = "https://" + vault_url
+        if not vault_url.startswith((HTTP_PREFIX, HTTPS_PREFIX)):
+            vault_url = HTTPS_PREFIX + vault_url
 
         parsed = urlparse(vault_url)
         if not parsed.netloc:
@@ -654,7 +655,7 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
     """Entry point called by ansible-rulebook."""
     if EDA_IMPORT_ERROR:
         raise ImportError(
-            "Missing required dependency: %s. Install with: pip install websockets aiohttp" % EDA_IMPORT_ERROR
+            MISSING_DEP_MSG % EDA_IMPORT_ERROR
         )
 
     normalized = normalize_args(args, os.environ)
@@ -687,7 +688,7 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
                         await queue.put(event)
                         await asyncio.sleep(0)
                 except Exception as exc:
-                    logger.error("Error processing event: %s", exc)
+                    logger.exception("Error processing event")
                     continue
 
         except asyncio.CancelledError:
@@ -697,7 +698,7 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
             raise
 
         except Exception as exc:
-            logger.error("Connection error: %s", exc)
+            logger.exception("Connection error")
             if websocket:
                 try:
                     await websocket.close()

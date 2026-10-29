@@ -330,9 +330,10 @@ class TestApproleLogin:
         response.json = AsyncMock(return_value={"errors": ["denied"]})
         response.text = AsyncMock(return_value="permission denied")
 
+        authenticator = self._authenticator()
         with patch.object(vault_events.aiohttp, "ClientSession", return_value=self._mock_session(response)):
             with pytest.raises(RuntimeError, match="AppRole login failed with status 400"):
-                asyncio.run(self._authenticator()._approle_login())
+                asyncio.run(authenticator._approle_login())
 
         response.text.assert_awaited_once()
         response.json.assert_not_awaited()
@@ -346,9 +347,10 @@ class TestApproleLogin:
         response.json = AsyncMock(return_value={"auth": None})
         response.text = AsyncMock(return_value="should-not-be-read")
 
+        authenticator = self._authenticator()
         with patch.object(vault_events.aiohttp, "ClientSession", return_value=self._mock_session(response)):
             with pytest.raises(ValueError, match="No token returned from AppRole login"):
-                asyncio.run(self._authenticator()._approle_login())
+                asyncio.run(authenticator._approle_login())
 
         response.json.assert_awaited_once()
         response.text.assert_not_awaited()
