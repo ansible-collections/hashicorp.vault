@@ -4,6 +4,27 @@ Hashicorp.Vault Release Notes
 
 .. contents:: Topics
 
+v1.4.0
+======
+
+Release Summary
+---------------
+
+This is a minor release of the ``hashicorp.vault`` collection. This changelog contains all changes to the modules and plugins in this collection that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- auth_login - Add ``ca_cert`` and ``tls_skip_verify`` parameters, with ``VAULT_CACERT``/``VAULT_SKIP_VERIFY`` environment variable fallbacks, to trust a local CA certificate or skip TLS verification (https://github.com/ansible-collections/hashicorp.vault/pull/165).
+- module_utils/authentication.py - The AppRole login request is now issued on the client session, so the ``proxies`` configuration applies to it. ``retries`` still does not apply to the login by default, because urllib3 excludes ``POST`` from its default set of retryable methods (https://github.com/ansible-collections/hashicorp.vault/pull/162).
+- module_utils/vault_auth_utils.py - Defer change for the ``namespace`` default value to version 3.0.0 (https://github.com/ansible-collections/hashicorp.vault/pull/152).
+
+Bugfixes
+--------
+
+- auth_login - Issue the login request on a TLS-configured session instead of a module level ``requests.post()`` call, which builds its own session and falls back to the certifi bundle. Authenticating against a Vault server with a private CA failed with ``CERTIFICATE_VERIFY_FAILED`` for every auth method dispatched by this module unless the undocumented ``REQUESTS_CA_BUNDLE`` variable was set (https://github.com/ansible-collections/hashicorp.vault/issues/126, https://github.com/ansible-collections/hashicorp.vault/pull/165).
+- module_utils/authentication.py - Issue the AppRole login request on the ``VaultClient`` session so that ``ca_cert`` (and the ``VAULT_CACERT`` environment variable) and ``tls_skip_verify`` are applied to the login as they already were to every subsequent API call. The login previously used a module level ``requests.post()`` call, which builds its own session and falls back to the certifi bundle, so authenticating against a Vault server with a private CA failed with ``CERTIFICATE_VERIFY_FAILED`` unless the undocumented ``REQUESTS_CA_BUNDLE`` variable was set (https://github.com/ansible-collections/hashicorp.vault/issues/126, https://github.com/ansible-collections/hashicorp.vault/pull/162).
+
 v1.3.0
 ======
 
