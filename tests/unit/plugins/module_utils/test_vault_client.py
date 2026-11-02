@@ -16,7 +16,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.authentication imp
     AppRoleAuthenticator,
     TokenAuthenticator,
 )
-from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import VaultClient
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_client import VaultClient, resolve_tls_verify
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_exceptions import (
     VaultApiError,
     VaultConfigurationError,
@@ -410,3 +410,31 @@ class TestBuildRetry:
         """Test _build_retry with unsupported type raises error."""
         with pytest.raises(VaultConfigurationError, match='retries must be an integer or a dictionary'):
             VaultClient._build_retry([1, 2, 3])
+
+
+class TestResolveTlsVerify:
+    """Tests for the resolve_tls_verify() helper shared by VaultClient and VaultLogin."""
+
+    def test_neither_setting_provided(self):
+        """When neither ca_certificate nor tls_skip_verify is set, keep the default (certifi) verification."""
+        assert resolve_tls_verify() is None
+
+    def test_ca_certificate_only(self):
+        """A custom CA certificate path is returned as the verify value."""
+        assert (
+            resolve_tls_verify(ca_certificate="/etc/pki/tls/certs/custom-ca.pem") == "/etc/pki/tls/certs/custom-ca.pem"
+        )
+
+    def test_tls_skip_verify_true(self):
+        """tls_skip_verify=True disables verification regardless of ca_certificate."""
+        assert resolve_tls_verify(ca_certificate="/etc/pki/tls/certs/custom-ca.pem", tls_skip_verify=True) is False
+
+    def test_tls_skip_verify_false_with_ca_certificate(self):
+        """tls_skip_verify=False does not override an explicit ca_certificate."""
+        assert resolve_tls_verify(ca_certificate="/etc/pki/tls/certs/custom-ca.pem", tls_skip_verify=False) == (
+            "/etc/pki/tls/certs/custom-ca.pem"
+        )
+
+    def test_tls_skip_verify_string_true(self):
+        """tls_skip_verify accepts Ansible-style boolean strings."""
+        assert resolve_tls_verify(tls_skip_verify="yes") is False

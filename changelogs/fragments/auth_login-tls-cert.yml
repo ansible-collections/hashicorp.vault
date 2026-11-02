@@ -1,0 +1,10 @@
+bugfixes:
+  - auth_login - Issue the login request on a TLS-configured session instead of a module level ``requests.post()`` call, which
+    builds its own session and falls back to the certifi bundle. Authenticating against a Vault server with a private CA failed
+    with ``CERTIFICATE_VERIFY_FAILED`` for every auth method dispatched by this module unless the undocumented
+    ``REQUESTS_CA_BUNDLE`` variable was set
+    (https://github.com/ansible-collections/hashicorp.vault/issues/126, https://github.com/ansible-collections/hashicorp.vault/pull/165).
+minor_changes:
+  - auth_login - Add ``ca_cert`` and ``tls_skip_verify`` parameters, with ``VAULT_CACERT``/``VAULT_SKIP_VERIFY`` environment
+    variable fallbacks, to trust a local CA certificate or skip TLS verification
+    (https://github.com/ansible-collections/hashicorp.vault/pull/165).
