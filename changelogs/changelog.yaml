@@ -267,4 +267,4 @@ releases:
     - 152-defer-namespace-deprecation.yml
     - 162-approle-login-ca-cert.yml
     - auth_login-tls-cert.yml
-    release_date: '2026-11-02'
+    release_date: '2026-11-03'
