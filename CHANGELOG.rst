@@ -10,7 +10,7 @@ v1.4.0
 Release Summary
 ---------------
 
-This is a minor release of the ``hashicorp.vault`` collection. This changelog contains all changes to the modules and plugins in this collection that have been made after the previous release.
+This minor release improves authentication TLS handling. The ``auth_login`` module adds ``ca_cert`` and ``tls_skip_verify`` support, including the ``VAULT_CACERT`` and ``VAULT_SKIP_VERIFY`` environment variables. Both ``auth_login`` and AppRole now apply the configured TLS settings during login; AppRole login also uses the configured client session for proxy support. The namespace default deprecation is deferred to version 3.0.0.
 
 Minor Changes
 -------------
