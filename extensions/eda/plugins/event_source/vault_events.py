@@ -518,9 +518,7 @@ class VaultAuthenticator:
 
     async def _approle_login(self) -> str:
         if EDA_IMPORT_ERROR:
-            raise ImportError(
-                MISSING_DEP_MSG % EDA_IMPORT_ERROR
-            )
+            raise ImportError(MISSING_DEP_MSG % EDA_IMPORT_ERROR)
 
         mount = str(self.args["vault_approle_path"]).strip("/")
         login_url = "%s/v1/auth/%s/login" % (self.vault_url, mount)
@@ -566,9 +564,7 @@ class VaultWebSocketClient:
 
     async def connect(self, event_type: str):
         if EDA_IMPORT_ERROR:
-            raise ImportError(
-                MISSING_DEP_MSG % EDA_IMPORT_ERROR
-            )
+            raise ImportError(MISSING_DEP_MSG % EDA_IMPORT_ERROR)
 
         ws_url = self._build_ws_url(event_type)
         headers = self._build_headers()
@@ -678,9 +674,7 @@ async def _listen(queue: asyncio.Queue, websocket: Any) -> None:
 async def main(queue: asyncio.Queue, args: Dict[str, Any]):
     """Entry point called by ansible-rulebook."""
     if EDA_IMPORT_ERROR:
-        raise ImportError(
-            MISSING_DEP_MSG % EDA_IMPORT_ERROR
-        )
+        raise ImportError(MISSING_DEP_MSG % EDA_IMPORT_ERROR)
 
     normalized = normalize_args(args, os.environ)
     _require_tls_verification(normalized["tls_skip_verify"])
