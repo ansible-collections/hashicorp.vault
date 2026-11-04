@@ -671,7 +671,7 @@ async def _listen(queue: asyncio.Queue, websocket: Any) -> None:
             continue
 
 
-async def main(queue: asyncio.Queue, args: Dict[str, Any]):
+async def main(queue: "asyncio.Queue[Dict[str, Any]]", args: Dict[str, Any]):
     """Entry point called by ansible-rulebook."""
     if EDA_IMPORT_ERROR:
         raise ImportError(MISSING_DEP_MSG % EDA_IMPORT_ERROR)
