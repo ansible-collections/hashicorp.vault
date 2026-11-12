@@ -97,6 +97,22 @@ def test_read_acl_policy_success(authenticated_client, vault_config):
     assert "rules" in result
 
 
+def test_read_acl_policy_preserves_trailing_newline(authenticated_client, vault_config):
+    rules = 'path "secret/data/myapp/*" {\n  capabilities = ["read", "list"]\n}\n'
+    authenticated_client._make_request.return_value = {
+        "data": {
+            "name": vault_config["acl_policy_name"],
+            "rules": rules,
+        }
+    }
+
+    policies_client = VaultAclPolicies(authenticated_client)
+    result = policies_client.read_acl_policy(vault_config["acl_policy_name"])
+
+    assert result["rules"] == rules
+    assert result["rules"].endswith("\n")
+
+
 def test_read_acl_policy_not_found(authenticated_client, vault_config):
     authenticated_client._make_request.side_effect = VaultSecretNotFoundError("ACL policy not found", 404, [])
     policies_client = VaultAclPolicies(authenticated_client)

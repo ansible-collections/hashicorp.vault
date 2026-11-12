@@ -12,6 +12,7 @@
       token: "{{ vault_token_from_setup_auth_token }}"
   vars:
     acl_policy_rules_alias_name: "{{ acl_policy_test_name }}-rules-alias"
+    acl_policy_block_name: "{{ acl_policy_test_name }}-block"
   block:
     # -------------------------------------------------------------------------
     # Cleanup
@@ -23,6 +24,7 @@
       loop:
         - "{{ acl_policy_test_name }}"
         - "{{ acl_policy_rules_alias_name }}"
+        - "{{ acl_policy_block_name }}"
       failed_when: false
 
     # -------------------------------------------------------------------------
@@ -321,6 +323,38 @@
         that:
           - alias_delete is changed
 
+    - name: Create ACL policy from a block scalar
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_block_name }}"
+        policy: "{{ acl_policy_block_rules }}"
+      register: block_create
+
+    - name: Read block-scalar policy
+      hashicorp.vault.acl_policy_info:
+        name: "{{ acl_policy_block_name }}"
+      register: block_read
+
+    - name: Apply the same block scalar again
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_block_name }}"
+        policy: "{{ acl_policy_block_rules }}"
+      register: block_idem
+
+    - name: Apply the same block scalar in check mode
+      hashicorp.vault.acl_policy:
+        name: "{{ acl_policy_block_name }}"
+        policy: "{{ acl_policy_block_rules }}"
+      register: block_check_idem
+      check_mode: true
+
+    - name: Assert block scalar is idempotent
+      ansible.builtin.assert:
+        that:
+          - block_create is changed
+          - block_read.policies[0].rules == acl_policy_block_rules
+          - block_idem is not changed
+          - block_check_idem is not changed
+
   always:
     - name: Ensure test policies removed
       hashicorp.vault.acl_policy:
@@ -329,4 +363,5 @@
       loop:
         - "{{ acl_policy_test_name }}"
         - "{{ acl_policy_rules_alias_name }}"
+        - "{{ acl_policy_block_name }}"
       failed_when: false

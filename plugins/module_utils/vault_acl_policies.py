@@ -61,7 +61,7 @@ class VaultAclPolicies:
         raw = self._client._make_request("GET", path)
         data = raw.get("data") or {}
         rules = raw.get("rules") or raw.get("policy") or data.get("rules") or data.get("policy") or ""
-        return {"name": name, "rules": rules.strip()}
+        return {"name": name, "rules": rules}
 
     def create_or_update_acl_policy(self, name: str, acl_policy_rules: str) -> dict:
         """
