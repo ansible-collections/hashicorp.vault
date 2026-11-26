@@ -1,0 +1,6 @@
+---
+minor_changes:
+  - module_utils - Add ``VaultTpm`` (``plugins/module_utils/vault_tpm.py``), an API layer for the Vault Enterprise
+    TPM identity endpoints, registered on ``VaultClient`` as ``client.tpm``. It provides ``check_vault_version()``,
+    ``register_tpm()``, ``read_tpm()``, ``read_tpm_by_id()``, ``update_tpm()``, ``delete_tpm()`` and
+    ``add_tpm_to_group()``, plus the ``compute_tpm_id()`` helper. No modules use it yet.
