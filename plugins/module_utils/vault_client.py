@@ -35,6 +35,7 @@ from ansible_collections.hashicorp.vault.plugins.module_utils.vault_kv2_secrets 
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_namespaces import VaultNamespaces
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_pki import VaultPki
 from ansible_collections.hashicorp.vault.plugins.module_utils.vault_secrets import Secrets
+from ansible_collections.hashicorp.vault.plugins.module_utils.vault_tpm import VaultTpm
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ __all__ = [
     'VaultPki',
     'VaultAclPolicies',
     'VaultNamespaces',
+    'VaultTpm',
     'Secrets',
     'resolve_tls_verify',
 ]
@@ -161,6 +163,7 @@ class VaultClient:
         self.secrets = Secrets(self)
         self.acl_policies = VaultAclPolicies(self)
         self.namespaces = VaultNamespaces(self)
+        self.tpm = VaultTpm(self)
 
         verify = resolve_tls_verify(ca_certificate, tls_skip_verify)
         if verify is not None:
